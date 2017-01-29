@@ -141,7 +141,6 @@
         
         <article class="followup">
             
-
             <div class="info">
                 <div class="commands">
                     <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
@@ -210,7 +209,11 @@
             </div>
             
             <div class="content">
+                {% if followup.content_type.split(";")[0] == "text/html" %}
                 {{ followup.content | safe }}
+                {% else %}
+                Unknown content type: {{followup.content_type}}
+                {% endif %}
             </div>
             
         </article>

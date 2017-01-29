@@ -235,6 +235,7 @@ class Entry(db.Model):
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True)
     archived = BooleanField(default=False)
+    content_type = CharField(default="text/html; charset=UTF-8")
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)
