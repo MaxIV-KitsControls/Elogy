@@ -1,0 +1,218 @@
+<script src="static/js/navigo.min.js"></script>
+<script src="static/js/signals.min.js"></script>
+
+<style>
+
+ html, body {
+     padding: 0;
+     margin: 0;
+     height: 100%;
+     width: 100%;
+ }
+ 
+ #app {
+     font-family: 'Avenir', Helvetica, Arial, sans-serif;
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+ }
+
+ header.main {
+     height: 50px;
+     border-bottom: 1px solid grey;
+ }
+
+ header.main .title {
+     font-size: xx-large;
+     position: absolute;
+ }
+ 
+ section.main {
+     display: flex;
+     flex-direction: row;
+     width: 100%;
+     height: calc(100% - 50px);
+ }
+
+ #logbooks {
+     flex: 1;
+     background: #ddd;
+     height: 100%;
+     border-right: 5px solid #aaa;     
+ }
+
+ iframe {
+     width: 100%;
+     height: 100%;
+ }
+ 
+ #entries {
+     flex: 2;
+     background: #ddd;
+     height: 100%;
+     border-right: 5px solid #aaa;
+ }
+
+ #entry {
+     flex: 4;
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+     max-width: 100%;
+     overflow-x: auto;
+ }
+
+ #entry header {
+     width: 100%;
+     flex: 0;
+ }
+
+ #entry article {
+     flex: 10;
+     height: 100%;
+     overflow-y: auto;
+ }
+
+ .logbook.selected {
+     background: white;
+ }
+
+ ul {
+     padding-left: 20px;     
+ }
+
+ 
+</style>
+
+
+{% macro logbook_children(logbook) %}
+
+<div class="logbook" id="{{ logbook.id }}">
+    <a href="/#/logbook/{{logbook.id}}">
+        {{logbook.name}}
+    </a>
+</div>
+    
+{% if logbook.children %}
+<ul>
+    {% for child in logbook.children %}
+    <li class="logbook">
+        {{logbook_children(child)}}
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% endmacro %}
+
+
+<div id="app">
+    <header class="main">
+        <div class="title">ELOGy</div>
+    </header>
+    <section class="main">
+        <nav id="logbooks">
+            <a href="/logbooks/new">New</a>
+            <ul>
+                {% for logbook in logbooks %}
+                <li class="logbook">
+                    {{ logbook_children(logbook) }}
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        <nav id="entries">
+            <iframe name="entries" frameborder="no"></iframe>
+        </nav>
+        <div id="entry">
+            <article><iframe name="entry" frameborder="no"></iframe></article>
+        </div>
+    </section>
+</div>
+
+
+<script type="text/javascript">
+
+ // A simple centralized event bus that we'll use to decouple
+ // things a bit. We'll send out events for various important
+ // changes, and components may listen to them as they need.
+ window.eventbus = {
+     entrySelected: new signals.Signal(),
+     logbookSelected: new signals.Signal()
+ };
+
+ function markLogbook(logbookId, unmark) {
+     document.querySelectorAll('.logbook')
+             .forEach(function (element) {
+                 element.classList.remove("selected")
+             });
+     if (logbookId) {
+         var element = document.getElementById(logbookId);
+         element.classList.add("selected")
+     }
+ } 
+ 
+ window.addEventListener("load", function () {
+
+     var entries = document.querySelector('iframe[name="entries"]'),
+         entry = document.querySelector('iframe[name="entry"]');
+
+     // === eventbus listeners ===
+     
+     function handleLogbook(logbookId, entryId) {
+         var entriesUrl = "/logbooks/" + logbookId;
+         // updating the entries list is expensive so let's only
+         // do that if the logbook has actually changed
+         if (entries.contentWindow.location.pathname !== entriesUrl) {
+             entries.src = entriesUrl + "#" +  entryId; 
+         }
+         markLogbook(logbookId)
+     }
+     eventbus.logbookSelected.add(handleLogbook)
+     
+     function handleEntry(entryId, followupId) {
+         console.log("entry", entryId, followupId)
+         if (entryId) {
+             var entryUrl = "/entries/" + entryId;
+             // if the routed URL points to a followup, we'll tack that
+             // to the end of the URL so that the view is scrolled to it
+             if (followupId) {
+                 entryUrl += "#" + followupId;
+             }
+             entry.src = entryUrl;
+         } else {
+             // no entry selected; show a placeholder
+             entry.src = "about:blank";
+         }
+     }     
+     eventbus.entrySelected.add(handleEntry);
+
+     window.addEventListener("unload", function() {
+         // cleanup
+         parent.window.eventbus.entrySelected.remove(handleLogbook);
+         parent.window.eventbus.entrySelected.remove(handleEntry);
+     });
+
+     // === Routing ===
+     // We need this in order for browser history to
+     // work, since the state of the application must be encoded in
+     // the url somehow. It's a little hacky (uses the 'hash' part of
+     // the location) but it's simple and pretty flexible.
+     
+     function goTo(params) {
+         console.log("goTo", params)
+         eventbus.logbookSelected.dispatch(params.logbookId, params.entryId);
+         eventbus.entrySelected.dispatch(params.entryId, params.followupId);
+     }
+     
+     var router = new Navigo();
+     router
+         .on("/logbook/:logbookId/entry/:entryId/:followupId", goTo)
+         .on("/logbook/:logbookId/entry/:entryId", goTo)
+         .on("/logbook/:logbookId", goTo)     
+         .resolve();
+     
+ });
+
+ 
+</script>

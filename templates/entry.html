@@ -1,0 +1,224 @@
+<link rel="stylesheet" type="text/css" href="/static/main.css"/>
+
+<style>
+ 
+ body {
+     font-size: 16px;
+     background: #ddd;
+ }
+
+ .container {
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+ }
+
+ header {
+     flex: 0;
+     padding: 5px;
+     background: #f5f5f5;
+ }
+
+ header .title {
+     font-size: large;
+ }
+ 
+ .body {
+     flex: 1;
+     border-bottom: 1px
+     max-height: 100%;
+     overflow: auto;
+ }
+
+ .info {
+     /* this is the magic that keeps the entry headers sloating along */
+     position: sticky;  
+     top: 0;
+     
+     background: #f5f5f5;
+     border-bottom: 1px solid #bbb;
+     padding: 10px;          
+ }
+
+ article {
+     background: white;
+     border-bottom: 2p solid black;
+ }   
+ 
+ article.followup {
+     margin-left: 10px;
+ }
+
+ article.followup .info {
+     border-top: 1px solid #aaa;
+ }
+
+ 
+</style>
+
+<div class="container">
+    
+    <header>
+        <span class="title">{{ entry.title or "(Untitled)"}}</span>
+        <span class="commands">
+            <a href="new?follows={{entry.id}}" target="_top">Follow-up</a>
+            {#
+            <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.previous.id}}" target="_top">Prev</a>            
+            <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.next.id}}" target="_top">Next</a>
+            #}
+        </span>
+    </header>
+
+    <div class="body">
+        
+        <article>
+            
+            <div class="info">
+
+                <span class="commands">
+                    <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
+                    
+                    <a href="edit/{{entry.id}}" target="_top">Edit</a>
+                    &nbsp;
+                    <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.id}}" target="_top">Link</a>
+                    {% if entry.followups %}
+                    <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.followups[0].id}}">🠋</a>
+                    {% endif %}
+                </span>
+                
+                <span class="timestamp">
+                    {{entry.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
+                </span>
+                {#
+                {% if entry.last_changed_at %}
+                <a href="/entries/change/{{entry.last_changed_at}}">
+                    <span class="changed">(Changed at {{entry.last_changed_at}})</span>
+                </a>
+                {% endif %}            
+                #}
+                <spam class="author">
+                    {{ entry.authors }}
+                </span>
+                <div class="attributes">
+
+                    {% if entry.logbook.attributes %}
+                    {% for attribute in entry.logbook.attributes
+                    if entry.attributes.get(attribute.name) != "" %}
+                    <label class="attribute" data-name="{{attribute.name}}">
+                        {% if attribute.required %}*{% endif %}
+                        {{attribute.name}}
+                        <span class="value">
+                            {% if attribute.type == "text" %}
+                            {{ entry.attributes.get(attribute.name) }}
+                            {% endif %}
+                            {% if attribute.type == "number" %}
+                            {{ entry.attributes.get(attribute.name) }}
+                            {% endif %}
+                            {% if attribute.type == "boolean" %}
+                            {{ entry.attributes.get(attribute.name) }}
+                            {% endif %}
+                            {% if attribute.type == "option" %}
+                            {{ entry.attributes.get(attribute.name) }}
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                
+            </div>
+            
+            
+            <div class="content">
+                {{ entry.content | safe }}
+            </div>
+            
+        </article>
+
+        {% for followup in entry.followups %}
+
+        <a id="{{followup.id}}"></a>  {# link anchor #}
+        
+        <article class="followup">
+            
+
+            <div class="info">
+                <div class="commands">
+                    <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
+                    <a target="_top" href="edit/{{followup.id}}">Edit</a>
+                    &nbsp;
+                    <a href="/#/logbook/{{followup.logbook.id}}/entry/{{entry.id}}/{{followup.id}}" target="_top">Link</a>
+                    
+                    {% if loop.first %}
+                    <a href="#">🠉</a>
+                    {% else %}
+                    <a href="#{{entry.followups[loop.index0-1].id}}">🠉</a>
+                    {% endif %}
+                    
+                    {% if not loop.last %}
+                    <a href="#{{entry.followups[loop.index0+1].id}}">🠋</a>
+                    {% endif %}
+                </div>        
+
+                #{{loop.index}}
+                <span>
+                    {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
+                </span>
+                {% if followup.authors != entry.authors %}
+                <span>{{followup.authors}}</span>
+                {% endif %}
+                {% if followup.last_changed_at %}
+                <a href="/entries/change/{{followup.last_changed_at}}">
+                    <span class="changed">(Changed at {{followup.last_changed_at}})</span>
+                </a>
+                {% endif %}
+                {% if followup.title and followup.title != entry.title %}
+                <div>
+                    <span class="title">
+                        {{followup.title}}
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if entry.attributes %}
+                <div class="attributes">        
+                    {% for attribute in entry.logbook.attributes %}
+                    {% if followup.attributes.get(attribute.name) != entry.attributes.get(attribute.name) %}
+                    <label class="attribute" data-name="{{attribute.name}}">
+                        {% if attribute.required %}*{% endif %}
+                        {{attribute.name}}:
+                        <span class="value">
+                            {% if attribute.type == "text" %}
+                            {{ followup.attributes.get(attribute.name) }}
+                            {% endif %}
+                            {% if attribute.type == "number" %}
+                            {{ followup.attributes.get(attribute.name) }}
+                            {% endif %}
+                            {% if attribute.type == "boolean" %}
+                            {{ followup.attributes.get(attribute.name) }}
+                            {% endif %}
+                            {% if attribute.type == "option" %}
+                            {{ followup.attributes.get(attribute.name) }}
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% endif %}
+                    {% endfor %}        
+                </div>
+                {% endif %}
+                
+            </div>
+            
+            <div class="content">
+                {{ followup.content | safe }}
+            </div>
+            
+        </article>
+
+        {% endfor %}
+    </div>
+</div>
+
+
+<script type="text/javascript" src="/static/color_attributes.js"></script>
+

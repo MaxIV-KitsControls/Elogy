@@ -1,0 +1,200 @@
+<link rel="stylesheet" type="text/css" href="/static/main.css"/>
+
+<style>
+ 
+ html, body {
+     background: #cfc;
+ }
+
+ /* some special magic to get the form to always fit the screen */ 
+ div.container {         
+     height: 100%;
+     padding: 10px;
+     background: white;
+ } 
+
+ form {
+     max-width: 1000px;
+     margin-left: auto;
+     margin-right: auto;
+
+ }
+ 
+ fieldset {
+     border: 1px solid #ccc;
+ }
+ 
+ fieldset.attribute {
+     border: 0;
+     vertical-align: top;
+ }
+
+ table {
+     border-collapse: collapse;
+ }
+
+ table td {
+     padding: 2px;
+ }
+
+ input.name {
+     width: 100%;
+ }
+
+ textarea.description {
+     width: 100%;
+ }
+ 
+</style>
+
+<header>
+    <div class="logbook">
+        Logbook:
+        
+        {% if logbook %}
+        {% for parent in logbook.ancestry %}
+        <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a> /
+        {% endfor %}
+        <a href="/logbooks/{{logbook.id}}"><b>{{ logbook.name }}</b></a>
+        {% else %}
+        
+        {% for parent in parent.ancestry %}
+        <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a> /
+        {% endfor %}
+        <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a>
+        / <b>New logbook</b>
+        {% endif %}
+
+    </div>
+</header>
+    
+
+<div class="container">
+    <section>
+
+        <form action="/logbooks/" method="post">
+            <input type="hidden" name="logbook" value="{{ logbook.id if logbook else 0 }}">
+            <input type="hidden" name="parent" value="{{ parent.id if parent else 0 }}">
+            <fieldset>
+                <legend>Title</legend>
+                <input type="text" class="name" name="name" required
+                       value="{{logbook.name if logbook else ''}}">
+            </fieldset>
+            <fieldset>
+                <legend>Description</legend>
+                <textarea rows="10" class="description" name="description">{{ logbook.description if logbook else "" }}</textarea>
+            </fieldset>
+            <fieldset name="attributes">
+                <legend>Attributes</legend>
+                <table id="attributes">
+                </table>
+                <button type="button" id="add-attribute">Add attribute</button>
+            </fieldset>
+            <button type="submit">Submit</button>
+        </form>
+    </section>
+</div>
+
+<script type="text/javascript">
+
+ var attributeTypes = ["text", "number", "boolean", "option"];
+ var attributeContainer = document.getElementById("attributes");
+ var attributeCounter = 1;
+ 
+ // we're getting the configuration as a JSON string through the template.
+ // Yea, it's a bit nasty but it works...
+ var attributes = JSON.parse(
+     '{{ (logbook.attributes or "[]" if logbook else parent.attributes if parent else "[]") | safe }}');
+
+ // adds an attribute input line, possibly pre-populated
+ function addAttribute(data) {
+
+     var n = attributeCounter++;  // just to get a unique name per attribute
+     var tr = document.createElement("tr");  // container for the widgets
+     tr.classList = "attribute";
+     var td;
+     
+     // name of the attribute
+     var nameInput = document.createElement("input");
+     nameInput.type = "text";
+     nameInput.name = "attribute-name-" + n;
+     nameInput.required = "true";
+     if (data) {
+         nameInput.value = data.name;
+     }
+     td = document.createElement("td");
+     td.appendChild(nameInput);
+     tr.appendChild(td)
+
+     // a dropdown widget for selecting the type
+     var typeSelect = document.createElement("select");
+     typeSelect.name = "attribute-type-" + n;
+     attributeTypes.forEach(function (t) {
+         var typeOption = document.createElement("option");
+         typeOption.name = t;
+         typeOption.innerText = t;
+         typeSelect.appendChild(typeOption);
+     })
+     typeSelect.onchange = function () {
+         console.log("psald", typeSelect.value);
+         optionsInput.style.display = typeSelect.value == "option"? null : "none";
+     };
+     if (data) {
+         typeSelect.value = data.type;
+     }
+     td = document.createElement("td");
+     td.appendChild(typeSelect);
+     tr.appendChild(td)
+
+     // checkbox that tells if the attribute is "required"
+     var requiredCheckbox = document.createElement("input");
+     requiredCheckbox.name = "attribute-required-" + n;
+     requiredCheckbox.type = "checkbox";
+     requiredCheckbox.id = "required";
+     requiredCheckbox.setAttribute("label", "required");
+     if (data) {
+         requiredCheckbox.checked = data.required;
+     }
+     td = document.createElement("td");
+     td.appendChild(requiredCheckbox);
+     
+     var requiredCheckboxLabel = document.createElement("label");
+     requiredCheckboxLabel.for = "required";
+     requiredCheckboxLabel.innerText = "Required";
+     td.appendChild(requiredCheckboxLabel);
+     tr.appendChild(td)
+
+     // name of the attribute
+     var optionsInput = document.createElement("textarea");
+     optionsInput.rows = "3";
+     optionsInput.name = "attribute-options-" + n;
+     if (data && data.options) {
+         optionsInput.value = data.options.join("\n");
+     }
+     if (!data || data.type != "option") {
+         optionsInput.style.display = "none";
+     }
+     td = document.createElement("td");
+     td.appendChild(optionsInput);
+     tr.appendChild(td)
+     
+     // button to remove the attribute from the list
+     var removeButton = document.createElement("button");
+     removeButton.innerText = "Remove";
+     removeButton.type = "button";
+     removeButton.onclick = function () {
+         attributeContainer.removeChild(tr);
+     };
+     td = document.createElement("td");
+     td.appendChild(removeButton);
+     tr.appendChild(td)
+     
+     attributeContainer.appendChild(tr);
+ }
+
+ attributes.forEach(addAttribute);
+ 
+ var addButton = document.getElementById("add-attribute");
+ addButton.onclick = function () {addAttribute()};
+ 
+</script>

@@ -1,0 +1,165 @@
+<link rel="stylesheet" type="text/css" href="/static/main.css"/>
+
+<style>
+
+ body {
+     background: #eee;
+ }
+
+ a {
+     text-decoration: none;
+ }
+
+ .container {
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+ }
+
+ header {
+     flex: 0;
+     padding: 5px;
+     border-bottom: 1px solid grey;
+     background: #ddd;
+     position: relative;
+ }
+
+
+ .entries {
+     flex: 1;
+     max-height: 100%;
+     overflow-y: auto;
+ }
+ 
+ .entry {
+     padding: 5px;
+     border-bottom: 1px solid #aaa;
+ }
+
+ .entry.selected {
+     background: white;
+ }
+
+ .date-separator {
+     position: sticky;
+     top: 0;
+     border-bottom: 1px solid #aaa;
+     font-size: small;
+     background: #ddd;
+     color: black;
+     text-align: center;
+ }
+
+ .entry .authors {
+     font-size: small;
+ }
+
+ .entry .followups {
+     float: right;
+ }
+ 
+</style>
+
+
+<base target="_top" />
+
+<div class="container">
+
+    <header>
+        <span>{{ logbook.name }}</span>
+
+        <span class="commands">
+            <a href="/logbooks/{{logbook.id}}/edit">Edit</a>
+            <a href="/logbooks/new?parent={{ logbook.id }}">Child</a>
+            | <a href="/entries/new?logbook={{logbook.id}}">New</a>
+        </span>
+        
+        {% if logbook.attributes %}
+        <div class="attributes">
+            {% for attribute in logbook.attributes %}
+            <label class="attribute" data-name="{{attribute.name}}">
+                {% if attribute.required %}*{% endif %}
+                {{ attribute.name }}
+                <span class="value">
+                    {{ attribute.type }}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </header>
+    
+    {% set entries=logbook.get_entries() %}
+    
+    <div class="entries">
+
+        {% for entry in entries %}
+
+        <a id="{{ entry.id }}"></a>  {# link anchor #}
+
+        {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
+        <div class="date-separator">
+            {{entry.timestamp.date()}}
+        </div>
+        {% endif %}
+        
+        {% set entryUrl = "/#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry) %}
+        
+        <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+            <div class="entry" id="entry-{{entry.id}}">
+                {{ entry.timestamp.strftime("%H:%M:%S") }}
+                <span class="authors">{{entry.authors}}</span>
+                
+                {% if entry.followups %}
+                <div class="followups">{{entry.n_followups}}</div>
+                {% endif %}
+                
+                <div>{{entry.title}}</div>
+                
+                {% if logbook.attributes %}                            
+                {% for attribute in logbook.attributes if attribute.required %}
+                {% if entry.attributes.get(attribute.name) != "" %}
+                <label class="attribute" data-name="{{attribute.name}}">
+                    {{entry.attrsibutes[attribute.name]}}
+                </label>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+
+    </div>
+</div>
+
+<script type="text/javascript" src="/static/color_attributes.js"></script>
+
+<script type="text/javascript">
+
+ function markEntry(entryId) {
+     console.log("markEntry", entryId)
+     // first remove all marks
+     document.querySelectorAll('div.entry')
+             .forEach(function (element) {
+                 element.classList.remove("selected")
+             });
+     if (entryId) {
+         var element = document.getElementById("entry-" + entryId);
+         element.classList.add("selected")
+     }
+ }
+
+ window.addEventListener("load", function () {
+     if (window.location.hash) {
+         // highlight the selected entry
+         markEntry(window.location.hash.slice(1))
+     }
+     parent.window.eventbus.entrySelected.add(markEntry);
+ });
+
+ window.addEventListener("unload", function() {
+     parent.window.eventbus.entrySelected.remove(markEntry);
+ })
+ 
+</script>
+
