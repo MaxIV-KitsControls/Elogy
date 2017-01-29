@@ -34,12 +34,12 @@ def cleanup_html_(bad_html):
     if not bad_html.strip():
         return ""
     tree = etree.HTML(bad_html.replace('\r', ''))
-    return '\n'.join([
+    return '\n'.join(
         (etree.tostring(stree, pretty_print=True, method="xml")
          .decode("utf-8")
          .strip())
         for stree in tree[0].iterchildren()
-    ])
+    )
 
 
 def cleanup_html(bad_html):
@@ -90,7 +90,7 @@ class Logbook(db.Model):
             entries = entries.paginate(page, entries_per_page)
         return entries
 
-    def get_entries(self, archived=False):
+    def get_entries(self, archived=False, n=10):
         Followup = Entry.alias()
         entries = (
             Entry.select(
@@ -130,8 +130,7 @@ class Logbook(db.Model):
                        .desc()
                    )
         )
-        print(list(entries))
-        return entries
+        return entries.limit(n)
 
     @property
     def ancestors(self):

@@ -23,11 +23,10 @@ def get_logbooks():
 @logbooks.route('/<int:logbook_id>', methods=["GET"])
 def show_logbook(logbook_id):
     logbook = Logbook.get(Logbook.id == logbook_id)
-    page = int(request.args.get("page", 0))
-    entries_per_page = int(request.args.get("entries_per_page", 0))
+    n_entries = int(request.args.get("n", 100))
+    print("n", n_entries)
     return render_template(
-        "logbook.html", logbook=logbook,
-        page=page, entries_per_page=entries_per_page)
+        "logbook.html", logbook=logbook, n_entries=n_entries)
 
 
 @logbooks.route("/new")

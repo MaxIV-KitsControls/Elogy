@@ -61,17 +61,15 @@
 </style>
 
 
-<base target="_top" />
-
 <div class="container">
 
     <header>
         <span>{{ logbook.name }}</span>
 
         <span class="commands">
-            <a href="/logbooks/{{logbook.id}}/edit">Edit</a>
-            <a href="/logbooks/new?parent={{ logbook.id }}">Child</a>
-            | <a href="/entries/new?logbook={{logbook.id}}">New</a>
+            <a href="/logbooks/{{logbook.id}}/edit" target="_top">Edit</a>
+            <a href="/logbooks/new?parent={{ logbook.id }}" target="_top">Child</a>
+            | <a href="/entries/new?logbook={{logbook.id}}" target="_top">New</a>
         </span>
         
         {% if logbook.attributes %}
@@ -89,7 +87,7 @@
         {% endif %}
     </header>
     
-    {% set entries=logbook.get_entries() %}
+    {% set entries=logbook.get_entries(n=n_entries) %}
     
     <div class="entries">
 
@@ -128,7 +126,11 @@
             </div>
         </a>
         {% endfor %}
-
+        
+        {% if n_entries == entries | length %}
+        <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
+        {% endif %}
+        
     </div>
 </div>
 
