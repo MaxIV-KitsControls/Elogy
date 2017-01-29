@@ -23,6 +23,8 @@ WELCOME_MESSAGE = """
 
 from datetime import datetime
 from flask.json import JSONEncoder
+import peewee
+from playhouse.shortcuts import model_to_dict
 
 
 class CustomJSONEncoder(JSONEncoder):
@@ -32,6 +34,10 @@ class CustomJSONEncoder(JSONEncoder):
         if isinstance(obj, datetime):
             serial = obj.timestamp()
             return serial
+        elif isinstance(obj, peewee.Model):
+            serial = model_to_dict(obj, recurse=False)
+            return serial
+
         return JSONEncoder.default(self, obj)
 
 
