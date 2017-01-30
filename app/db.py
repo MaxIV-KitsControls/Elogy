@@ -1,5 +1,4 @@
 from datetime import datetime
-from html.parser import HTMLParser
 import json
 from lxml import etree
 from playhouse.shortcuts import model_to_dict, dict_to_model
@@ -78,7 +77,7 @@ class Logbook(db.Model):
         return [model_to_dict(lb, recurse=False)
                 for lb in Logbook.select().where(Logbook.parent == self)]
 
-    def get_entries_(self, followups=False,
+    def get_entries_(self, followups=True,
                     page=None, entries_per_page=None):
         entries = (Entry.select()
                    .where(Entry.logbook == self)
@@ -90,18 +89,14 @@ class Logbook(db.Model):
             entries = entries.paginate(page, entries_per_page)
         return entries
 
-    def get_entries(self, archived=False, n=10):
+    def get_entries(self, followups=True, archived=False, n=10):
         Followup = Entry.alias()
         entries = (
             Entry.select(
                 Entry,
                 fn.count(Followup.id).alias("n_followups"),
-                fn.coalesce(Followup.last_changed_at,
-                            Followup.created_at,
-                            Entry.last_changed_at,
-                            Entry.created_at)
-                .alias("timestamp"))  # a helpful alias
-            )
+                Entry.created_at.alias("timestamp"))  # a helpful alias
+        )
         if archived:
             entries = (entries
                        .where(Entry.logbook == self.id)
@@ -114,22 +109,21 @@ class Logbook(db.Model):
                        .join(Followup, JOIN.LEFT_OUTER,
                              on=((Followup.follows == Entry.id) &
                                  ~Followup.archived)))
-        entries = (entries
-                   .where(Entry.follows == None)
-                   .group_by(Entry.id)
-                   # Sort newest first, where the latest followup is
-                   # preferred, and edits bumps the timestamps.
-                   # Note that editing an entry will *not* cause
-                   # it to be sorted as newer than its newest followup
-                   # (if any). Not sure if this makes sense...
-                   .order_by(
-                       fn.coalesce(Followup.last_changed_at,
-                                   Followup.created_at,
-                                   Entry.last_changed_at,
-                                   Entry.created_at)
-                       .desc()
-                   )
-        )
+        if not followups:
+            entries = (entries.where(Entry.follows == None)
+                       .group_by(Entry.id)
+                       .order_by(fn.coalesce(
+                           Followup.created_at,
+                           Entry.created_at).desc()))
+        else:
+            entries = (entries
+                       .group_by(Entry.id)
+                       # .where(Entry.follows == None)
+                       .order_by(Entry.created_at.desc())
+            )
+
+
+
         return entries.limit(n)
 
     @property
@@ -201,39 +195,22 @@ class LogbookRevision(db.Model):
 DeferredEntry = DeferredRelation()
 
 
-class EntrySearch(FTS5Model):
-    entry = ForeignKeyField(DeferredEntry)
-    content = SearchField()
-
-
-class MLStripper(HTMLParser):
-    def __init__(self):
-        self.reset()
-        self.strict = False
-        self.convert_charrefs= True
-        self.fed = []
-    def handle_data(self, d):
-        self.fed.append(d)
-    def get_data(self):
-        return ''.join(self.fed)
-
-
-def strip_tags(html):
-    s = MLStripper()
-    s.feed(html)
-    return s.get_data()
+# class EntrySearch(FTS5Model):
+#     entry = ForeignKeyField(DeferredEntry)
+#     content = SearchField()
 
 
 class Entry(db.Model):
 
     logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField()
-    authors = CharField()
+    authors = JSONField()
     content = HTMLField()
     attributes = JSONField(null=True)
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True)
+    attachments = JSONField(null=True)
     archived = BooleanField(default=False)
     content_type = CharField(default="text/html; charset=UTF-8")
 
@@ -252,10 +229,6 @@ class Entry(db.Model):
                 (Entry.select()
                  .where(Entry.follows_id == self.id)
                  .order_by(Entry.id))]
-
-    # @property
-    # def timestamp(self):
-    #     return self.last_changed_at or self.created_at
 
     @property
     def next(self):

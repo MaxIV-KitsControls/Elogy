@@ -87,7 +87,7 @@
         {% endif %}
     </header>
     
-    {% set entries=logbook.get_entries(n=n_entries) %}
+    {% set entries=logbook.get_entries(n=n_entries, followups=followups) %}
     
     <div class="entries">
 
@@ -100,17 +100,25 @@
             {{entry.timestamp.date()}}
         </div>
         {% endif %}
+
+        {% set parameters = "?followups=true" if followups else "" %}
         
-        {% set entryUrl = "/#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry) %}
+        {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
         
-        <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+        <a href="{{entryUrl}}" target="_top">
             <div class="entry" id="entry-{{entry.id}}">
                 {{ entry.timestamp.strftime("%H:%M:%S") }}
-                <span class="authors">{{entry.authors}}</span>
+
                 
                 {% if entry.followups %}
                 <div class="followups">{{entry.n_followups}}</div>
+                {% else %}
+                
+                {% if entry.follows %}
+                <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top"><div class="followups">*</div></a>
                 {% endif %}
+
+                {% endif %}                
                 
                 <div>{{entry.title}}</div>
                 
@@ -118,9 +126,15 @@
                 {% for attribute in logbook.attributes if attribute.required %}
                 {% if entry.attributes.get(attribute.name) != "" %}
                 <label class="attribute" data-name="{{attribute.name}}">
-                    {{entry.attrsibutes[attribute.name]}}
+                    {{entry.attributes[attribute.name]}}
                 </label>
                 {% endif %}
+                {% endfor %}
+                {% endif %}
+
+                {% if entry.attachments %}
+                {% for attachment in entry.attachments %}
+                <img src="/attachments/{{attachment}}.thumbnail"></div>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -138,16 +152,39 @@
 
 <script type="text/javascript">
 
- function markEntry(entryId) {
-     console.log("markEntry", entryId)
+ function markEntry(entryId, followupId) {
+     console.log("markEntry", entryId, followupId)
      // first remove all marks
      document.querySelectorAll('div.entry')
              .forEach(function (element) {
                  element.classList.remove("selected")
              });
-     if (entryId) {
+     /* if (followupId) {
+      *     var element = document.getElementById("entry-" + followupId);
+      *     if (element) {
+      *         element.classList.add("selected")
+      *     } else if (entryId) {
+      *         var element = document.getElementById("entry-" + entryId);
+      *         if (element) {
+      *             element.classList.add("selected")
+      *         }
+      *     }
+      * }*/
+     if (followupId) {
+         var element = document.getElementById("entry-" + followupId);
+         if (element) {
+             element.classList.add("selected")
+         } else if (entryId) {
+             var element = document.getElementById("entry-" + entryId);
+             if (element) {
+                 element.classList.add("selected")
+             }
+         }
+     } else {
          var element = document.getElementById("entry-" + entryId);
-         element.classList.add("selected")
+         if (element) {
+             element.classList.add("selected")
+         }         
      }
  }
 

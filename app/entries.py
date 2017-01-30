@@ -49,9 +49,13 @@ def edit_entry(entry_id):
 @entries.route("/", methods=["POST"])
 def write_entry():
     data = request.form
-    print(data)
+
     logbook_id = int(data["logbook"])
     logbook = Logbook.get(Logbook.id == logbook_id)
+
+    # a list of attachment filenames
+    attachments = data.getlist("attachment")
+    print("attachments", attachments)
 
     # Pick up attributes
     attributes = {}
@@ -64,14 +68,9 @@ def write_entry():
                 attr["name"], value)
 
     # Make a list of authors
-    author_keys = [key for key in data
-                   if key.startswith("author-")]
-    authors = [data[key].strip()
-               for key in sorted(author_keys)
-               if data[key]]
-    if data.get("last-author"):
-        authors.append(data["last-author"])
-    print("authors", authors)
+    authors = [author.strip()
+               for author in data.getlist("author")
+               if author]
 
     entry_id = int(data.get("entry", 0))
     if entry_id:
@@ -83,7 +82,8 @@ def write_entry():
                 "title": data["title"],
                 "content": data["content"],
                 "authors": authors,
-                "attributes": attributes
+                "attributes": attributes,
+                "attachments": attachments
             })
             change.save()
         except Exception as e:
@@ -91,11 +91,12 @@ def write_entry():
     else:
         # creating a new entry
         entry = Entry(title=data["title"],
-                      authors=",".join(authors),
+                      authors=authors,
                       content=data["content"],
                       follows=int(data.get("follows", 0)) or None,
                       attributes=attributes,
                       archived="archived" in data,
+                      attachments=attachments,
                       logbook=logbook_id)
     entry.save()
 

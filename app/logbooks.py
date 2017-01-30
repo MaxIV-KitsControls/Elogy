@@ -22,11 +22,13 @@ def get_logbooks():
 
 @logbooks.route('/<int:logbook_id>', methods=["GET"])
 def show_logbook(logbook_id):
+    followups = request.args.get("followups", "").lower() == "true"
     logbook = Logbook.get(Logbook.id == logbook_id)
     n_entries = int(request.args.get("n", 100))
     print("n", n_entries)
     return render_template(
-        "logbook.html", logbook=logbook, n_entries=n_entries)
+        "logbook.html", logbook=logbook, followups=followups,
+        n_entries=n_entries)
 
 
 @logbooks.route("/new")
@@ -71,7 +73,7 @@ def write_logbook():
             "options": [
                 option.strip()
                 for option
-                in data.get("attribute-options-{}".format(n)).split()
+                in data.get("attribute-options-{}".format(n)).split("\n")
             ]
         })
     parent_id = int(data.get("parent", 0))

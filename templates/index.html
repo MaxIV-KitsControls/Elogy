@@ -164,7 +164,8 @@
          // updating the entries list is expensive so let's only
          // do that if the logbook has actually changed
          if (entries.contentWindow.location.pathname !== entriesUrl) {
-             entries.src = entriesUrl + "#" +  entryId; 
+             entries.src = entriesUrl + window.location.search + (
+                 entryId? "#" + entryId : "");
          }
          markLogbook(logbookId)
      }
@@ -205,12 +206,14 @@
          eventbus.entrySelected.dispatch(params.entryId, params.followupId);
      }
      
-     var router = new Navigo();
+     var router = new Navigo(null, true);
      router
          .on("/logbook/:logbookId/entry/:entryId/:followupId", goTo)
          .on("/logbook/:logbookId/entry/:entryId", goTo)
          .on("/logbook/:logbookId", goTo)     
          .resolve();
+
+     console.log("router", router)
      
  });
 

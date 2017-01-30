@@ -13,10 +13,10 @@
      height: 100%;
  }
 
- header {
+ .container header {
      flex: 0;
      padding: 5px;
-     background: #f5f5f5;
+     background: #eee;
  }
 
  header .title {
@@ -35,7 +35,7 @@
      position: sticky;  
      top: 0;
      
-     background: #f5f5f5;
+     background: #eee;
      border-bottom: 1px solid #bbb;
      padding: 10px;          
  }
@@ -46,7 +46,7 @@
  }   
  
  article.followup {
-     margin-left: 10px;
+     border-left: 10px solid #ddd;
  }
 
  article.followup .info {
@@ -61,15 +61,21 @@
     <header>
         <span class="title">{{ entry.title or "(Untitled)"}}</span>
         <span class="commands">
+            {% if entry.follows %}
+            <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.follows.id}}" target="_top">Parent</a>
+            {% else %}
             <a href="new?follows={{entry.id}}" target="_top">Follow-up</a>
+            {% endif %}
             {#
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.previous.id}}" target="_top">Prev</a>            
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.next.id}}" target="_top">Next</a>
             #}
         </span>
     </header>
-
+    
     <div class="body">
+
+        <a id="{{entry.id}}"></a>  {# link anchor #}
         
         <article>
             
@@ -82,7 +88,7 @@
                     &nbsp;
                     <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.id}}" target="_top">Link</a>
                     {% if entry.followups %}
-                    <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.followups[0].id}}">🠋</a>
+                    <a href="#{{entry.followups[0].id}}">🠋</a>
                     {% endif %}
                 </span>
                 
@@ -97,7 +103,7 @@
                 {% endif %}            
                 #}
                 <spam class="author">
-                    {{ entry.authors }}
+                    {{ ", ".join(entry.authors) }}
                 </span>
                 <div class="attributes">
 
@@ -149,7 +155,7 @@
                     <a href="/#/logbook/{{followup.logbook.id}}/entry/{{entry.id}}/{{followup.id}}" target="_top">Link</a>
                     
                     {% if loop.first %}
-                    <a href="#">🠉</a>
+                    <a href="#{{entry.id}}">🠉</a>
                     {% else %}
                     <a href="#{{entry.followups[loop.index0-1].id}}">🠉</a>
                     {% endif %}
@@ -164,7 +170,7 @@
                     {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                 </span>
                 {% if followup.authors != entry.authors %}
-                <span>{{followup.authors}}</span>
+                <span>{{ ", ".join(followup.authors) }}</span>
                 {% endif %}
                 {% if followup.last_changed_at %}
                 <a href="/entries/change/{{followup.last_changed_at}}">

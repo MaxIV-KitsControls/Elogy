@@ -24,18 +24,27 @@
      margin-right: auto;
  }
 
+ form fieldset {
+     border: none;
+     padding: 0;
+ }
+ 
  div.title {
      width: 100%
  }
  
  form input.title {
      width: 100%;
+     border: 1px solid grey;
+     padding: 3px;
  }
 
  form input.author {
-     width: 200px;
+     min-width: 30px;
      margin-right: 2px;
      margin-bottom: 2px;
+     border: 1px solid grey;
+     padding: 3px; 
  }
  
  form input:invalid {
@@ -134,57 +143,55 @@
                 <label for="title"> Title </label>
                 <span>
                     <input class="title" type="text" name="title"
-                           value="{{entry.title if entry else follows.title if follows else ''}}"
+                           value="{{ entry.title if entry else follows.title if follows else '' }}"
                            {% if not follows %}required="true"{% endif %}>
                 </span>
             </div>
             <div>
                 <label for="author">Author(s)</label>
-                {% set authors = entry.authors.split(',') if entry else [] %}
-                <span id="authors" class="authors">
-                    {% for author in authors %}
+                <fieldset id="authors" class="authors">
+                    {% if entry %}
+                    {% for author in entry.authors -%}
                     <input class="author" type="text"
-                           name="author-{{loop.index}}"
-                           value="{{author.strip()}}"/>
-                    {% endfor %}
-                    <input class="author" type="text" name="last-author"
-                           placeholder="New author"/>
-                </span>
+                           name="author" value="{{ author }}"/>
+                    {%- endfor %}
+                    {% endif %}
+                </fieldset>
             </div>
         </div>
 
         <div class="attributes">
             {% for attribute in logbook.attributes %}
-            <label class="attribute" data-name="{{attribute.name}}">
+            <label class="attribute" data-name="{{ attribute.name }}">
                 {% if attribute.required %}*{% endif %}
                 {{attribute.name}}
                 {% if attribute.type == "text" %}
                 <input type="text"
-                       name="attribute-{{attribute.name}}"
+                       name="attribute-{{ attribute.name }}"
                        value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
                        {% if attribute.required %}required="true"{% endif %}>
                 {% endif %}
                 {% if attribute.type == "number" %}
                 <input type="number" step="any"
-                       name="attribute-{{attribute.name}}"
+                       name="attribute-{{ attribute.name }}"
                        value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
                        {% if attribute.required %}required="true"{% endif %}>
                 {% endif %}
                 {% if attribute.type == "boolean" %}
                 <input type="checkbox"
-                       name="attribute-{{attribute.name}}"
-                       {% if entry.attributes[attribute.name] or follows.attributes[attribute.name] %} checked {% endif %}>
+                       name="attribute-{{ attribute.name }}"
+                       {% if entry and entry.attributes[attribute.name] or follows and follows.attributes[attribute.name] %} checked {% endif %}>
                 {% endif %}
                 {% if attribute.type == "option" %}
-                <select name="attribute-{{attribute.name}}"
+                <select name="attribute-{{ attribute.name }}"
                         
                         {% if attribute.required %}required="true"{% endif %}>
                     {% if attribute.required %}
                     <option name=""></option>
                     {% endif %}
                     {% for option in attribute.options %}
-                    <option name="{{option}}"
-                            {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name]) %} selected="selected" {% endif %}>{{option}}</option>
+                    <option name="{{ option }}"
+                            {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '') %} selected="selected" {% endif %}>{{option}}</option>
                     {% endfor %}
                 </select>
                 {% endif %}
@@ -242,15 +249,26 @@
                  failure('Invalid JSON: ' + xhr.responseText);
                  return;
              }
-
              success(json.location);
          };
 
          formData = new FormData();
-         var blob = blobInfo.blob();
-         console.log(blobInfo, blob, blob.name);
-         formData.append('file', blob, blob.name);
+         formData.append('entry', '{{ entry.id if entry else "0" }}');
+         var blob = blobInfo.blob(); 
 
+         var now = new Date();
+         var filePath = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate() + "/" + blob.size + "-" + blob.name;
+
+         
+         formData.append('file', blob, filePath);
+
+         var entryForm = document.getElementById("form");
+         var input = document.createElement("input");
+         input.type = "hidden";
+         input.name = "attachment";
+         input.value = filePath;
+         entryForm.appendChild(input);
+         
          xhr.send(formData);
      }
 
@@ -258,14 +276,15 @@
          selector: '#content',
          plugins: "image textcolor paste table",
          toolbar: (
-             "undo redo | styleselect | "
-             + "bold italic forecolor backcolor | alignleft" 
-             + "aligncenter alignright alignjustify | " 
-             + "bullist numlist outdent indent | link image table"
+             "undo redo | styleselect |"
+             + " bold italic forecolor backcolor | alignleft" 
+             + " aligncenter alignright alignjustify |" 
+             + " bullist numlist outdent indent | link image table"
          ),
          menubar: false,
          statusbar: false,
          height: "100%",
+         relative_urls : false,  // otherwise images broken in editor
          apply_source_formatting: false,
          force_br_newlines: false,
          paste_data_images: true,
@@ -302,7 +321,7 @@
                      // tell TinyMCE to upload any images it has received
                      tinymce.activeEditor.uploadImages(function () {
                          // Once that's finished, finally submit the form!
-                         form.submit();
+                         setTimeout(function () {form.submit();}, 100);
                      })  // TODO: upload failure handler?
                  } else {
                      alert("You have not filled in all required fields!");
@@ -312,51 +331,13 @@
 
 </script>
 
+<script src="/static/js/montag.js"></script>
+
 <script>
 
- (function () {
-     var authorsElement = document.getElementById("authors");
-
-     var input = authorsElement.firstChild;
-
-     document.getElementById("form")
-             .addEventListener("input", addAuthorInputs, true)
-     document.getElementById("form")
-             .addEventListener("blur", removeAuthorInputs, true);
-   
-     var inputCounter = 1;
-
-     function addAuthorInputs(event) {
-         if (event.target.parentNode == authorsElement) {
-             var inputs = authorsElement.querySelectorAll("input");
-             console.log("inputs", inputs)
-             var lastInput = inputs[inputs.length - 1];
-             console.log("hej", lastInput, event.target)
-             for (var input of inputs) {
-                 if (input == event.target && input == lastInput) {
-                     if (input.value) {
-                         var newInput = document.createElement("input");
-                         newInput.classList = "author";
-                         newInput.type = "text";
-                         newInput.name = "author-" + inputCounter++;
-                         newInput.placeholder = "New author";
-                         authorsElement.appendChild(newInput);
-                     }
-                 }
-             }
-         }
-     }
-
-     function removeAuthorInputs(event) {
-         if (event.target.parentNode == authorsElement) {
-             var inputs = authorsElement.querySelectorAll("input");
-             var index = Array.prototype.slice.call(inputs).indexOf(event.target);
-             if (!event.target.value && index != inputs.length - 1) {
-                 authorsElement.removeChild(event.target);
-             }
-         }
-     }
-
- })();
-
+ /* Maintain a list of authors that expands to allow adding and removing names */ 
+ new Montag(document.getElementById("authors"), {name: "author",
+                                                 placeholder: "Author",
+                                                 classes: ["author"]});
+ 
 </script>
