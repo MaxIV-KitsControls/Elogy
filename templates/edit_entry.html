@@ -29,7 +29,7 @@
      padding: 0;
  }
  
- div.title {
+ .title {
      width: 100%
  }
  
@@ -139,12 +139,14 @@
         <input type="hidden" name="follows"
                value="{{ follows.id if follows else 0 }}">
         <div class="top">
+            
+            {# TODO: this is messy #}
+            
             <div class="title">
                 <label for="title"> Title </label>
                 <span>
                     <input class="title" type="text" name="title"
-                           value="{{ entry.title if entry else follows.title if follows else '' }}"
-                           {% if not follows %}required="true"{% endif %}>
+                           value="{{ entry.title if entry else follows.title if follows else '' }}">
                 </span>
             </div>
             <div>

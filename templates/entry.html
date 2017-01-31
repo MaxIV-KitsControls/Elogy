@@ -15,7 +15,7 @@
 
  .container header {
      flex: 0;
-     padding: 5px;
+     padding: 5px 10px;
      background: #eee;
  }
 
@@ -31,7 +31,7 @@
  }
 
  .info {
-     /* this is the magic that keeps the entry headers sloating along */
+     /* this is the magic that keeps the entry headers floating along */
      position: sticky;  
      top: 0;
      
@@ -53,6 +53,13 @@
      border-top: 1px solid #aaa;
  }
 
+ article.followup .followup-n {
+     background: grey;
+     color: white;
+     padding: 0 5px;
+     border-radius: 10px;
+ }
+
  
 </style>
 
@@ -60,17 +67,17 @@
     
     <header>
         <span class="title">{{ entry.title or "(Untitled)"}}</span>
-        <span class="commands">
+        <div class="commands">
             {% if entry.follows %}
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.follows.id}}" target="_top">Parent</a>
             {% else %}
             <a href="new?follows={{entry.id}}" target="_top">Follow-up</a>
             {% endif %}
-            {#
+            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
+            |
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.previous.id}}" target="_top">Prev</a>            
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.next.id}}" target="_top">Next</a>
-            #}
-        </span>
+        </div>
     </header>
     
     <div class="body">
@@ -81,17 +88,15 @@
             
             <div class="info">
 
-                <span class="commands">
-                    <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
-                    
-                    <a href="edit/{{entry.id}}" target="_top">Edit</a>
+                <div class="commands">                    
+                    <a href="edit/{{entry.id}}">Edit</a>
                     &nbsp;
                     <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.id}}" target="_top">Link</a>
                     {% if entry.followups %}
                     <a href="#{{entry.followups[0].id}}">🠋</a>
                     {% endif %}
-                </span>
-                
+                </div>
+
                 <span class="timestamp">
                     {{entry.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                 </span>
@@ -102,7 +107,7 @@
                 </a>
                 {% endif %}            
                 #}
-                <spam class="author">
+                <span class="author">
                     {{ ", ".join(entry.authors) }}
                 </span>
                 <div class="attributes">
@@ -149,8 +154,8 @@
             
             <div class="info">
                 <div class="commands">
-                    <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
-                    <a target="_top" href="edit/{{followup.id}}">Edit</a>
+
+                    <a href="/entries/edit/{{followup.id}}">Edit</a>
                     &nbsp;
                     <a href="/#/logbook/{{followup.logbook.id}}/entry/{{entry.id}}/{{followup.id}}" target="_top">Link</a>
                     
@@ -165,7 +170,7 @@
                     {% endif %}
                 </div>        
 
-                #{{loop.index}}
+                <span class="followup-n">#{{loop.index}}</span>
                 <span>
                     {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                 </span>

@@ -47,10 +47,18 @@ api.add_resource(SearchResource,
 
 
 @app.route("/")
-def get_entry():
+def get_index():
     logbooks = Logbook.select().where(Logbook.parent == None)
-    return render_template("index.html", logbooks=logbooks)
+    return render_template("index.html", logbooks=logbooks,
+                           title=app.config.get("TITLE", ""))
+
+
+@app.route("/mobile")
+def get_index_mobile():
+    logbooks = Logbook.select().where(Logbook.parent == None)
+    return render_template("index_mobile.html", logbooks=logbooks,
+                           title=app.config.get("TITLE", ""))
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

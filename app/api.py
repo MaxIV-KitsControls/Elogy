@@ -56,7 +56,8 @@ class EntriesResource(Resource):
             # requesting a single entry
             entry = Entry.get(Entry.id == entry_id)
             if request_wants_json():
-                return model_to_dict(entry, extra_attrs=["followups"])
+                return model_to_dict(entry, backrefs=True,
+                                     extra_attrs=["followups"])
             else:
                 # just get the HTML content
                 return make_response(entry.content)
@@ -65,18 +66,24 @@ class EntriesResource(Resource):
             logbook_id = int(request.args["logbook"])
             limit = int(request.args.get("limit", 50))
             offset = int(request.args.get("offset", 0))
-            entries = (
-                Entry.select(
-                    Entry.id, Entry.logbook,
-                    Entry.authors, Entry.title,
-                    Entry.created_at, Entry.last_changed_at,
-                ).where((Entry.logbook_id == logbook_id) &
-                        (Entry.follows == None))
-                .order_by(fn.coalesce(Entry.last_changed_at,
-                                      Entry.created_at).desc())
-                .offset(offset)
-                .limit(limit))
-            return list(map(partial(model_to_dict, recurse=False), entries))
+            # entries = (
+            #     Entry.select(
+            #         Entry.id, Entry.logbook,
+            #         Entry.authors, Entry.title,
+            #         Entry.created_at, Entry.last_changed_at,
+            #     ).where((Entry.logbook_id == logbook_id) &
+            #             (Entry.follows == None))
+            #     .order_by(fn.coalesce(Entry.last_changed_at,
+            #                           Entry.created_at).desc())
+            #     .offset(offset)
+            #     .limit(limit))
+            logbook = Logbook.get(Logbook.id == logbook_id)
+            entries = (logbook.get_entries()
+                       .paginate(offset, limit))
+            return list(map(partial(model_to_dict,
+                                    exclude=[Entry.content],
+                                    extra_attrs=["timestamp"],
+                                    recurse=False), entries))
 
     def post(self):
         entry = dict_to_model(Entry, request.json)

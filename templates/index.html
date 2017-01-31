@@ -38,7 +38,8 @@
      flex: 1;
      background: #ddd;
      height: 100%;
-     border-right: 5px solid #aaa;     
+     border-right: 5px solid #aaa;
+     padding: 0 10px;
  }
 
  iframe {
@@ -108,7 +109,7 @@
 
 <div id="app">
     <header class="main">
-        <div class="title">ELOGy</div>
+        <div class="title">{{ title | safe }}</div>
     </header>
     <section class="main">
         <nav id="logbooks">

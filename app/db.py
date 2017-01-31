@@ -1,16 +1,17 @@
 from datetime import datetime
+from html.parser import HTMLParser
 import json
 from lxml import etree
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from playhouse.flask_utils import FlaskDB
-from playhouse.sqlite_ext import FTS5Model, SearchField
+# from playhouse.sqlite_ext import FTS5Model, SearchField
 from peewee import (CharField, TextField, IntegerField, BooleanField,
                     DateTimeField, ForeignKeyField)
 from peewee import DoesNotExist, DeferredRelation, fn, JOIN
-from bs4 import BeautifulSoup
 
 from .patch import make_patch, apply_patch
+
 
 db = FlaskDB()  # wrapper, to make config cleaner
 
@@ -29,21 +30,20 @@ class JSONField(TextField):
         return {}
 
 
-def cleanup_html_(bad_html):
+def cleanup_html(bad_html):
+    "Shape up a HTML string"
     if not bad_html.strip():
         return ""
     tree = etree.HTML(bad_html.replace('\r', ''))
+    # TODO: some intelligent cleanup here, removing evil tags such as
+    # <html>, <body>, <script>, <style>, <iframe>, ...
+    # Might also remove stuff like multiple empty <p>
     return '\n'.join(
         (etree.tostring(stree, pretty_print=True, method="xml")
          .decode("utf-8")
          .strip())
         for stree in tree[0].iterchildren()
     )
-
-
-def cleanup_html(bad_html):
-    tree = BeautifulSoup(bad_html)
-    return tree.prettify()
 
 
 class HTMLField(TextField):
@@ -122,8 +122,6 @@ class Logbook(db.Model):
                        .order_by(Entry.created_at.desc())
             )
 
-
-
         return entries.limit(n)
 
     @property
@@ -200,10 +198,31 @@ DeferredEntry = DeferredRelation()
 #     content = SearchField()
 
 
+class MLStripper(HTMLParser):
+
+    def __init__(self):
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        return ''.join(self.fed)
+
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
+
 class Entry(db.Model):
 
     logbook = ForeignKeyField(Logbook, related_name="entries")
-    title = CharField()
+    title = CharField(null=True)
     authors = JSONField()
     content = HTMLField()
     attributes = JSONField(null=True)
@@ -234,13 +253,12 @@ class Entry(db.Model):
     def next(self):
         "Next entry (order by id)"
         try:
-            return model_to_dict(
-                Entry.select()
-                .where((Entry.logbook == self.logbook) &
-                       (Entry.follows == None) &
-                       (Entry.id > self.id))
-                .order_by(Entry.id)
-                .get(), recurse=False)
+            return (Entry.select()
+                    .where((Entry.logbook == self.logbook) &
+                           (Entry.follows == None) &
+                           (Entry.created_at > self.created_at))
+                    .order_by(Entry.created_at)
+                    .get())
         except DoesNotExist:
             pass
 
@@ -252,8 +270,8 @@ class Entry(db.Model):
                 Entry.select()
                 .where((Entry.logbook == self.logbook) &
                        (Entry.follows == None) &
-                       (Entry.id < self.id))
-                .order_by(Entry.id.desc())
+                       (Entry.created_at < self.created_at))
+                .order_by(Entry.created_at.desc())
                 .get(), recurse=False)
         except DoesNotExist:
             pass
@@ -279,6 +297,10 @@ class Entry(db.Model):
 
     def get_old_version(self, change_id):
         pass
+
+    @property
+    def stripped_content(self):
+        return strip_tags(self.content)
 
 
 DeferredEntry.set_model(Entry)

@@ -2,7 +2,24 @@
 Provides simple "tag" like functionality to forms. Basically maintains
 a list of input fields that are added/removed as they are filled in.
 Useful for editing a variable number of string items, e.g. authors.
+
+Usage:
+
+new Montag(container, {name: "myfield", classes: ["myclass"], placeholder: "Enter something!"});
+
+All options except "name" may be omitted.
+
+The container should be a <fieldset> tag that may contain prefilled
+inputs. They should all have the name attribute set to "myfield".
+
+After submitting, contents of the inputs will be available in the form
+data under the field "myfield", as a list of strings.
+
 */
+
+// TODO: There's some issue in chrome, empty inputs don't get removed
+// immediately. Probably something with events or keycodes not being
+// the same as in FF?
 
 Montag = (function () {
 

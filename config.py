@@ -1,3 +1,5 @@
+TITLE = "Apology"
+
 SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 DEBUG = True  # change this to False for production use!
@@ -29,8 +31,9 @@ from playhouse.shortcuts import model_to_dict
 
 class CustomJSONEncoder(JSONEncoder):
 
+    """JSON serializer for objects not serializable by default json code"""
+
     def default(self, obj):
-        """JSON serializer for objects not serializable by default json code"""
         if isinstance(obj, datetime):
             serial = obj.timestamp()
             return serial

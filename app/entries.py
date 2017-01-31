@@ -102,6 +102,5 @@ def write_entry():
 
     follows = int(data.get("follows", 0))
     if follows:
-        return redirect("#/logbook/{}/entry/{}/{}".format(
-            logbook.id, follows, entry.id))
-    return redirect("#/logbook/{}/entry/{}".format(logbook.id, entry.id))
+        return redirect("/entries/{}#{}".format(follows, entry.id))
+    return redirect("/entries/{}".format(entry.id))
