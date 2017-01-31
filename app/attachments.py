@@ -7,7 +7,7 @@ in a configurable location on disk.
 from datetime import datetime
 import os
 
-from flask import (Blueprint, abort, request,
+from flask import (Blueprint, abort, request, url_for,
                    current_app, jsonify, send_from_directory)
 from PIL import Image
 
@@ -24,32 +24,32 @@ def allowed_file(filename):
 @attachments.route("/", methods=["POST"])
 def post_attachment():
 
-    # entry_id = request.form["entry"]
     file_ = request.files["file"]
-    print("attachment", request.form.get("entry"))
 
     if file_ and allowed_file(file_.filename):
-        path = os.path.join(current_app.config["UPLOAD_FOLDER"], file_.filename)
+        # make up a path and unique filename using the timestamp
+        # TODO: make this smarter, somehow
+        now = datetime.now()
+        today = now.strftime("%Y/%m/%d")
+        epoch = now.strftime("%s")
+        upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], today)
+        if not os.path.exists(upload_dir):
+            os.makedirs(upload_dir)
+        filename = "{}-{}".format(epoch, file_.filename)
+        url = os.path.join(url_for(".post_attachment"), today, filename)
+        path = os.path.join(upload_dir, filename)
+        file_.save(path)
 
-        if not os.path.exists(path):
-
-            # The path is assumed to be contain today's date and the
-            # file size, so it seems pretty safe to assume that if we
-            # already have a file of the same name, we don't need to
-            # rewrite it.
-
-            directory = os.path.dirname(path)
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-
-            file_.save(path)
-
+        image = Image.open(file_)
+        width, height = image.size
+        if width > 100 or height > 100:
             # create a tiny preview version of the image
-            image = Image.open(file_)
             image.thumbnail((100, 100))
             image.save(path + ".thumbnail", "JPEG")
+        else:
+            os.link(path, path + ".thumbnail")
 
-        return jsonify({"location": "/" + path})
+        return jsonify({"location": url})
     else:
         abort(500)
 

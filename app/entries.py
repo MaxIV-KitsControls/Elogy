@@ -6,6 +6,7 @@ from .db import Entry, Logbook
 from flask import (Blueprint, abort, redirect, render_template, request,
                    url_for)
 from peewee import JOIN, fn, DoesNotExist
+from lxml import html
 
 
 entries = Blueprint('entries', __name__)
@@ -55,6 +56,14 @@ def write_entry():
 
     # a list of attachment filenames
     attachments = data.getlist("attachment")
+    try:
+        # Grab all image elements from the HTML.
+        # TODO: this will explode on data URIs, those should
+        # be ignored. Also we need to ignore links to external images.
+        tree = html.document_fromstring(data.get("content"))
+        attachments = tree.xpath('//img/@src')
+    except SyntaxError as e:
+        print(e)
     print("attachments", attachments)
 
     # Pick up attributes

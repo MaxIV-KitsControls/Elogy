@@ -258,18 +258,18 @@
          formData.append('entry', '{{ entry.id if entry else "0" }}');
          var blob = blobInfo.blob(); 
 
-         var now = new Date();
-         var filePath = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate() + "/" + blob.size + "-" + blob.name;
+         /* var now = new Date();
+          * var filePath = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate() + "/" + blob.size + "-" + blob.name;*/
 
          
-         formData.append('file', blob, filePath);
+         formData.append('file', blob, blob.name);
 
-         var entryForm = document.getElementById("form");
-         var input = document.createElement("input");
-         input.type = "hidden";
-         input.name = "attachment";
-         input.value = filePath;
-         entryForm.appendChild(input);
+         /* var entryForm = document.getElementById("form");
+          * var input = document.createElement("input");
+          * input.type = "hidden";
+          * input.name = "attachment";
+          * input.value = filePath;
+          * entryForm.appendChild(input);*/
          
          xhr.send(formData);
      }

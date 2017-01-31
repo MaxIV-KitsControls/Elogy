@@ -38,6 +38,7 @@
      position: relative;
      padding: 5px;
      border-bottom: 1px solid #aaa;
+     overflow: auto;
  }
 
  .entry.selected {
@@ -59,7 +60,6 @@
      font-size: small;
      line-height: 2ex;
      max-height: 6ex;
-     
      overflow-y: hidden;
  }
 
@@ -73,6 +73,11 @@
      top: 2px;
  }
 
+ img.thumbnail {
+     float: right;
+     clear: right;
+ }
+ 
 </style>
 
 
@@ -86,7 +91,7 @@
         <a href="/logbooks/new?parent={{ logbook.id }}" target="_top">New child</a>
         
         <span class="commands">
-            <a href="/entries/new?logbook={{logbook.id}}" target="_top">New entry</a>
+            <a href="/entries/new?logbook={{logbook.id}}" target="entry">New entry</a>
         </span>
         
         {% if logbook.attributes %}
@@ -114,7 +119,7 @@
 
         {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
         <div class="date-separator">
-            {{ entry.timestamp.strftime("%a %Y-%m-%m") }} 
+            {{ entry.timestamp.strftime("%a %Y-%M-%d") }} 
         </div>
         {% endif %}
 
@@ -126,23 +131,30 @@
             
             <a href="{{entryUrl}}" target="_top">
                 <div>
+
+                    {% if entry.attachments %}
+                    {% for attachment in entry.attachments[:1] %}
+                    <img class="thumbnail lazy" src="blank.gif" data-src="{{attachment}}.thumbnail" width="50"></img>
+                    {% endfor %}
+                    {% endif %}
+                    
                     <span class="timestamp">
                         {{ entry.timestamp.strftime("%H:%M:%S") }}
                     </span>
 
                     {% if entry.authors %}
                     <span class="authors">
-                        {{ entry.authors[0] }}{% if entry.authors | length > 1 %}, et al. {% endif %}
+                        {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
                     </span>
                     {% endif %}
                     
-                    {% if entry.title %}
+
                     <div class="title">{{ entry.title }}</div>
-                    {% else %}
+
                     <div class="content">
                         {{ entry.stripped_content[:500] }}
                     </div>
-                    {% endif %}
+
                     
                     {% if logbook.attributes %}                            
                     {% for attribute in logbook.attributes if attribute.required %}
@@ -154,11 +166,6 @@
                     {% endfor %}
                     {% endif %}
 
-                    {% if entry.attachments %}
-                    {% for attachment in entry.attachments %}
-                    <img src="/attachments/{{attachment}}.thumbnail"></img>
-                    {% endfor %}
-                    {% endif %}
                 </div>
             </a>
 
@@ -182,6 +189,16 @@
 </div>
 
 <script type="text/javascript" src="/static/color_attributes.js"></script>
+
+<script type="text/javascript" src="/static/js/lazyload.js"></script>
+
+<script type="text/javascript">
+ window.addEventListener("load", function () {
+     // we don't want to load all thumbnails for the entire logbook
+     // immediately. Instead we'll load them as they come into view.
+     new LazyImageLoad(document.querySelector("div.entries"))
+ });
+</script>
 
 <script type="text/javascript">
 
