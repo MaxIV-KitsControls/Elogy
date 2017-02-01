@@ -314,7 +314,15 @@
     stuff for showing what inputs are required.  But it will do for
     now, I haven't found a better way... */
 
- (function () {
+ window.addEventListener("load", function () {
+
+     // Open a confirmation dialog if the user tries to navigate away.
+     // Note: this does not work properly in FF, chrome is OK.
+     function checkUnloadDialog (e) {
+         e.returnValue = "foo";
+     }     
+     window.addEventListener("beforeunload", checkUnloadDialog);
+
      document.getElementById("submitButton")
              .onclick = function () {
                  // first we check that we're even allowed to submit
@@ -323,13 +331,15 @@
                      // tell TinyMCE to upload any images it has received
                      tinymce.activeEditor.uploadImages(function () {
                          // Once that's finished, finally submit the form!
+                         window.removeEventListener("beforeunload",
+                                                    checkUnloadDialog);
                          setTimeout(function () {form.submit();}, 100);
                      })  // TODO: upload failure handler?
                  } else {
                      alert("You have not filled in all required fields!");
                  };
              };
- })();
+ });
 
 </script>
 

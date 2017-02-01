@@ -71,7 +71,7 @@
             {% if entry.follows %}
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.follows.id}}" target="_top">Parent</a>
             {% else %}
-            <a href="new?follows={{entry.id}}" target="_top">Follow-up</a>
+            <a href="new?follows={{ entry.id }}">Follow-up</a>
             {% endif %}
             <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
             |
