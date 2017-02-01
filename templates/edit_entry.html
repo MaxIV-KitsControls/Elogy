@@ -157,6 +157,11 @@
                     <input class="author" type="text"
                            name="author" value="{{ author }}"/>
                     {%- endfor %}
+                    {% elif follows %}
+                    {% for author in follows.authors -%}
+                    <input class="author" type="text"
+                           name="author" value="{{ author }}"/>
+                    {%- endfor %}                    
                     {% endif %}
                 </fieldset>
             </div>
@@ -353,3 +358,4 @@
                                                  classes: ["author"]});
  
 </script>
+
