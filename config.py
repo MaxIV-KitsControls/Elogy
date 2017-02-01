@@ -22,26 +22,3 @@ DATABASE = {
     "engine": "playhouse.sqlite_ext.SqliteExtDatabase",
     "threadlocals": True,
 }
-
-from datetime import datetime
-from flask.json import JSONEncoder
-import peewee
-from playhouse.shortcuts import model_to_dict
-
-
-class CustomJSONEncoder(JSONEncoder):
-
-    """JSON serializer for objects not serializable by default json code"""
-
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            serial = obj.timestamp()
-            return serial
-        elif isinstance(obj, peewee.Model):
-            serial = model_to_dict(obj, recurse=False)
-            return serial
-
-        return JSONEncoder.default(self, obj)
-
-
-RESTFUL_JSON = {'cls': CustomJSONEncoder}
