@@ -2,12 +2,9 @@
 A simple HTTP "REST like" API for creating and accessing logbooks.
 """
 
-from dateutil.parser import parse as parse_timestamp
-
-from flask import Flask, request, jsonify, make_response, render_template
-from flask_restful import Resource, Api
-from peewee import OperationalError, fn
-from playhouse.shortcuts import model_to_dict, dict_to_model
+from flask import Flask, render_template
+from flask_restful import Api
+from peewee import OperationalError
 
 from app.db import (db,
                     Logbook, LogbookRevision,
