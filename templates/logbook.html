@@ -25,7 +25,7 @@
  }
 
  header .name {
-     font-size: large;
+     font-size: 120%;
  }
  
  .entries {
@@ -49,7 +49,7 @@
      position: sticky;
      top: 0;
      border-bottom: 1px solid #aaa;
-     font-size: small;
+     font-size: 80%;
      background: #ddd;
      color: black;
      text-align: center;
@@ -57,10 +57,14 @@
  }
 
  .entry .content {
-     font-size: small;
+     font-size: 80%;
      line-height: 2ex;
      max-height: 6ex;
      overflow-y: hidden;
+ }
+
+ .entry .content:before {
+     content: attr(data-content); 
  }
 
  .entry .followups {
@@ -99,10 +103,7 @@
             {% for attribute in logbook.attributes %}
             <label class="attribute" data-name="{{attribute.name}}">
                 {% if attribute.required %}*{% endif %}
-                {{ attribute.name }}
-                <span class="value">
-                    {{ attribute.type }}
-                </span>
+                {{ attribute.name }}<span class="value">{{ attribute.type }}</span>
             </label>
             {% endfor %}
         </div>
@@ -147,14 +148,14 @@
                         {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
                     </span>
                     {% endif %}
-                    
 
+                    {% if entry.title %}
                     <div class="title">{{ entry.title }}</div>
-
-                    <div class="content">
-                        {{ entry.stripped_content[:500] }}
-                    </div>
-
+                    {% elif entry.content %}
+                    {# this data-* stuff looks funky, it's a hack just to make
+                       the browser ignore the content preview when searching in the page #}
+                    <div class="content" data-content="{{ entry.stripped_content[:500] }}"> </div>
+                    {% endif %}
                     
                     {% if logbook.attributes %}                            
                     {% for attribute in logbook.attributes if attribute.required %}

@@ -1,5 +1,6 @@
 from functools import partial
 
+from dateutil.parser import parse
 from flask import Flask, request, jsonify, make_response
 from flask_restful import Resource, Api
 from peewee import OperationalError, fn
@@ -9,6 +10,7 @@ from playhouse.shortcuts import model_to_dict, dict_to_model
 from app.db import (db,
                     Logbook, LogbookRevision,
                     Entry, EntryRevision)
+from app.entries import handle_img_tags
 
 
 class LogbooksResource(Resource):
@@ -86,6 +88,8 @@ class EntriesResource(Resource):
                                     recurse=False), entries))
 
     def post(self):
+        data = request.json
+        data["content"], data["attachments"] = handle_img_tags(data["content"], parse(data["created_at"]))
         entry = dict_to_model(Entry, request.json)
         entry.save()
         return {"entry": entry.id}

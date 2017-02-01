@@ -1,12 +1,18 @@
+from base64 import decodestring
 from datetime import datetime
+import io
 import json
 from jinja2 import TemplateNotFound
 
+from bs4 import BeautifulSoup
 from .db import Entry, Logbook
 from flask import (Blueprint, abort, redirect, render_template, request,
                    url_for)
+from werkzeug import FileStorage
 from peewee import JOIN, fn, DoesNotExist
 from lxml import html
+
+from .attachments import save_attachment
 
 
 entries = Blueprint('entries', __name__)
@@ -47,6 +53,27 @@ def edit_entry(entry_id):
                            entry=entry, logbook=logbook, follows=follows)
 
 
+def handle_img_tags(text, timestamp):
+    soup = BeautifulSoup(text)
+    attachments = []
+    for img in soup.findAll('img'):
+        src = img['src']
+        if src.startswith("data:"):
+            header, data = src[5:].split(",", 1)
+            filetype, encoding = header.split(";")
+            try:
+                filename = "decoded." + filetype.split("/")[1].lower()
+            except IndexError:
+                print("weird filetype!?", filetype)
+                continue
+            file_ = FileStorage(io.BytesIO(decodestring(data.encode("ascii"))),
+                                filename=filename)
+            src = img["src"] = save_attachment(file_, timestamp)
+
+        attachments.append(src)
+    return str(soup), attachments
+
+
 @entries.route("/", methods=["POST"])
 def write_entry():
     data = request.form
@@ -60,8 +87,9 @@ def write_entry():
         # Grab all image elements from the HTML.
         # TODO: this will explode on data URIs, those should
         # be ignored. Also we need to ignore links to external images.
-        tree = html.document_fromstring(data.get("content"))
-        attachments = tree.xpath('//img/@src')
+        #tree = html.document_fromstring(data.get("content"))
+        #attachments = tree.xpath('//img/@src')
+        content, attachments = handle_img_tags(data.get("content"), datetime.now())
     except SyntaxError as e:
         print(e)
     print("attachments", attachments)

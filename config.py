@@ -10,7 +10,7 @@ DATABASE = "/tmp/test.db"  # name of the database file
 UPLOAD_FOLDER = '/tmp/attachments'
 
 # Currently we only care about images.
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif', 'svg'])
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp'])
 
 
 # Don't change anything below this line unless you know what you're doing!

@@ -23,7 +23,7 @@
  }
 
  header.main .title {
-     font-size: xx-large;
+     font-size: 200%;
      position: absolute;
  }
  
@@ -39,9 +39,40 @@
      background: #ddd;
      height: 100%;
      border-right: 5px solid #aaa;
-     padding: 0 10px;
+     display: flex;
+     flex-direction: column;
  }
 
+ #logbooks .logbooks {
+     flex: 1;
+     padding: 10px;     
+}
+ 
+
+ #logbooks .search {
+     flex: 0;
+     padding: 10px;          
+     border-top: 1px solid #aaa;
+ }
+
+ #logbooks .search form{
+     margin: 0;
+ }
+ 
+ #logbooks .search input {
+     width: 100%;
+     margin-bottom: 5px;
+ }
+
+ #logbooks .search input[type=checkbox] {
+     width: 0;
+ }
+
+ #logbooks .search label {
+     font-size: 90%;
+     float: left;
+ }
+ 
  iframe {
      width: 100%;
      height: 100%;
@@ -63,11 +94,6 @@
      overflow-x: auto;
  }
 
- #entry header {
-     width: 100%;
-     flex: 0;
- }
-
  #entry article {
      flex: 10;
      height: 100%;
@@ -82,7 +108,6 @@
      padding-left: 20px;     
  }
 
- 
 </style>
 
 
@@ -113,20 +138,41 @@
     </header>
     <section class="main">
         <nav id="logbooks">
-            <a href="/logbooks/new">New</a>
-            <ul>
-                {% for logbook in logbooks %}
-                <li class="logbook">
-                    {{ logbook_children(logbook) }}
-                </li>
-                {% endfor %}
-            </ul>
+            <div class="logbooks">
+                <a href="/logbooks/new">New</a>
+                <ul>
+                    {% for logbook in logbooks %}
+                    <li class="logbook">
+                        {{ logbook_children(logbook) }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="search">
+                Search entries
+                <form action="/search/" target="entries">
+                    <div>
+                        <label for="all-logbooks">
+                            <input name="all-logbooks" type="checkbox"/>
+                            This logbook
+                        </label>
+                        <label for="include-chidlren">
+                            <input name="include-children" type="checkbox"/>
+                            Include children
+                        </label>
+                    </div>
+                    <input name="content" placeholder="Content"/>
+                    <input name="title" placeholder="Title"/>
+                    <input name="authors" placeholder="Author"/>
+                    <button type="submit">Search</button>
+                </form>
+            </div>
         </nav>
         <nav id="entries">
             <iframe name="entries" frameborder="no"></iframe>
         </nav>
         <div id="entry">
-            <article><iframe name="entry" frameborder="no"></iframe></article>
+            <iframe name="entry" frameborder="no"></iframe>
         </div>
     </section>
 </div>
@@ -152,6 +198,7 @@
          element.classList.add("selected")
      }
  } 
+
  
  window.addEventListener("load", function () {
 
@@ -165,8 +212,10 @@
          // updating the entries list is expensive so let's only
          // do that if the logbook has actually changed
          if (entries.contentWindow.location.pathname !== entriesUrl) {
-             entries.src = entriesUrl + window.location.search + (
-                 entryId? "#" + entryId : "");
+             entries.contentWindow.location = (
+                 entriesUrl + window.location.search + (
+                     entryId? "#" + entryId : "")
+             );
          }
          markLogbook(logbookId)
      }
@@ -181,18 +230,18 @@
              if (followupId) {
                  entryUrl += "#" + followupId;
              }
-             entry.src = entryUrl;
+             entry.contentWindow.location = entryUrl;
          } else {
              // no entry selected; show a placeholder
-             entry.src = "about:blank";
+             window.open("about:blank", "entry");
          }
      }     
      eventbus.entrySelected.add(handleEntry);
 
      window.addEventListener("unload", function() {
          // cleanup
-         parent.window.eventbus.entrySelected.remove(handleLogbook);
-         parent.window.eventbus.entrySelected.remove(handleEntry);
+         eventbus.entrySelected.remove(handleLogbook);
+         eventbus.entrySelected.remove(handleEntry);
      });
 
      // === Routing ===
@@ -217,6 +266,5 @@
      console.log("router", router)
      
  });
-
  
 </script>

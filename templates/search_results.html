@@ -1,0 +1,177 @@
+<link rel="stylesheet" type="text/css" href="/static/main.css"/>
+
+<style>
+
+ body {
+     background: #eee;
+ }
+ 
+ a {
+     text-decoration: none;
+ }
+
+ .container {
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+ }
+
+
+ header {
+     flex: 0;
+     padding: 5px;
+     border-bottom: 1px solid grey;
+     background: #ddd;
+     position: relative;
+ } 
+ 
+ .entries {
+     flex: 1;
+     max-height: 100%;
+     overflow-y: auto;
+ }
+ .entry {
+     position: relative;
+     padding: 5px;
+     border-bottom: 1px solid #aaa;
+     overflow: auto;
+ }
+
+ .entry.selected {
+     background: white;
+ }
+
+ .date-separator {
+     position: sticky;
+     top: 0;
+     border-bottom: 1px solid #aaa;
+     font-size: small;
+     background: #ddd;
+     color: black;
+     text-align: center;
+     z-index: 10;
+ }
+
+ .entry .logbook {
+     text-decoration: underline;
+     font-size: 90%;
+ }
+ 
+ .entry .content {
+     font-size: small;
+     line-height: 2ex;
+     max-height: 6ex;
+     overflow-y: hidden;
+ }
+ 
+ .entry .content:before {
+     content: attr(data-content); 
+ }
+
+ .entry .followups {
+     background: grey;
+     color: white;
+     padding: 0 5px;
+     border-radius: 10px;
+     position: absolute;
+     right: 2px;
+     top: 2px;
+ }
+
+ img.thumbnail {
+     float: right;
+     clear: right;
+ }
+
+ 
+</style>
+
+<div class="container">
+
+    <header>
+        <div>Search</div>
+        {% for field, term in parameters.items() %}
+        {% if term %}
+        {{field}}: "{{term}}",
+        {% endif %}
+        {% endfor %}
+    </header>
+
+    <div class="entries">
+        {% for entry in entries %}
+
+        <a id="{{ entry.id }}"></a>  {# link anchor #}
+
+        {% if loop.first or entries[loop.index0-1].created_at.date() != entry.created_at.date() %}
+        <div class="date-separator">
+            {{ entry.created_at.strftime("%a %Y-%M-%d") }} 
+        </div>
+        {% endif %}
+
+        {% set parameters = "?followups=true" if followups else "" %}
+
+        {% set entryUrl = "/entries/{entry.id}".format(entry=entry) %}
+
+        <div class="entry" id="entry-{{entry.id}}">
+            
+            <a href="{{entryUrl}}" target="entry">
+                
+                <div>
+
+                    <div class="logbook">{{ entry.logbook.name }}</div>
+                    
+                    {% if entry.attachments %}
+                    {% for attachment in entry.attachments[:1] %}
+                    <img class="thumbnail lazy" src="blank.gif" data-src="{{attachment}}.thumbnail" width="50"></img>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <span class="timestamp">
+                        {{ entry.created_at.strftime("%H:%M:%S") }}
+                    </span>
+
+                    {% if entry.authors %}
+                    <span class="authors">
+                        {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
+                    </span>
+                    {% endif %}
+                    
+                    {% if entry.title %}
+                    <div class="title">{{ entry.title }}</div>
+                    {% elif entry.content %}
+                    {# this data-* stuff looks funky, it's a hack just to make
+                    the browser ignore the content preview when searching in the page #}
+                    <div class="content" data-content="{{ entry.stripped_content[:500] }}"> </div>
+                    {% endif %}
+                    
+                </div>
+            </a>
+
+            {% if entry.followups %}
+            <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+                <div class="followups">
+                    {{ entry.n_followups }}
+                </div>
+            </a>
+            {% elif entry.follows %}
+            <div class="followups">*</div>
+            {% endif %}
+            
+        </div>
+
+
+
+        {% endfor %}
+    </div>
+</div>
+
+
+<script type="text/javascript" src="/static/js/lazyload.js"></script>
+
+<script type="text/javascript">
+ window.addEventListener("load", function () {
+     // we don't want to load all thumbnails for the entire logbook
+     // immediately. Instead we'll load them as they come into view.
+     new LazyImageLoad(document.querySelector("div.entries"))
+ });
+</script>

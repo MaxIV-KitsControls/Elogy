@@ -13,6 +13,7 @@ from app.api import LogbooksResource, EntriesResource, SearchResource
 from app.entries import entries
 from app.logbooks import logbooks
 from app.attachments import attachments
+from app.search import search
 
 
 app = Flask(__name__)
@@ -21,6 +22,7 @@ api = Api(app)
 app.register_blueprint(entries, url_prefix="/entries")
 app.register_blueprint(logbooks, url_prefix="/logbooks")
 app.register_blueprint(attachments, url_prefix="/attachments")
+app.register_blueprint(search, url_prefix="/search")
 
 
 db.init_app(app)

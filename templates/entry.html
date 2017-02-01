@@ -3,7 +3,6 @@
 <style>
  
  body {
-     font-size: 16px;
      background: #ddd;
  }
 
@@ -20,7 +19,7 @@
  }
 
  header .title {
-     font-size: large;
+     font-size: 120%;
  }
  
  .body {
@@ -73,8 +72,9 @@
             {% else %}
             <a href="new?follows={{ entry.id }}">Follow-up</a>
             {% endif %}
-            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
             |
+            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
+
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.previous.id}}" target="_top">Prev</a>            
             <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.next.id}}" target="_top">Next</a>
         </div>
@@ -90,10 +90,10 @@
 
                 <div class="commands">                    
                     <a href="edit/{{entry.id}}">Edit</a>
-                    &nbsp;
+                    |
                     <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.id}}" target="_top">Link</a>
                     {% if entry.followups %}
-                    <a href="#{{entry.followups[0].id}}">🠋</a>
+                    &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}
                 </div>
 
@@ -107,14 +107,16 @@
                 </a>
                 {% endif %}            
                 #}
+                {% if entry.authors %}
                 <span class="author">
                     {{ ", ".join(entry.authors) }}
                 </span>
+                {% endif %}
                 <div class="attributes">
 
-                    {% if entry.logbook.attributes %}
+                    {% if entry.logbook.attributes and entry.attributes  %}
                     {% for attribute in entry.logbook.attributes
-                    if entry.attributes.get(attribute.name) != "" %}
+                       if attribute.name in entry.attributes %}
                     <label class="attribute" data-name="{{attribute.name}}">
                         {% if attribute.required %}*{% endif %}
                         {{attribute.name}}
@@ -139,9 +141,8 @@
                 
             </div>
             
-            
             <div class="content">
-                {{ entry.content | safe }}
+                {{ (entry.content or "") | safe }}
             </div>
             
         </article>
@@ -160,13 +161,15 @@
                     <a href="/#/logbook/{{followup.logbook.id}}/entry/{{entry.id}}/{{followup.id}}" target="_top">Link</a>
                     
                     {% if loop.first %}
-                    <a href="#{{entry.id}}">🠉</a>
+                    <a href="#{{entry.id}}">&nbsp;🠉&nbsp;</a>
                     {% else %}
-                    <a href="#{{entry.followups[loop.index0-1].id}}">🠉</a>
+                    <a href="#{{entry.followups[loop.index0-1].id}}">&nbsp;🠉&nbsp;</a>
                     {% endif %}
                     
-                    {% if not loop.last %}
-                    <a href="#{{entry.followups[loop.index0+1].id}}">🠋</a>
+                    {% if loop.last %}
+                    &nbsp;🠋&nbsp;
+                    {% else %}
+                    <a href="#{{entry.followups[loop.index0+1].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}
                 </div>        
 
@@ -174,7 +177,7 @@
                 <span>
                     {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                 </span>
-                {% if followup.authors != entry.authors %}
+                {% if followup.authors and followup.authors != entry.authors %}
                 <span>{{ ", ".join(followup.authors) }}</span>
                 {% endif %}
                 {% if followup.last_changed_at %}

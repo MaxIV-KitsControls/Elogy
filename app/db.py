@@ -5,6 +5,7 @@ from lxml import etree
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from playhouse.flask_utils import FlaskDB
+from playhouse.sqlite_ext import JSONField
 # from playhouse.sqlite_ext import FTS5Model, SearchField
 from peewee import (CharField, TextField, IntegerField, BooleanField,
                     DateTimeField, ForeignKeyField)
@@ -16,7 +17,7 @@ from .patch import make_patch, apply_patch
 db = FlaskDB()  # wrapper, to make config cleaner
 
 
-class JSONField(TextField):
+class JSONField_(TextField):
 
     "Stores a JSON string. Encodes/decodes on access"
 
@@ -223,15 +224,15 @@ class Entry(db.Model):
 
     logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField(null=True)
-    authors = JSONField()
-    content = HTMLField()
+    authors = JSONField(null=True)
+    content = HTMLField(null=True)
+    content_type = CharField(default="text/html; charset=UTF-8")  # TODO: should not default to HTML
     attributes = JSONField(null=True)
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True)
     attachments = JSONField(null=True)
     archived = BooleanField(default=False)
-    content_type = CharField(default="text/html; charset=UTF-8")
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)

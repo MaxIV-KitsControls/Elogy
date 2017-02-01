@@ -2,7 +2,6 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    font-size: 16px;    
     font-family: Sans-Serif;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;      
 }
@@ -46,7 +45,7 @@ div.attributes {
 }
 
 label.attribute {
-    font-size: small;
+    font-size: 80%;
     background: #eee;
     border: 1px solid #aaa;
     padding: 2px 5px;
@@ -63,7 +62,7 @@ article {
 }
 
 article .info {
-    /* font-size: 11pt; */
+
 }
 
 article .info span {
@@ -72,7 +71,7 @@ article .info span {
 
 
 article span.title {
-    font-size: large;
+    font-size: 120%;
 }
 
 article div.content {
