@@ -68,6 +68,9 @@ def edit_entry(entry_id):
 def handle_img_tags(text, timestamp):
     "Extract embedded images and save them as attachments"
     # TODO: This is the only thing we need BS for. Use lxml instead.
+    # tree = html.document_fromstring(text)
+    # attachments = tree.xpath('//img/@src')
+    # ...
     soup = BeautifulSoup(text)
     attachments = []
     for img in soup.findAll('img'):
@@ -89,16 +92,20 @@ def handle_img_tags(text, timestamp):
     return str(soup), attachments
 
 
+def remove_lock(entry_id):
+    lock = EntryLock.get(EntryLock.entry_id == entry_id)
+    lock.delete_instance()
+
+
 @entries.route("/unlock/<int:entry_id>")
 def unlock_entry(entry_id):
     "Remove the lock on the given entry"
-    lock = EntryLock.get(EntryLock.entry_id == entry_id)
-    lock.delete_instance()
+    remove_lock(entry_id)
     return redirect(url_for(".show_entry", entry_id=entry_id))
 
 
-@entries.route("/", methods=["POST"])
-def write_entry():
+@entries.route("/<entry_id>", methods=["POST"])
+def write_entry(entry_id):
 
     "Save a submitted entry (new or edited)"
 
@@ -113,8 +120,6 @@ def write_entry():
         # Grab all image elements from the HTML.
         # TODO: this will explode on data URIs, those should
         # be ignored. Also we need to ignore links to external images.
-        #tree = html.document_fromstring(data.get("content"))
-        #attachments = tree.xpath('//img/@src')
         content, attachments = handle_img_tags(data.get("content"),
                                                datetime.now())
     except SyntaxError as e:
@@ -123,7 +128,7 @@ def write_entry():
 
     # Pick up attributes
     attributes = {}
-    for attr in logbook.attributes:
+    for attr in logbook.attributes or []:
         value = data.get("attribute-{}".format(attr["name"]))
         if value:
             # since we always get strings from the form, we need to
@@ -136,39 +141,47 @@ def write_entry():
                for author in data.getlist("author")
                if author]
 
-    entry_id = int(data.get("entry", 0))
+    # entry_id = int(data.get("entry", 0))
     if entry_id:
         # editing an existing entry
         try:
-            entry = Entry.get(Entry.id == entry_id)
-
-            lock = EntryLock(EntryLock.entry == entry)
-            if lock.owner_ip != request.remote_addr:
-                # locked by someont else, let's send everyting back
-                # with a notice.
-                entry = Entry(title=data["title"],
-                              authors=authors,
-                              content=data["content"],
-                              follows=int(data.get("follows", 0)) or None,
-                              attributes=attributes,
-                              archived="archived" in data,
-                              attachments=attachments,
-                              logbook=logbook_id)
-                return render_template("edit_entry.jinja2",
-                                       entry=entry, lock=lock)
-            else:
+            lock = EntryLock.get(EntryLock.entry_id == entry_id)
+            if lock.owner_ip == request.remote_addr:
+                # it's our lock
                 lock.delete_instance()
+            else:
+                unlock = int(data.get("unlock", 0))
+                if lock.entry_id == unlock:
+                    # the user has decided to unlock the entry
+                    remove_lock(lock.entry_id)
+                else:
+                    # locked by someone else, let's send everyting back
+                    # with a notice.
+                    entry = Entry(title=data["title"],
+                                  authors=authors,
+                                  content=data["content"],
+                                  follows=int(data.get("follows", 0)) or None,
+                                  attributes=attributes,
+                                  archived="archived" in data,
+                                  attachments=attachments,
+                                  logbook=logbook)
+                    return render_template("edit_entry.jinja2",
+                                           entry=entry, lock=lock)
+        except DoesNotExist as e:
+            pass
 
-            change = entry.make_change({
-                "title": data["title"],
-                "content": data["content"],
-                "authors": authors,
-                "attributes": attributes,
-                "attachments": attachments
-            })
-            change.save()
-        except Exception as e:
-            print(e)
+        # Now make the change
+        entry = Entry.get(Entry.id == entry_id)
+        change = entry.make_change({
+            "title": data["title"],
+            "content": data["content"],
+            "authors": authors,
+            "attributes": attributes,
+            "attachments": attachments
+        })
+        change.save()
+        entry.save()
+
     else:
         # creating a new entry
         entry = Entry(title=data["title"],
@@ -178,8 +191,9 @@ def write_entry():
                       attributes=attributes,
                       archived="archived" in data,
                       attachments=attachments,
-                      logbook=logbook_id)
-    entry.save()
+                      logbook=logbook)
+
+        entry.save()
 
     follows = int(data.get("follows", 0))
     if follows:

@@ -120,7 +120,7 @@
 
 {% if lock %}
 <div class="warning">
-    The entry is locked! This means someone (IP {{lock.owner-ip}}, at
+    The entry is locked! This means someone (IP {{lock.owner_ip}}, at
     {{lock.timestamp}}) has, or is making changes to the entry. If you
     are sure this is not the case, you can press "submit" again.
     (Note that data can't be completely lost, but you may have to look
@@ -146,12 +146,16 @@
 
 <div class="container">
     
-    <form id="form" action="/entries/" method="post">
+    <form id="form" action="/entries/{{ entry.id if entry else 0 }}"
+          method="post">
 
         {# hidden fields used to identify the submission #}
         <input type="hidden" name="logbook" value="{{ logbook.id }}">
         <input type="hidden" name="entry" value="{{ entry.id if entry else 0 }}">
         <input type="hidden" name="follows" value="{{ follows.id if follows else 0 }}">
+        {% if lock %}
+        <input type="hidden" name="unlock" value="{{ lock.id }}">
+        {% endif %}
         
         <div class="top">
             
@@ -226,7 +230,7 @@
             <textarea id="content" cols="100" rows="20" name="content">{{ (entry.content if entry else '') | safe }}</textarea>            
         </div>
         <div>
-            <button id="submitButton" type="button">Submit</button>
+            <button id="submitButton" type="submit">Submit</button>
             <label>
                 <input name="archived" type="checkbox" 
                        {% if entry and entry.archived %}checked{% endif %}/> 
@@ -317,7 +321,7 @@
          apply_source_formatting: false,
          force_br_newlines: false,
          paste_data_images: true,
-         automatic_uploads: false,  // don't immediately upload images
+         /*          automatic_uploads: false,  // don't immediately upload images*/
          images_upload_handler: customUploadHandler
      });
        
@@ -341,7 +345,8 @@
     stuff for showing what inputs are required.  But it will do for
     now, I haven't found a better way... */
 
- window.addEventListener("load", function () {
+ /*  window.addEventListener("load",*/
+                         function () {
 
      // Open a confirmation dialog if the user tries to navigate away.
      // Note: this does not work properly in FF, chrome is OK.
