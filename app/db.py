@@ -232,6 +232,7 @@ class Entry(db.Model):
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True)
     attachments = JSONField(null=True)
+    tags = JSONField(null=True)
     archived = BooleanField(default=False)
 
     # def __init__(self, *args, **kwargs):
@@ -313,8 +314,20 @@ class EntryRevision(db.Model):
     logbook = ForeignKeyField(Logbook, null=True)
     timestamp = DateTimeField(default=datetime.now)
     title = CharField(null=True)
-    authors = CharField(null=True)
+    authors = JSONField(null=True)
     content = TextField(null=True)
     attributes = JSONField(null=True)
     follows_id = IntegerField(null=True)
+    attachments = JSONField(null=True)
+    tags = JSONField(null=True)
     archived = BooleanField(default=False)
+
+    revision_authors = JSONField(null=True)
+    revision_comment = TextField(null=True)
+
+
+class EntryLock(db.Model):
+    "Contains temporary edit locks, to prevent overwriting changes"
+    entry = ForeignKeyField(Entry)
+    timestamp = DateTimeField(default=datetime.now)
+    owner_ip = CharField()

@@ -13,6 +13,7 @@ from peewee import JOIN, fn, DoesNotExist
 from lxml import html
 
 from .attachments import save_attachment
+from .db import EntryLock
 
 
 entries = Blueprint('entries', __name__)
@@ -43,7 +44,16 @@ def new_entry():
 @entries.route("/edit/<int:entry_id>")
 def edit_entry(entry_id):
     "Deliver a form for posting a new entry"
+
     entry = Entry.get(Entry.id == entry_id)
+
+    # check if there's a lock on the entry, otherwise create one
+    try:
+        lock = EntryLock.get(EntryLock.entry == entry)
+        return render_template("entry_lock.html", lock=lock)
+    except DoesNotExist:
+        lock = EntryLock(entry=entry, owner_ip=request.remote_addr)
+
     if entry.follows:
         follows = Entry.get(Entry.id == entry.follows)
     else:
@@ -74,9 +84,34 @@ def handle_img_tags(text, timestamp):
     return str(soup), attachments
 
 
+@entries.route("/unlock/<int:entry_id>")
+def unlock_entry(entry_id):
+    "Remove the lock on the given entry"
+    lock = EntryLock.get(EntryLock.entry_id == entry_id)
+    lock.delete_instance()
+    return redirect(url_for(".edit_entry", entry_id=entry_id))
+
+
 @entries.route("/", methods=["POST"])
 def write_entry():
     data = request.form
+
+    entry_id = int(data.get("entry", 0))
+    if entry_id:
+        entry = Entry.get(Entry.id == entry_id)
+
+        lock = EntryLock(EntryLock.entry == entry)
+        if lock.owner_ip != request.remote_addr:
+            # FIXME: This will not do; user might lose edits. We
+            # should instead return them to the edit page with all the
+            # form data refilled.
+            return render_template("entry_lock.html",
+                                   lock=lock)
+        else:
+            lock.delete_instance()
+
+        # TODO: check if there has been any changes since
+        # the edit started?
 
     logbook_id = int(data["logbook"])
     logbook = Logbook.get(Logbook.id == logbook_id)
