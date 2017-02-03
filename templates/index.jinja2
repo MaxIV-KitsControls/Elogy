@@ -73,7 +73,7 @@
      float: left;
  }
  
- iframe {
+ object {
      width: 100%;
      height: 100%;
  }
@@ -169,10 +169,10 @@
             </div>
         </nav>
         <nav id="entries">
-            <iframe name="entries" frameborder="no"></iframe>
+            <object name="entries" frameborder="no" type="text/html" data="about:blank"></object>
         </nav>
         <div id="entry">
-            <iframe name="entry" frameborder="no"></iframe>
+            <object name="entry" frameborder="no" type="text/html" data="about:blank"></object>
         </div>
     </section>
 </div>
@@ -202,8 +202,8 @@
  
  window.addEventListener("load", function () {
 
-     var entries = document.querySelector('iframe[name="entries"]'),
-         entry = document.querySelector('iframe[name="entry"]');
+     var entries = document.querySelector('object[name="entries"]'),
+         entry = document.querySelector('object[name="entry"]');
 
      // === eventbus listeners ===
      
@@ -211,8 +211,13 @@
          var entriesUrl = "/logbooks/" + logbookId;
          // updating the entries list is expensive so let's only
          // do that if the logbook has actually changed
-         if (entries.contentWindow.location.pathname !== entriesUrl) {
-             entries.contentWindow.location = (
+         console.log(entries)
+         console.log("URL", entries.data, "http://localhost:5000" + entriesUrl);
+         if (!entries.contentDocument) {
+             // looks like the contentDocument does not initially exist
+             entries.data = entriesUrl;
+         } else if (entries.contentDocument.location.pathname !== entriesUrl) {
+             entries.contentDocument.location = (
                  entriesUrl + window.location.search + (
                      entryId? "#" + entryId : "")
              );
@@ -230,7 +235,7 @@
              if (followupId) {
                  entryUrl += "#" + followupId;
              }
-             entry.contentWindow.location = entryUrl;
+             entry.data = entryUrl;
          } else {
              // no entry selected; show a placeholder
              window.open("about:blank", "entry");

@@ -21,8 +21,9 @@ entries = Blueprint('entries', __name__)
 
 @entries.route("/<int:entry_id>")
 def show_entry(entry_id):
+    "Display an entry"
     entry = Entry.get(Entry.id == entry_id)
-    return render_template("entry.html", entry=entry, **request.args)
+    return render_template("entry.jinja2", entry=entry, **request.args)
 
 
 @entries.route("/new")
@@ -37,20 +38,21 @@ def new_entry():
         follows = None
         logbook_id = int(data["logbook"])
         logbook = Logbook.get(Logbook.id == logbook_id)
-    return render_template('edit_entry.html',
+    return render_template('edit_entry.jinja2',
                            logbook=logbook, follows=follows)
 
 
 @entries.route("/edit/<int:entry_id>")
 def edit_entry(entry_id):
-    "Deliver a form for posting a new entry"
+
+    "Deliver a form for editing an existing entry"
 
     entry = Entry.get(Entry.id == entry_id)
 
     # check if there's a lock on the entry, otherwise create one
     try:
         lock = EntryLock.get(EntryLock.entry == entry)
-        return render_template("entry_lock.html", lock=lock)
+        return render_template("entry_lock.jinja2", lock=lock)
     except DoesNotExist:
         lock = EntryLock(entry=entry, owner_ip=request.remote_addr)
 
@@ -59,19 +61,22 @@ def edit_entry(entry_id):
     else:
         follows = 0
     logbook = entry.logbook
-    return render_template('edit_entry.html',
+    return render_template('edit_entry.jinja2',
                            entry=entry, logbook=logbook, follows=follows)
 
 
 def handle_img_tags(text, timestamp):
+    "Extract embedded images and save them as attachments"
+    # TODO: This is the only thing we need BS for. Use lxml instead.
     soup = BeautifulSoup(text)
     attachments = []
     for img in soup.findAll('img'):
         src = img['src']
         if src.startswith("data:"):
-            header, data = src[5:].split(",", 1)
+            header, data = src[5:].split(",", 1)  # TODO: find a safer way
             filetype, encoding = header.split(";")
             try:
+                # TODO: possible to be more clever about the filename?
                 filename = "decoded." + filetype.split("/")[1].lower()
             except IndexError:
                 print("weird filetype!?", filetype)
@@ -89,29 +94,15 @@ def unlock_entry(entry_id):
     "Remove the lock on the given entry"
     lock = EntryLock.get(EntryLock.entry_id == entry_id)
     lock.delete_instance()
-    return redirect(url_for(".edit_entry", entry_id=entry_id))
+    return redirect(url_for(".show_entry", entry_id=entry_id))
 
 
 @entries.route("/", methods=["POST"])
 def write_entry():
+
+    "Save a submitted entry (new or edited)"
+
     data = request.form
-
-    entry_id = int(data.get("entry", 0))
-    if entry_id:
-        entry = Entry.get(Entry.id == entry_id)
-
-        lock = EntryLock(EntryLock.entry == entry)
-        if lock.owner_ip != request.remote_addr:
-            # FIXME: This will not do; user might lose edits. We
-            # should instead return them to the edit page with all the
-            # form data refilled.
-            return render_template("entry_lock.html",
-                                   lock=lock)
-        else:
-            lock.delete_instance()
-
-        # TODO: check if there has been any changes since
-        # the edit started?
 
     logbook_id = int(data["logbook"])
     logbook = Logbook.get(Logbook.id == logbook_id)
@@ -124,7 +115,8 @@ def write_entry():
         # be ignored. Also we need to ignore links to external images.
         #tree = html.document_fromstring(data.get("content"))
         #attachments = tree.xpath('//img/@src')
-        content, attachments = handle_img_tags(data.get("content"), datetime.now())
+        content, attachments = handle_img_tags(data.get("content"),
+                                               datetime.now())
     except SyntaxError as e:
         print(e)
     print("attachments", attachments)
@@ -147,9 +139,26 @@ def write_entry():
     entry_id = int(data.get("entry", 0))
     if entry_id:
         # editing an existing entry
-        print(entry_id)
         try:
             entry = Entry.get(Entry.id == entry_id)
+
+            lock = EntryLock(EntryLock.entry == entry)
+            if lock.owner_ip != request.remote_addr:
+                # locked by someont else, let's send everyting back
+                # with a notice.
+                entry = Entry(title=data["title"],
+                              authors=authors,
+                              content=data["content"],
+                              follows=int(data.get("follows", 0)) or None,
+                              attributes=attributes,
+                              archived="archived" in data,
+                              attachments=attachments,
+                              logbook=logbook_id)
+                return render_template("edit_entry.jinja2",
+                                       entry=entry, lock=lock)
+            else:
+                lock.delete_instance()
+
             change = entry.make_change({
                 "title": data["title"],
                 "content": data["content"],

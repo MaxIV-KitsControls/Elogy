@@ -13,7 +13,7 @@ def get_logbooks():
     try:
         logbooks = (Logbook.select()
                     .where(Logbook.parent == 0))
-        return render_template('logbooks.html', children=logbooks)
+        return render_template('logbooks.jinja2', children=logbooks)
     except DoesNotExist:
         abort(404)
     except TemplateNotFound:
@@ -27,7 +27,7 @@ def show_logbook(logbook_id):
     n_entries = int(request.args.get("n", 100))
     print("n", n_entries)
     return render_template(
-        "logbook.html", logbook=logbook, followups=followups,
+        "logbook.jinja2", logbook=logbook, followups=followups,
         n_entries=n_entries)
 
 
@@ -40,7 +40,7 @@ def new_logbook():
         parent = Logbook.get(Logbook.id == parent_id)
     else:
         parent = None
-    return render_template('edit_logbook.html',
+    return render_template('edit_logbook.jinja2',
                            parent=parent, logbook=None)
 
 
@@ -52,7 +52,7 @@ def edit_logbook(logbook_id):
         parent = Logbook.get(Logbook.id == logbook.parent)
     else:
         parent = None
-    return render_template('edit_logbook.html',
+    return render_template('edit_logbook.jinja2',
                            parent=parent, logbook=logbook)
 
 

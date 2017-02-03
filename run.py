@@ -13,7 +13,7 @@ from peewee import OperationalError
 
 from app.db import (db,
                     Logbook, LogbookRevision,
-                    Entry, EntryRevision)
+                    Entry, EntryRevision, EntryLock)
 from app.api import LogbooksResource, EntriesResource, SearchResource
 from app.entries import entries
 from app.logbooks import logbooks
@@ -55,8 +55,7 @@ try:
     # make sure the database tables exist
     db.database.create_tables([
         Logbook, LogbookRevision,
-        Entry, EntryRevision,
-        # EntrySearch,
+        Entry, EntryRevision, EntryLock
     ])
 except OperationalError:
     pass
@@ -73,16 +72,16 @@ api.add_resource(SearchResource,
 @app.route("/")
 def get_index():
     logbooks = Logbook.select().where(Logbook.parent == None)
-    return render_template("index.html", logbooks=logbooks,
+    return render_template("index.jinja2", logbooks=logbooks,
                            title=app.config.get("TITLE", ""))
 
 
 @app.route("/mobile")
 def get_index_mobile():
     logbooks = Logbook.select().where(Logbook.parent == None)
-    return render_template("index_mobile.html", logbooks=logbooks,
+    return render_template("index_mobile.jinja2", logbooks=logbooks,
                            title=app.config.get("TITLE", ""))
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0")

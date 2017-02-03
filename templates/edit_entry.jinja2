@@ -14,6 +14,10 @@
      padding: 10px;
      background: white;
  }
+
+ div.warning {
+     background: #faa;
+ }
  
  form  {
      display: flex;
@@ -113,7 +117,17 @@
  }
  
 </style>
-    
+
+{% if lock %}
+<div class="warning">
+    The entry is locked! This means someone (IP {{lock.owner-ip}}, at
+    {{lock.timestamp}}) has, or is making changes to the entry. If you
+    are sure this is not the case, you can press "submit" again.
+    (Note that data can't be completely lost, but you may have to look
+    in the revision history to find it.)
+</div>
+{% endif %}
+
 <header>
     {% if entry %}
     <div class="entry">
@@ -134,10 +148,11 @@
     
     <form id="form" action="/entries/" method="post">
 
+        {# hidden fields used to identify the submission #}
         <input type="hidden" name="logbook" value="{{ logbook.id }}">
         <input type="hidden" name="entry" value="{{ entry.id if entry else 0 }}">
-        <input type="hidden" name="follows"
-               value="{{ follows.id if follows else 0 }}">
+        <input type="hidden" name="follows" value="{{ follows.id if follows else 0 }}">
+        
         <div class="top">
             
             {# TODO: this is messy #}
@@ -168,6 +183,7 @@
         </div>
 
         <div class="attributes">
+            {% if logbook.attributes %}  {# may be null, perhaps this should be handled somewhere else #}
             {% for attribute in logbook.attributes %}
             <label class="attribute" data-name="{{ attribute.name }}">
                 {% if attribute.required %}*{% endif %}
@@ -203,7 +219,8 @@
                 </select>
                 {% endif %}
             </label>
-            {% endfor %}        
+            {% endfor %}
+            {% endif %}
         </div>
         <div class="editor-container">
             <textarea id="content" cols="100" rows="20" name="content">{{ (entry.content if entry else '') | safe }}</textarea>            
@@ -229,6 +246,11 @@
  // create an instance of TinyMCE HTML editor for the content
 
  (function () {
+
+     // TODO: might be better to skip all the upload logic and just let
+     // the editor include images in base64. We can decode them in the server.
+     // That way, the association between entry and attachment should
+     // become easier.
 
      function customUploadHandler (blobInfo, success, failure) {
 
