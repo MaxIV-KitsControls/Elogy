@@ -49,12 +49,16 @@ def edit_entry(entry_id):
 
     entry = Entry.get(Entry.id == entry_id)
 
-    # check if there's a lock on the entry, otherwise create one
+    # we use a simple table to store temporary "locks" on entries that
+    # are being edited.  The idea is to prevent collisions where one
+    # user saves over the edits of another. Note that since all
+    # changes are stored, we should never actually *lose* data, but it
+    # can still be annoying.
     try:
         lock = EntryLock.get(EntryLock.entry == entry)
         return render_template("entry_lock.jinja2", lock=lock)
     except DoesNotExist:
-        lock = EntryLock(entry=entry, owner_ip=request.remote_addr)
+        lock = EntryLock.create(entry=entry, owner_ip=request.remote_addr)
 
     if entry.follows:
         follows = Entry.get(Entry.id == entry.follows)
@@ -66,7 +70,8 @@ def edit_entry(entry_id):
 
 
 def handle_img_tags(text, timestamp):
-    "Extract embedded images and save them as attachments"
+    """Get image tags from the text. Extract embedded images and save
+    them as attachments"""
     # TODO: This is the only thing we need BS for. Use lxml instead.
     # tree = html.document_fromstring(text)
     # attachments = tree.xpath('//img/@src')
@@ -87,7 +92,6 @@ def handle_img_tags(text, timestamp):
             file_ = FileStorage(io.BytesIO(decodestring(data.encode("ascii"))),
                                 filename=filename)
             src = img["src"] = save_attachment(file_, timestamp)
-
         attachments.append(src)
     return str(soup), attachments
 
@@ -104,7 +108,7 @@ def unlock_entry(entry_id):
     return redirect(url_for(".show_entry", entry_id=entry_id))
 
 
-@entries.route("/<entry_id>", methods=["POST"])
+@entries.route("/<int:entry_id>", methods=["POST"])
 def write_entry(entry_id):
 
     "Save a submitted entry (new or edited)"
@@ -120,11 +124,15 @@ def write_entry(entry_id):
         # Grab all image elements from the HTML.
         # TODO: this will explode on data URIs, those should
         # be ignored. Also we need to ignore links to external images.
-        content, attachments = handle_img_tags(data.get("content"),
-                                               datetime.now())
+        content, image_attachments = handle_img_tags(data.get("content"),
+                                                     datetime.now())
+        attachments.append(image_attachments)
     except SyntaxError as e:
+        #
         print(e)
     print("attachments", attachments)
+    # for att in attachments:
+    #     if
 
     # Pick up attributes
     attributes = {}
@@ -141,9 +149,8 @@ def write_entry(entry_id):
                for author in data.getlist("author")
                if author]
 
-    # entry_id = int(data.get("entry", 0))
     if entry_id:
-        # editing an existing entry
+        # editing an existing entry, first check for locks
         try:
             lock = EntryLock.get(EntryLock.entry_id == entry_id)
             if lock.owner_ip == request.remote_addr:
@@ -152,12 +159,13 @@ def write_entry(entry_id):
             else:
                 unlock = int(data.get("unlock", 0))
                 if lock.entry_id == unlock:
-                    # the user has decided to unlock the entry
+                    # the user has decided to unlock the entry and save anyway
                     remove_lock(lock.entry_id)
                 else:
                     # locked by someone else, let's send everyting back
-                    # with a notice.
-                    entry = Entry(title=data["title"],
+                    # with a warning.
+                    entry = Entry(id=entry_id,
+                                  title=data["title"],
                                   authors=authors,
                                   content=data["content"],
                                   follows=int(data.get("follows", 0)) or None,
@@ -168,6 +176,8 @@ def write_entry(entry_id):
                     return render_template("edit_entry.jinja2",
                                            entry=entry, lock=lock)
         except DoesNotExist as e:
+            # Note: there should be a lock, but maybe someone removed it.
+            # In this case, not much to do..?
             pass
 
         # Now make the change

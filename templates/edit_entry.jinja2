@@ -118,6 +118,8 @@
  
 </style>
 
+{% set logbook = logbook or entry.logbook %}
+
 {% if lock %}
 <div class="warning">
     The entry is locked! This means someone (IP {{lock.owner_ip}}, at
@@ -147,7 +149,7 @@
 <div class="container">
     
     <form id="form" action="/entries/{{ entry.id if entry else 0 }}"
-          method="post">
+          method="post" enctype="multipart/form-data">
 
         {# hidden fields used to identify the submission #}
         <input type="hidden" name="logbook" value="{{ logbook.id }}">
@@ -229,6 +231,16 @@
         <div class="editor-container">
             <textarea id="content" cols="100" rows="20" name="content">{{ (entry.content if entry else '') | safe }}</textarea>            
         </div>
+        
+        <div>
+            {% if entry %}
+            {% for attachment in entry.attachments or [] %}
+                {{ attachment }}
+            {% endfor %}
+            {% endif %}
+            <input type="file" name="attachments[]" size="40" multiple="multiple">
+        </div>
+        
         <div>
             <button id="submitButton" type="submit">Submit</button>
             <label>
@@ -266,7 +278,7 @@
 
          xhr = new XMLHttpRequest();
          xhr.withCredentials = false;
-         xhr.open('POST', '/attachments/');
+         xhr.open('POST', '/attachments/{{ entry.id if entry else 0 }}');
 
          xhr.onload = function() {
              var json;
@@ -286,7 +298,7 @@
          };
 
          formData = new FormData();
-         formData.append('entry', '{{ entry.id if entry else "0" }}');
+         formData.append('entry', '{{ entry.id if entry else 0 }}');
          var blob = blobInfo.blob(); 
 
          /* var now = new Date();
