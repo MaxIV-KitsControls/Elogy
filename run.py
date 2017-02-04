@@ -6,7 +6,6 @@ import datetime
 
 from flask import Flask, render_template
 from flask.json import JSONEncoder
-from flask_restful import Api
 import peewee
 from playhouse.shortcuts import model_to_dict
 from peewee import OperationalError
@@ -15,7 +14,6 @@ from app.db import (db,
                     Logbook, LogbookRevision,
                     Entry, EntryRevision, EntryLock,
                     Attachment)
-from app.api import LogbooksResource, EntriesResource, SearchResource
 from app.entries import entries
 from app.logbooks import logbooks
 from app.attachments import attachments
@@ -41,10 +39,8 @@ class CustomJSONEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-app.config["RESTFUL_JSON"] = {'cls': CustomJSONEncoder}
+app.json_encoder = CustomJSONEncoder
 
-
-api = Api(app)
 app.register_blueprint(entries, url_prefix="/entries")
 app.register_blueprint(logbooks, url_prefix="/logbooks")
 app.register_blueprint(attachments, url_prefix="/attachments")
@@ -61,14 +57,6 @@ try:
     ])
 except OperationalError:
     pass
-
-
-api.add_resource(LogbooksResource,
-                 '/api/logbooks', '/api/logbooks/<int:logbook_id>')
-api.add_resource(EntriesResource,
-                 '/api/entries', '/api/entries/<int:entry_id>')
-api.add_resource(SearchResource,
-                 '/api/search')
 
 
 @app.route("/")
