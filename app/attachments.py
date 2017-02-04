@@ -12,6 +12,8 @@ from flask import (Blueprint, abort, request, url_for,
                    current_app, jsonify, send_from_directory)
 from PIL import Image
 
+from . import db
+
 attachments = Blueprint('attachments', __name__,
                         template_folder='templates')
 
@@ -22,7 +24,7 @@ def allowed_file(filename):
             in current_app.config["ALLOWED_EXTENSIONS"])
 
 
-def save_attachment(file_, timestamp):
+def save_attachment(file_, timestamp, entry_id, embedded=False):
     # make up a path and unique filename using the timestamp
     # TODO: make this smarter, somehow
     today = timestamp.strftime("%Y/%m/%d")
@@ -31,37 +33,52 @@ def save_attachment(file_, timestamp):
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
     filename = "{}-{}".format(epoch, file_.filename)
-    url = os.path.join(url_for("attachments.post_attachment"), today, filename)
+    # url = url_for(".get_attachment", "{}/{}".format(today, filename))
     path = os.path.join(upload_dir, filename)
     file_.save(path)
 
     image = Image.open(file_)
     width, height = image.size
+    metadata = dict(size={"width": width, "height": height})
     if width > 100 or height > 100:
         # create a tiny preview version of the image
         image.thumbnail((100, 100))
         try:
             image.save(path + ".thumbnail", "JPEG")
+            width, height = image.size
+            metadata["thumbnail_size"] = {"width": width, "height": height}
         except IOError as e:
             print("Error making thumbnail", e)
     else:
         os.link(path, path + ".thumbnail")
-    return url
+
+    if entry_id:
+        entry = db.Entry.get(db.Entry.id == entry_id)
+    else:
+        entry = None
+    attachment = db.Attachment.create(path="{}/{}".format(today, filename),
+                                      timestamp=timestamp,
+                                      content_type=file_.content_type,
+                                      entry=entry, embedded=embedded,
+                                      metadata=metadata)
+    return attachment
 
 
 @attachments.route("/", methods=["POST"])
-def post_attachment():
+@attachments.route("/<int:entry_id>", methods=["POST"])
+def post_attachment(entry_id=None):
     file_ = request.files["file"]
-    # print("file", file_)
     timestamp = request.form.get("timestamp")
+    embedded = request.args.get("embedded") == "true"
     if timestamp:
         timestamp = parse(timestamp)
     else:
         timestamp = datetime.now()
-
     if file_ and allowed_file(file_.filename):
-        url = save_attachment(file_, timestamp)
-        return jsonify({"location": url})
+        attachment = save_attachment(file_, timestamp, entry_id,
+                                     embedded=embedded)
+        return jsonify({"location": url_for(".get_attachment",
+                                            filename=attachment.path)})
     else:
         abort(500)
 

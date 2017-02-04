@@ -24,6 +24,10 @@
      background: #ddd;
      position: relative;
  } 
+
+ header > div {
+     font-size: 120%;
+ }
  
  .entries {
      flex: 1;
@@ -52,7 +56,7 @@
      z-index: 10;
  }
 
- .entry .logbook {
+ .logbook {
      text-decoration: underline;
      font-size: 90%;
  }
@@ -98,69 +102,40 @@
     </header>
 
     <div class="entries">
+
+        {% from 'entries.jinja2' import entry_item without context %}
+        
         {% for entry in entries %}
-
-        <a id="{{ entry.id }}"></a>  {# link anchor #}
-
-        {% if loop.first or entries[loop.index0-1].created_at.date() != entry.created_at.date() %}
-        <div class="date-separator">
-            {{ entry.created_at.strftime("%a %Y-%M-%d") }} 
-        </div>
-        {% endif %}
-
-        {% set parameters = "?followups=true" if followups else "" %}
-
-        {% set entryUrl = "/entries/{entry.id}".format(entry=entry) %}
-
-        <div class="entry" id="entry-{{entry.id}}">
             
-            <a href="{{entryUrl}}" target="entry">
-                
-                <div>
-
-                    <div class="logbook">{{ entry.logbook.name }}</div>
-                    
-                    {% if entry.attachments %}
-                    {% for attachment in entry.attachments[:1] %}
-                    <img class="thumbnail lazy" src="blank.gif" data-src="{{attachment}}.thumbnail" width="50"></img>
-                    {% endfor %}
-                    {% endif %}
-                    
-                    <span class="timestamp">
-                        {{ entry.created_at.strftime("%H:%M:%S") }}
-                    </span>
-
-                    {% if entry.authors %}
-                    <span class="authors">
-                        {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
-                    </span>
-                    {% endif %}
-                    
-                    {% if entry.title %}
-                    <div class="title">{{ entry.title }}</div>
-                    {% elif entry.content %}
-                    {# this data-* stuff looks funky, it's a hack just to make
-                    the browser ignore the content preview when searching in the page #}
-                    <div class="content" data-content="{{ entry.stripped_content[:500] }}"> </div>
-                    {% endif %}
-                    
+            <a id="{{ entry.id }}"></a>  {# link anchor #}
+            
+            {% if loop.first or entries[loop.index0-1].created_at.date() != entry.created_at.date() %}
+                <div class="date-separator">
+                    {{ entry.created_at.strftime("%a %Y-%m-%d") }} 
                 </div>
-            </a>
-
-            {% if entry.followups %}
-            <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
-                <div class="followups">
-                    {{ entry.n_followups }}
-                </div>
-            </a>
-            {% elif entry.follows %}
-            <div class="followups">*</div>
             {% endif %}
             
-        </div>
-
-
-
+            {% set parameters = "?followups=true" if followups else "" %}
+            
+            {% set entryUrl = "/entries/{entry.id}".format(entry=entry) %}
+            
+            <a href="{{entryUrl}}" target="entry">
+                <div>
+                    <div class="logbook">{{ entry.logbook.name }}</div>
+                    {{ entry_item(entry) }}
+                </div>
+            </a>
+            
+            {% if entry.followups %}
+                <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+                    <div class="followups">
+                        {{ entry.n_followups }}
+                    </div>
+                </a>
+            {% elif entry.follows %}
+                <div class="followups">*</div>
+            {% endif %}
+            
         {% endfor %}
     </div>
 </div>

@@ -13,7 +13,8 @@ from peewee import OperationalError
 
 from app.db import (db,
                     Logbook, LogbookRevision,
-                    Entry, EntryRevision, EntryLock)
+                    Entry, EntryRevision, EntryLock,
+                    Attachment)
 from app.api import LogbooksResource, EntriesResource, SearchResource
 from app.entries import entries
 from app.logbooks import logbooks
@@ -55,7 +56,8 @@ try:
     # make sure the database tables exist
     db.database.create_tables([
         Logbook, LogbookRevision,
-        Entry, EntryRevision, EntryLock
+        Entry, EntryRevision, EntryLock,
+        Attachment
     ])
 except OperationalError:
     pass

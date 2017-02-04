@@ -2,18 +2,18 @@ from base64 import decodestring
 from datetime import datetime
 import io
 import json
-from jinja2 import TemplateNotFound
+import os
 
-from bs4 import BeautifulSoup
-from .db import Entry, Logbook
+from jinja2 import TemplateNotFound
+from dateutil.parser import parse
 from flask import (Blueprint, abort, redirect, render_template, request,
                    url_for)
 from werkzeug import FileStorage
 from peewee import JOIN, fn, DoesNotExist
-from lxml import html
+from lxml import html, etree
 
 from .attachments import save_attachment
-from .db import EntryLock
+from .db import Entry, Logbook, EntryLock, Attachment
 
 
 entries = Blueprint('entries', __name__)
@@ -69,31 +69,39 @@ def edit_entry(entry_id):
                            entry=entry, logbook=logbook, follows=follows)
 
 
-def handle_img_tags(text, timestamp):
+def handle_img_tags(text, entry_id=None, timestamp=None):
     """Get image tags from the text. Extract embedded images and save
     them as attachments"""
-    # TODO: This is the only thing we need BS for. Use lxml instead.
-    # tree = html.document_fromstring(text)
-    # attachments = tree.xpath('//img/@src')
-    # ...
-    soup = BeautifulSoup(text)
     attachments = []
-    for img in soup.findAll('img'):
-        src = img['src']
+    timestamp = timestamp or datetime.now()
+    try:
+        doc = html.document_fromstring(text)
+    except etree.ParserError:
+        return text, attachments
+    for i, element in enumerate(doc.xpath("//*[@src]")):
+        src = element.attrib['src'].split("?", 1)[0]
         if src.startswith("data:"):
             header, data = src[5:].split(",", 1)  # TODO: find a safer way
             filetype, encoding = header.split(";")
+            raw_image = decodestring(data.encode("ascii"))
             try:
                 # TODO: possible to be more clever about the filename?
-                filename = "decoded." + filetype.split("/")[1].lower()
+                filename = "decoded-{}-{}.{}".format(
+                    len(raw_image), i, filetype.split("/")[1].lower())
             except IndexError:
                 print("weird filetype!?", filetype)
                 continue
-            file_ = FileStorage(io.BytesIO(decodestring(data.encode("ascii"))),
-                                filename=filename)
-            src = img["src"] = save_attachment(file_, timestamp)
+            file_ = FileStorage(io.BytesIO(raw_image),
+                                filename=filename, content_type=filetype)
+            attachment = save_attachment(file_, timestamp, entry_id)
+            src = element.attrib["src"] = os.path.join(
+                url_for("attachments.get_attachment", filename=""),
+                attachment.path)
+            if element.getparent().tag == "a":
+                element.getparent().attrib["href"] = src
+
         attachments.append(src)
-    return str(soup), attachments
+    return html.tostring(doc), attachments
 
 
 def remove_lock(entry_id):
@@ -108,8 +116,9 @@ def unlock_entry(entry_id):
     return redirect(url_for(".show_entry", entry_id=entry_id))
 
 
+@entries.route("/", methods=["POST"])
 @entries.route("/<int:entry_id>", methods=["POST"])
-def write_entry(entry_id):
+def write_entry(entry_id=None):
 
     "Save a submitted entry (new or edited)"
 
@@ -120,16 +129,6 @@ def write_entry(entry_id):
 
     # a list of attachment filenames
     attachments = data.getlist("attachment")
-    try:
-        # Grab all image elements from the HTML.
-        # TODO: this will explode on data URIs, those should
-        # be ignored. Also we need to ignore links to external images.
-        content, image_attachments = handle_img_tags(data.get("content"),
-                                                     datetime.now())
-        attachments.append(image_attachments)
-    except SyntaxError as e:
-        #
-        print(e)
     print("attachments", attachments)
     # for att in attachments:
     #     if
@@ -165,9 +164,9 @@ def write_entry(entry_id):
                     # locked by someone else, let's send everyting back
                     # with a warning.
                     entry = Entry(id=entry_id,
-                                  title=data["title"],
+                                  title=data.get("title"),
                                   authors=authors,
-                                  content=data["content"],
+                                  content=data.get("content"),
                                   follows=int(data.get("follows", 0)) or None,
                                   attributes=attributes,
                                   archived="archived" in data,
@@ -182,28 +181,50 @@ def write_entry(entry_id):
 
         # Now make the change
         entry = Entry.get(Entry.id == entry_id)
-        change = entry.make_change({
-            "title": data["title"],
-            "content": data["content"],
-            "authors": authors,
-            "attributes": attributes,
-            "attachments": attachments
-        })
+        change = entry.make_change(title=data.get("title"),
+                                   content=data.get("content"),
+                                   authors=authors,
+                                   attributes=attributes,
+                                   attachments=attachments)
         change.save()
-        entry.save()
 
     else:
         # creating a new entry
-        entry = Entry(title=data["title"],
+        if "created_at" in data:
+            created_at = parse(data.get("created_at"))
+        else:
+            created_at = datetime.now()
+
+        entry = Entry(title=data.get("title"),
                       authors=authors,
-                      content=data["content"],
+                      created_at=created_at,
+                      content=data.get("content"),
                       follows=int(data.get("follows", 0)) or None,
                       attributes=attributes,
                       archived="archived" in data,
                       attachments=attachments,
                       logbook=logbook)
 
+    entry.save()
+
+    try:
+        # Grab all image elements from the HTML.
+        # TODO: this will explode on data URIs, those should
+        # be ignored. Also we need to ignore links to external images.
+        content, embedded_attachments = handle_img_tags(
+            entry.content, entry_id)
+        entry.content = content
         entry.save()
+        for url in embedded_attachments:
+            path = url[1:].split("/", 1)[-1]
+            try:
+                attachment = Attachment.get(Attachment.path == path)
+                attachment.entry_id = entry.id
+                attachment.save()
+            except DoesNotExist:
+                print("Did not find attachment", url)
+    except SyntaxError as e:
+        print(e)
 
     follows = int(data.get("follows", 0))
     if follows:

@@ -115,7 +115,7 @@
 
 <div class="logbook" id="{{ logbook.id }}">
     <a href="/#/logbook/{{logbook.id}}">
-        {{logbook.name}}
+        {{logbook.name}} ({{logbook.get_entries().count()}})
     </a>
 </div>
     

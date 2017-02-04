@@ -32,5 +32,5 @@ def perform_search():
                                 .extract("")
                                 .contains(parameters["authors"]))
 
-    return render_template('search_results.html', parameters=parameters,
+    return render_template('search_results.jinja2', parameters=parameters,
                            entries=results)

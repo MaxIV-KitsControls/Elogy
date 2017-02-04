@@ -1,7 +1,7 @@
 from datetime import datetime
 from html.parser import HTMLParser
 import json
-from lxml import etree
+from lxml import etree, html
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from playhouse.flask_utils import FlaskDB
@@ -35,7 +35,7 @@ def cleanup_html(bad_html):
     "Shape up a HTML string"
     if not bad_html.strip():
         return ""
-    tree = etree.HTML(bad_html.replace('\r', ''))
+    tree = html.document_fromstring(bad_html)
     # TODO: some intelligent cleanup here, removing evil tags such as
     # <html>, <body>, <script>, <style>, <iframe>, ...
     # Might also remove stuff like multiple empty <p>
@@ -52,8 +52,7 @@ class HTMLField(TextField):
     "Stores a HTML string. It applies a cleanup step before storing"
 
     def db_value(self, value):
-        if value:
-            return cleanup_html(value)
+        return cleanup_html(value)
 
 
 class Logbook(db.Model):
@@ -70,13 +69,11 @@ class Logbook(db.Model):
     attributes = JSONField(null=True)
     archived = BooleanField(default=False)
 
-    # class Meta:
-    #     order_by = fn.coalesce('-last_changed_at', '-created_at')
-
     @property
     def children(self):
-        return [model_to_dict(lb, recurse=False)
-                for lb in Logbook.select().where(Logbook.parent == self)]
+        # return [model_to_dict(lb, recurse=False)
+        #         for lb in Logbook.select().where(Logbook.parent == self)]
+        return Logbook.select().where(Logbook.parent == self)
 
     def get_entries_(self, followups=True,
                     page=None, entries_per_page=None):
@@ -90,7 +87,7 @@ class Logbook(db.Model):
             entries = entries.paginate(page, entries_per_page)
         return entries
 
-    def get_entries(self, followups=True, archived=False, n=10):
+    def get_entries(self, followups=True, archived=False, n=None):
         Followup = Entry.alias()
         entries = (
             Entry.select(
@@ -120,8 +117,7 @@ class Logbook(db.Model):
             entries = (entries
                        .group_by(Entry.id)
                        # .where(Entry.follows == None)
-                       .order_by(Entry.created_at.desc())
-            )
+                       .order_by(Entry.created_at.desc()))
 
         return entries.limit(n)
 
@@ -231,7 +227,6 @@ class Entry(db.Model):
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True)
-    attachments = JSONField(null=True)
     tags = JSONField(null=True)
     archived = BooleanField(default=False)
 
@@ -278,7 +273,7 @@ class Entry(db.Model):
         except DoesNotExist:
             pass
 
-    def make_change(self, data):
+    def make_change(self, **data):
         "Change the entry, storing the old values as a revision"
         original_values = {
             attr: getattr(self, attr)
@@ -293,8 +288,6 @@ class Entry(db.Model):
         for attr, value in data.items():
             setattr(self, attr, value)
         self.last_changed_at = change.timestamp
-        change.save()
-        self.save()
         return change
 
     def get_old_version(self, change_id):
@@ -318,7 +311,6 @@ class EntryRevision(db.Model):
     content = TextField(null=True)
     attributes = JSONField(null=True)
     follows_id = IntegerField(null=True)
-    attachments = JSONField(null=True)
     tags = JSONField(null=True)
     archived = BooleanField(default=False)
 
@@ -331,3 +323,16 @@ class EntryLock(db.Model):
     entry = ForeignKeyField(Entry)
     timestamp = DateTimeField(default=datetime.now)
     owner_ip = CharField()
+
+
+class Attachment(db.Model):
+    "Store information about an attachment"
+    entry = ForeignKeyField(Entry, null=True, related_name="attachments")
+    timestamp = DateTimeField(default=datetime.now)
+    path = CharField()  # path within the upload folder
+    content_type = CharField(null=True)
+    embedded = BooleanField(default=False)  # i.e. an image in the content
+    metadata = JSONField(null=True)  # may contain image size, etc
+
+    class Meta:
+        order_by = ("id",)

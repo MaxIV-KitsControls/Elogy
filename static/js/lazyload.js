@@ -24,7 +24,6 @@ window.LazyImageLoad = (function () {
         for (var i = 0; i<this.images.length; i++) {
             var img = this.images[i];
             if (elementInViewport(img, this.container)) {
-                img.removeAttribute("width")
                 img.src = img.getAttribute("data-src");
                 this.images.splice(i, 1)
                 i--;  // ahem!

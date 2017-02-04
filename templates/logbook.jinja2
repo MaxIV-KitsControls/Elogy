@@ -41,6 +41,10 @@
      overflow: auto;
  }
 
+ .entry:hover {
+     background: #f5f5f5;
+ }
+ 
  .entry.selected {
      background: white;
  }
@@ -85,8 +89,10 @@
 </style>
 
 
-<div class="container">
+{% from 'entries.jinja2' import entry_item %}
 
+<div class="container">
+    
     <header>
         <span class="name">{{ logbook.name }}</span>
         &nbsp;
@@ -99,91 +105,40 @@
         </span>
         
         {% if logbook.attributes %}
-        <div class="attributes">
-            {% for attribute in logbook.attributes %}
-            <label class="attribute" data-name="{{attribute.name}}">
-                {% if attribute.required %}*{% endif %}
-                {{ attribute.name }}<span class="value">{{ attribute.type }}</span>
-            </label>
-            {% endfor %}
-        </div>
+            <div class="attributes">
+                {% for attribute in logbook.attributes %}
+                    <label class="attribute" data-name="{{attribute.name}}">
+                        {% if attribute.required %}*{% endif %}
+                        {{ attribute.name }}<span class="value">{{ attribute.type }}</span>
+                    </label>
+                {% endfor %}
+            </div>
         {% endif %}
     </header>
     
     {% set entries=logbook.get_entries(n=n_entries, followups=followups) %}
     
     <div class="entries">
-
-        {% for entry in entries %}
-
-        <a id="{{ entry.id }}"></a>  {# link anchor #}
-
-        {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
-        <div class="date-separator">
-            {{ entry.timestamp.strftime("%a %Y-%M-%d") }} 
-        </div>
-        {% endif %}
-
-        {% set parameters = "?followups=true" if followups else "" %}
         
-        {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
-
-        <div class="entry" id="entry-{{entry.id}}">
+        {% for entry in entries %}
             
-            <a href="{{entryUrl}}" target="_top">
-                <div>
-
-                    {% if entry.attachments %}
-                    {% for attachment in entry.attachments[:1] %}
-                    <img class="thumbnail lazy" src="blank.gif" data-src="{{attachment}}.thumbnail" width="50"></img>
-                    {% endfor %}
-                    {% endif %}
-                    
-                    <span class="timestamp">
-                        {{ entry.timestamp.strftime("%H:%M:%S") }}
-                    </span>
-
-                    {% if entry.authors %}
-                    <span class="authors">
-                        {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
-                    </span>
-                    {% endif %}
-
-                    {% if entry.title %}
-                    <div class="title">{{ entry.title }}</div>
-                    {% elif entry.content %}
-                    {# this data-* stuff looks funky, it's a hack just to make
-                       the browser ignore the content preview when searching in the page #}
-                    <div class="content" data-content="{{ entry.stripped_content[:500] }}"> </div>
-                    {% endif %}
-                    
-                    {% if logbook.attributes %}                            
-                    {% for attribute in logbook.attributes if attribute.required %}
-                    {% if entry.attributes.get(attribute.name) != "" %}
-                    <label class="attribute" data-name="{{attribute.name}}">
-                        {{entry.attributes[attribute.name]}}
-                    </label>
-                    {% endif %}
-                    {% endfor %}
-                    {% endif %}
-
+            <a id="{{ entry.id }}"></a>  {# link anchor #}
+            
+            {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
+                <div class="date-separator">
+                    {{ entry.timestamp.strftime("%a %Y-%m-%d") }} 
                 </div>
-            </a>
-
-            {% if entry.followups %}
-            <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
-                <div class="followups">
-                    {{ entry.n_followups }}
-                </div>
-            </a>
-            {% elif entry.follows %}
-            <div class="followups">*</div>
             {% endif %}
             
-        </div>
+            {% set parameters = "?followups=true" if followups else "" %}
+            {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
+
+            <a href="{{entryUrl}}" target="_top">
+                {{ entry_item(entry) }}
+            </a>
         {% endfor %}        
         {% if n_entries == entries | length %}
-        <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
+            <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
         {% endif %}
         
     </div>
@@ -192,11 +147,12 @@
 <script type="text/javascript" src="/static/color_attributes.js"></script>
 
 <script type="text/javascript" src="/static/js/lazyload.js"></script>
-
 <script type="text/javascript">
  window.addEventListener("load", function () {
      // we don't want to load all thumbnails for the entire logbook
      // immediately. Instead we'll load them as they come into view.
+     // (Yeah, this is an optimization, but I think it's a pretty
+     // important one)
      new LazyImageLoad(document.querySelector("div.entries"))
  });
 </script>

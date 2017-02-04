@@ -86,7 +86,7 @@
      width: 0;
  }
  
-  /* Following some hacks to make TinyMCE fill the rest of the window */
+ /* Following some hacks to make TinyMCE fill the rest of the window */
  
  /*Container, container body, iframe*/
  /*With some extra haxxoring to avoid ruining some popups :( */
@@ -121,28 +121,28 @@
 {% set logbook = logbook or entry.logbook %}
 
 {% if lock %}
-<div class="warning">
-    The entry is locked! This means someone (IP {{lock.owner_ip}}, at
-    {{lock.timestamp}}) has, or is making changes to the entry. If you
-    are sure this is not the case, you can press "submit" again.
-    (Note that data can't be completely lost, but you may have to look
-    in the revision history to find it.)
-</div>
+    <div class="warning">
+        The entry is locked! This means someone (IP {{lock.owner_ip}}, at
+        {{lock.timestamp}}) has, or is making changes to the entry. If you
+        are sure this is not the case, you can press "submit" again.
+        (Note that data can't be completely lost, but you may have to look
+        in the revision history to find it.)
+    </div>
 {% endif %}
 
 <header>
     {% if entry %}
-    <div class="entry">
-        Editing: <b>{{ entry.title }}</b>
-    </div>
+        <div class="entry">
+            Editing: <b>{{ entry.title }}</b>
+        </div>
     {% elif follows %}    
-    <div class="entry">
-        Followup to: <a href="/entries/{{follows.id}}">{{ follows.title }}</a>
-    </div>
+        <div class="entry">
+            Followup to: <a href="/entries/{{follows.id}}">{{ follows.title }}</a>
+        </div>
     {% else %}
-    <div class="entry">
-        New entry
-    </div>
+        <div class="entry">
+            New entry
+        </div>
     {% endif %}
 </header>
 
@@ -156,7 +156,7 @@
         <input type="hidden" name="entry" value="{{ entry.id if entry else 0 }}">
         <input type="hidden" name="follows" value="{{ follows.id if follows else 0 }}">
         {% if lock %}
-        <input type="hidden" name="unlock" value="{{ lock.id }}">
+            <input type="hidden" name="unlock" value="{{ lock.id }}">
         {% endif %}
         
         <div class="top">
@@ -174,15 +174,15 @@
                 <label for="author">Author(s)</label>
                 <fieldset id="authors" class="authors">
                     {% if entry %}
-                    {% for author in entry.authors -%}
-                    <input class="author" type="text"
-                           name="author" value="{{ author }}"/>
-                    {%- endfor %}
+                        {% for author in entry.authors -%}
+                            <input class="author" type="text"
+                                   name="author" value="{{ author }}"/>
+                        {%- endfor %}
                     {% elif follows %}
-                    {% for author in follows.authors -%}
-                    <input class="author" type="text"
-                           name="author" value="{{ author }}"/>
-                    {%- endfor %}                    
+                        {% for author in follows.authors -%}
+                            <input class="author" type="text"
+                                   name="author" value="{{ author }}"/>
+                        {%- endfor %}                    
                     {% endif %}
                 </fieldset>
             </div>
@@ -190,42 +190,42 @@
 
         <div class="attributes">
             {% if logbook.attributes %}  {# may be null, perhaps this should be handled somewhere else #}
-            {% for attribute in logbook.attributes %}
-            <label class="attribute" data-name="{{ attribute.name }}">
-                {% if attribute.required %}*{% endif %}
-                {{attribute.name}}
-                {% if attribute.type == "text" %}
-                <input type="text"
-                       name="attribute-{{ attribute.name }}"
-                       value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
-                       {% if attribute.required %}required="true"{% endif %}>
-                {% endif %}
-                {% if attribute.type == "number" %}
-                <input type="number" step="any"
-                       name="attribute-{{ attribute.name }}"
-                       value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
-                       {% if attribute.required %}required="true"{% endif %}>
-                {% endif %}
-                {% if attribute.type == "boolean" %}
-                <input type="checkbox"
-                       name="attribute-{{ attribute.name }}"
-                       {% if entry and entry.attributes[attribute.name] or follows and follows.attributes[attribute.name] %} checked {% endif %}>
-                {% endif %}
-                {% if attribute.type == "option" %}
-                <select name="attribute-{{ attribute.name }}"
-                        
-                        {% if attribute.required %}required="true"{% endif %}>
-                    {% if attribute.required %}
-                    <option name=""></option>
-                    {% endif %}
-                    {% for option in attribute.options %}
-                    <option name="{{ option }}"
-                            {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '') %} selected="selected" {% endif %}>{{option}}</option>
-                    {% endfor %}
-                </select>
-                {% endif %}
-            </label>
-            {% endfor %}
+                {% for attribute in logbook.attributes %}
+                    <label class="attribute" data-name="{{ attribute.name }}">
+                        {% if attribute.required %}*{% endif %}
+                        {{attribute.name}}
+                        {% if attribute.type == "text" %}
+                            <input type="text"
+                                   name="attribute-{{ attribute.name }}"
+                                   value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
+                                   {% if attribute.required %}required="true"{% endif %}>
+                        {% endif %}
+                        {% if attribute.type == "number" %}
+                            <input type="number" step="any"
+                                   name="attribute-{{ attribute.name }}"
+                                   value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
+                                   {% if attribute.required %}required="true"{% endif %}>
+                        {% endif %}
+                        {% if attribute.type == "boolean" %}
+                            <input type="checkbox"
+                                   name="attribute-{{ attribute.name }}"
+                                   {% if entry and entry.attributes[attribute.name] or follows and follows.attributes[attribute.name] %} checked {% endif %}>
+                        {% endif %}
+                        {% if attribute.type == "option" %}
+                            <select name="attribute-{{ attribute.name }}"
+                                    
+                                    {% if attribute.required %}required="true"{% endif %}>
+                                {% if attribute.required %}
+                                    <option name=""></option>
+                                {% endif %}
+                                {% for option in attribute.options %}
+                                    <option name="{{ option }}"
+                                            {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '') %} selected="selected" {% endif %}>{{option}}</option>
+                                {% endfor %}
+                            </select>
+                        {% endif %}
+                    </label>
+                {% endfor %}
             {% endif %}
         </div>
         <div class="editor-container">
@@ -234,9 +234,9 @@
         
         <div>
             {% if entry %}
-            {% for attachment in entry.attachments or [] %}
-                {{ attachment }}
-            {% endfor %}
+                {% for attachment in entry.attachments or [] %}
+                    {{ attachment }}
+                {% endfor %}
             {% endif %}
             <input type="file" name="attachments[]" size="40" multiple="multiple">
         </div>
@@ -278,7 +278,7 @@
 
          xhr = new XMLHttpRequest();
          xhr.withCredentials = false;
-         xhr.open('POST', '/attachments/{{ entry.id if entry else 0 }}');
+         xhr.open('POST', '/attachments/{{ entry.id if entry else 0 }}?embedded=true');
 
          xhr.onload = function() {
              var json;
