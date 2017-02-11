@@ -2,10 +2,6 @@
 
 <style>
  
- body {
-     background: #ddd;
- }
-
  .container {
      display: flex;
      flex-direction: column;
@@ -201,7 +197,7 @@
                                 {% if followup.attributes.get(attribute.name) != entry.attributes.get(attribute.name) %}
                                     <label class="attribute" data-name="{{attribute.name}}">
                                         {% if attribute.required %}*{% endif %}
-                                        {{attribute.name}}:
+                                        {{attribute.name}}
                                         <span class="value">
                                             {% if attribute.type == "text" %}
                                                 {{ followup.attributes.get(attribute.name) }}
@@ -239,7 +235,7 @@
 </div>
 
 
-<script type="text/javascript" src="/static/color_attributes.js"></script>
+<!-- <script type="text/javascript" src="/static/color_attributes.js"></script> -->
 
 
 <script>
