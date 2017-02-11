@@ -141,7 +141,7 @@
             {% endif %}
             
             {% set parameters = "?followups=true" if followups else "" %}
-            {% set entryUrl = "/{parameters}#/logbooks/{entry.logbook.id}+/entries/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
+            {% set entryUrl = "/{parameters}#/logbooks/{entry.logbook.id}@/entries/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
 
             <a href="{{entryUrl}}" target="_top">
                 {{ entry_item(entry) }}

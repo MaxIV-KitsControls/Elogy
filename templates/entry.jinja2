@@ -94,7 +94,7 @@
                 <div class="commands">                    
                     <a href="edit/{{entry.id}}">Edit</a>
                     |
-                    <a href="/#/logbooks/{{entry.logbook.id}}+/entries/{{entry.id}}" target="_top">Link</a>
+                    <a href="/#/logbooks/{{entry.logbook.id}}@/entries/{{entry.id}}" target="_top">Link</a>
                     {% if entry.followups %}
                         &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}
@@ -160,7 +160,7 @@
 
                         <a href="/entries/edit/{{followup.id}}">Edit</a>
                         &nbsp;
-                        <a href="/#/logbooks/{{followup.logbook.id}}+/entries/{{entry.id}}#{{followup.id}}" target="_top">Link</a>
+                        <a href="/#/logbooks/{{followup.logbook.id}}@/entries/{{entry.id}}#{{followup.id}}" target="_top">Link</a>
                         
                         {% if loop.first %}
                             <a href="#{{entry.id}}">&nbsp;🠉&nbsp;</a>

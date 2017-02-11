@@ -24,7 +24,7 @@ window.Router = (function () {
 
             if (window.location.hash == "" || window.location.hash == "#") return
             
-            var iframeUrls = window.location.hash.slice(1).split("+")
+            var iframeUrls = window.location.hash.slice(1).split("@")
 
             for (var i=0; i<iframeUrls.length; i++) {
                 // set the iframe URL, if it has changed
@@ -68,7 +68,7 @@ window.Router = (function () {
             }
 
             if (urlHash.length > 0) {
-                window.location.hash = urlHash.join("+");                
+                window.location.hash = urlHash.join("@");                
                 if (reload) {
                     window.location.reload();
                 }
