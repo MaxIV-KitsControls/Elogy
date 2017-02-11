@@ -4,7 +4,7 @@ A simple HTTP "REST like" API for creating and accessing logbooks.
 
 import datetime
 
-from flask import Flask, render_template
+from flask import Flask, request, render_template
 from flask.json import JSONEncoder
 import peewee
 from playhouse.shortcuts import model_to_dict
@@ -61,8 +61,11 @@ except OperationalError:
 
 @app.route("/")
 def get_index():
-    logbooks = Logbook.select().where(Logbook.parent == None)
-    return render_template("index.jinja2", logbooks=logbooks,
+    parameters = request.args
+    parent = parameters.get("parent")
+    logbooks = Logbook.select().where(Logbook.parent == parent)
+    return render_template("index.jinja2",
+                           parent=parent or 0, logbooks=logbooks,
                            title=app.config.get("TITLE", ""))
 
 

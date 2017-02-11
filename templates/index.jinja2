@@ -121,7 +121,9 @@
          </a> -->
     <a href="/logbooks/{{logbook.id}}" target="logbook">
         {{ logbook.name.replace(" ", "&nbsp;") }}
-        ({{logbook.get_entries().count()}})
+        {% if logbook.get_entries() %}
+        ({{ logbook.get_entries().count() }})
+        {% endif %}
     </a>
 </div>
     
@@ -144,7 +146,7 @@
     </header>
     <section class="main">
         <nav id="logbooks">
-            <a href="/logbooks/new">New</a>            
+            <a href="/logbooks/new?parent={{parent}}">New</a>            
             <div class="logbooks">
                 <ul class="logbooks">
                     {% for logbook in logbooks %}

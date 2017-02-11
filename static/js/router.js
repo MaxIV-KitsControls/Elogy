@@ -68,7 +68,7 @@ window.Router = (function () {
             }
 
             if (urlHash.length > 0) {
-                window.location.hash = urlHash.join("@");                
+                window.location.hash = urlHash.join("@");
                 if (reload) {
                     window.location.reload();
                 }
