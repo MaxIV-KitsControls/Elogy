@@ -43,7 +43,7 @@
      padding: 3px;
  }
 
- form input.author {
+ form input.author, input.tag {
      min-width: 30px;
      margin-right: 2px;
      margin-bottom: 2px;
@@ -186,10 +186,26 @@
                     {% endif %}
                 </fieldset>
             </div>
+            <div>
+                <label for="author">Tags</label>
+                <fieldset id="tags" class="tags">
+                    {% if entry and entry.tags %}
+                        {% for tag in entry.tags -%}
+                            <input class="tag" type="text"
+                                   name="tag" value="{{ tag }}"/>
+                        {%- endfor %}
+                    {% elif follows and follows.tags %}
+                        {% for tag in follows.tags -%}
+                            <input class="tag" type="text"
+                                   name="tag" value="{{ tag }}"/>
+                        {%- endfor %}                    
+                    {% endif %}
+                </fieldset>
+            </div>            
         </div>
 
-        <div class="attributes">
-            {% if logbook.attributes %}  {# may be null, perhaps this should be handled somewhere else #}
+        {% if logbook.attributes %}  {# may be null, perhaps this should be handled somewhere else #}
+            <div class="attributes">            
                 {% for attribute in logbook.attributes %}
                     <label class="attribute" data-name="{{ attribute.name }}">
                         {% if attribute.required %}*{% endif %}
@@ -226,8 +242,9 @@
                         {% endif %}
                     </label>
                 {% endfor %}
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
+        
         <div class="editor-container">
             <textarea id="content" cols="100" rows="20" name="content">{{ (entry.content if entry else '') | safe }}</textarea>            
         </div>
@@ -358,32 +375,32 @@
     now, I haven't found a better way... */
 
  /*  window.addEventListener("load",*/
-                         function () {
+ /* function () {
 
-     // Open a confirmation dialog if the user tries to navigate away.
-     // Note: this does not work properly in FF, chrome is OK.
-     function checkUnloadDialog (e) {
-         e.returnValue = "foo";
-     }     
-     window.addEventListener("beforeunload", checkUnloadDialog);
+  *     // Open a confirmation dialog if the user tries to navigate away.
+  *     // Note: this does not work properly in FF, chrome is OK.
+  *     function checkUnloadDialog (e) {
+  *         e.returnValue = "foo";
+  *     }     
+  *     window.addEventListener("beforeunload", checkUnloadDialog);
 
-     document.getElementById("submitButton")
-             .onclick = function () {
-                 // first we check that we're even allowed to submit
-                 var form = document.getElementById("form");
-                 if (form.checkValidity()) {
-                     // tell TinyMCE to upload any images it has received
-                     tinymce.activeEditor.uploadImages(function () {
-                         // Once that's finished, finally submit the form!
-                         window.removeEventListener("beforeunload",
-                                                    checkUnloadDialog);
-                         setTimeout(function () {form.submit();}, 100);
-                     })  // TODO: upload failure handler?
-                 } else {
-                     alert("You have not filled in all required fields!");
-                 };
-             };
- });
+  *     document.getElementById("submitButton")
+  *             .onclick = function () {
+  *                 // first we check that we're even allowed to submit
+  *                 var form = document.getElementById("form");
+  *                 if (form.checkValidity()) {
+  *                     // tell TinyMCE to upload any images it has received
+  *                     tinymce.activeEditor.uploadImages(function () {
+  *                         // Once that's finished, finally submit the form!
+  *                         window.removeEventListener("beforeunload",
+  *                                                    checkUnloadDialog);
+  *                         setTimeout(function () {form.submit();}, 100);
+  *                     })  // TODO: upload failure handler?
+  *                 } else {
+  *                     alert("You have not filled in all required fields!");
+  *                 };
+  *             };
+  * });*/
 
 </script>
 
@@ -394,7 +411,14 @@
  /* Maintain a list of authors that expands to allow adding and removing names */ 
  new Montag(document.getElementById("authors"), {name: "author",
                                                  placeholder: "Author",
-                                                 classes: ["author"]});
+                                                 classes: ["author"],
+                                                 minWidth: 100, maxWidth: 300});
+
+ new Montag(document.getElementById("tags"), {name: "tag",
+                                              placeholder: "Tag",
+                                              classes: ["tag"],
+                                              minWidth: 50, maxWidth: 300});
+
  
 </script>
 

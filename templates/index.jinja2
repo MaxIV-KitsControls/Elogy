@@ -1,6 +1,3 @@
-<script src="static/js/navigo.min.js"></script>
-<script src="static/js/signals.min.js"></script>
-
 <style>
 
  html, body {
@@ -36,6 +33,7 @@
 
  #logbooks {
      flex: 1;
+     max-width: 20%;
      background: #ddd;
      height: 100%;
      border-right: 5px solid #aaa;
@@ -45,9 +43,13 @@
 
  #logbooks .logbooks {
      flex: 1;
-     padding: 10px;     
-}
- 
+     max-height: 100%;
+     overflow: auto;
+ }
+
+ #logbooks ul.logbooks {
+     margin: 0;
+ }
 
  #logbooks .search {
      flex: 0;
@@ -78,7 +80,7 @@
      height: 100%;
  }
  
- #entries {
+ #logbook {
      flex: 2;
      background: #ddd;
      height: 100%;
@@ -103,7 +105,7 @@
  .logbook.selected {
      background: white;
  }
-
+ 
  ul {
      padding-left: 20px;     
  }
@@ -114,8 +116,12 @@
 {% macro logbook_children(logbook) %}
 
 <div class="logbook" id="{{ logbook.id }}">
-    <a href="/#/logbook/{{logbook.id}}">
-        {{logbook.name}} ({{logbook.get_entries().count()}})
+    <!-- <a href="/#/logbook/{{logbook.id}}">
+         {{logbook.name}} ({{logbook.get_entries().count()}})
+         </a> -->
+    <a href="/logbooks/{{logbook.id}}" target="logbook">
+        {{ logbook.name.replace(" ", "&nbsp;") }}
+        ({{logbook.get_entries().count()}})
     </a>
 </div>
     
@@ -138,9 +144,9 @@
     </header>
     <section class="main">
         <nav id="logbooks">
+            <a href="/logbooks/new">New</a>            
             <div class="logbooks">
-                <a href="/logbooks/new">New</a>
-                <ul>
+                <ul class="logbooks">
                     {% for logbook in logbooks %}
                     <li class="logbook">
                         {{ logbook_children(logbook) }}
@@ -150,7 +156,7 @@
             </div>
             <div class="search">
                 Search entries
-                <form action="/search/" target="entries">
+                <form action="/search/" target="logbook">
                     <div>
                         <label for="all-logbooks">
                             <input name="all-logbooks" type="checkbox"/>
@@ -168,8 +174,8 @@
                 </form>
             </div>
         </nav>
-        <nav id="entries">
-            <object name="entries" frameborder="no" type="text/html" data="about:blank"></object>
+        <nav id="logbook">
+            <object name="logbook" frameborder="no" type="text/html" data="about:blank"></object>
         </nav>
         <div id="entry">
             <object name="entry" frameborder="no" type="text/html" data="about:blank"></object>
@@ -177,18 +183,22 @@
     </section>
 </div>
 
+<script type="text/javascript" src="static/js/signals.min.js"></script>
+
+<script type="text/javascript" src="/static/js/router.js"></script>
 
 <script type="text/javascript">
 
- // A simple centralized event bus that we'll use to decouple
- // things a bit. We'll send out events for various important
+ // A simple global event bus, just to 'de-couple'
+ // things a bit. We'll send out events for important
  // changes, and components may listen to them as they need.
  window.eventbus = {
-     entrySelected: new signals.Signal(),
-     logbookSelected: new signals.Signal()
+     entries: new signals.Signal(),
+     logbooks: new signals.Signal()
  };
 
- function markLogbook(logbookId, unmark) {
+ function markLogbook(logbookId) {
+     // highlight the currently selected logbook in the list
      document.querySelectorAll('.logbook')
              .forEach(function (element) {
                  element.classList.remove("selected")
@@ -197,79 +207,12 @@
          var element = document.getElementById(logbookId);
          element.classList.add("selected")
      }
- } 
+ }
 
+ window.eventbus.logbooks.add(markLogbook);
  
  window.addEventListener("load", function () {
-
-     var entries = document.querySelector('object[name="entries"]'),
-         entry = document.querySelector('object[name="entry"]');
-
-     // === eventbus listeners ===
-     
-     function handleLogbook(logbookId, entryId) {
-         var entriesUrl = "/logbooks/" + logbookId;
-         // updating the entries list is expensive so let's only
-         // do that if the logbook has actually changed
-         console.log(entries)
-         console.log("URL", entries.data, "http://localhost:5000" + entriesUrl);
-         if (!entries.contentDocument) {
-             // looks like the contentDocument does not initially exist
-             entries.data = entriesUrl;
-         } else if (entries.contentDocument.location.pathname !== entriesUrl) {
-             entries.contentDocument.location = (
-                 entriesUrl + window.location.search + (
-                     entryId? "#" + entryId : "")
-             );
-         }
-         markLogbook(logbookId)
-     }
-     eventbus.logbookSelected.add(handleLogbook)
-     
-     function handleEntry(entryId, followupId) {
-         console.log("entry", entryId, followupId)
-         if (entryId) {
-             var entryUrl = "/entries/" + entryId;
-             // if the routed URL points to a followup, we'll tack that
-             // to the end of the URL so that the view is scrolled to it
-             if (followupId) {
-                 entryUrl += "#" + followupId;
-             }
-             entry.data = entryUrl;
-         } else {
-             // no entry selected; show a placeholder
-             window.open("about:blank", "entry");
-         }
-     }     
-     eventbus.entrySelected.add(handleEntry);
-
-     window.addEventListener("unload", function() {
-         // cleanup
-         eventbus.entrySelected.remove(handleLogbook);
-         eventbus.entrySelected.remove(handleEntry);
-     });
-
-     // === Routing ===
-     // We need this in order for browser history to
-     // work, since the state of the application must be encoded in
-     // the url somehow. It's a little hacky (uses the 'hash' part of
-     // the location) but it's simple and pretty flexible.
-     
-     function goTo(params) {
-         console.log("goTo", params)
-         eventbus.logbookSelected.dispatch(params.logbookId, params.entryId);
-         eventbus.entrySelected.dispatch(params.entryId, params.followupId);
-     }
-     
-     var router = new Navigo(null, true);
-     router
-         .on("/logbook/:logbookId/entry/:entryId/:followupId", goTo)
-         .on("/logbook/:logbookId/entry/:entryId", goTo)
-         .on("/logbook/:logbookId", goTo)     
-         .resolve();
-
-     console.log("router", router)
-     
+     window.router = new Router(["logbook", "entry"]);
  });
- 
+  
 </script>

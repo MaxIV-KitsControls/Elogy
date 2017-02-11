@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, abort, request, redirect, url_for
+from flask import (Blueprint, render_template, abort, request, redirect,
+                   url_for, jsonify)
 from jinja2 import TemplateNotFound
 from peewee import fn, JOIN, DoesNotExist
 
 from .db import Logbook
+from .utils import request_wants_json
 
 
 logbooks = Blueprint('logbooks', __name__)
@@ -59,23 +61,29 @@ def edit_logbook(logbook_id):
 @logbooks.route('/', methods=["POST"])
 def write_logbook():
     "Handle form data creating or editing a logbook"
-    data = request.form
-    attributes = []
-    attr_keys = [(key, name)
-                 for key, name in data.items()
-                 if name and key.startswith("attribute-name-")]
-    for key, name in sorted(attr_keys):
-        n = key.rsplit("-", 1)[-1]
-        attributes.append({
-            "name": name,
-            "type": data["attribute-type-{}".format(n)],
-            "required": bool(data.get("attribute-required-{}".format(n))),
-            "options": [
-                option.strip()
-                for option
-                in data.get("attribute-options-{}".format(n)).split("\n")
-            ]
-        })
+    if request.form:
+        data = request.form
+
+        attributes = []
+        attr_keys = [(key, name)
+                     for key, name in data.items()
+                     if name and key.startswith("attribute-name-")]
+        for key, name in sorted(attr_keys):
+            n = key.rsplit("-", 1)[-1]
+            attributes.append({
+                "name": name,
+                "type": data["attribute-type-{}".format(n)],
+                "required": bool(data.get("attribute-required-{}".format(n))),
+                "options": [
+                    option.strip()
+                    for option
+                    in data.get("attribute-options-{}".format(n)).split("\n")
+                ]
+            })
+    else:
+        data = request.json
+        attributes = data.get("attributes")
+
     parent_id = int(data.get("parent", 0))
     if parent_id:
         parent = Logbook.get(Logbook.id == parent_id)
@@ -95,4 +103,7 @@ def write_logbook():
                      attributes=attributes,
                      parent=parent)
     lb.save()
+
+    if request_wants_json():
+        return jsonify(logbook_id=lb.id)
     return redirect("/#/logbook/{}".format(lb.id))

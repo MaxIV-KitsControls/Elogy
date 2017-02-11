@@ -36,21 +36,25 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
     # url = url_for(".get_attachment", "{}/{}".format(today, filename))
     path = os.path.join(upload_dir, filename)
     file_.save(path)
-
-    image = Image.open(file_)
-    width, height = image.size
-    metadata = dict(size={"width": width, "height": height})
-    if width > 100 or height > 100:
-        # create a tiny preview version of the image
-        image.thumbnail((100, 100))
-        try:
-            image.save(path + ".thumbnail", "JPEG")
-            width, height = image.size
-            metadata["thumbnail_size"] = {"width": width, "height": height}
-        except IOError as e:
-            print("Error making thumbnail", e)
-    else:
-        os.link(path, path + ".thumbnail")
+    try:
+        # If it's an image file we create a thumbnail version for preview
+        image = Image.open(file_)
+        width, height = image.size
+        metadata = dict(size={"width": width, "height": height})
+        if width > 100 or height > 100:
+            # create a tiny preview version of the image
+            image.thumbnail((100, 100))
+            try:
+                image.save(path + ".thumbnail", "JPEG")
+                width, height = image.size
+                metadata["thumbnail_size"] = {"width": width, "height": height}
+            except IOError as e:
+                print("Error making thumbnail", e)
+        else:
+            os.link(path, path + ".thumbnail")
+    except IOError:
+        # Not a recognized image
+        metadata = None
 
     if entry_id:
         entry = db.Entry.get(db.Entry.id == entry_id)
@@ -70,11 +74,12 @@ def post_attachment(entry_id=None):
     file_ = request.files["file"]
     timestamp = request.form.get("timestamp")
     embedded = request.args.get("embedded") == "true"
+
     if timestamp:
         timestamp = parse(timestamp)
     else:
         timestamp = datetime.now()
-    if file_ and allowed_file(file_.filename):
+    if file_:  # and allowed_file(file_.filename):
         attachment = save_attachment(file_, timestamp, entry_id,
                                      embedded=embedded)
         return jsonify({"location": url_for(".get_attachment",

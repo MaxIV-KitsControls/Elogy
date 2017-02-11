@@ -1,19 +1,20 @@
 from base64 import decodestring
+import binascii
 from datetime import datetime
 import io
-import json
 import os
 
 from jinja2 import TemplateNotFound
 from dateutil.parser import parse
 from flask import (Blueprint, abort, redirect, render_template, request,
-                   url_for)
+                   url_for, jsonify)
 from werkzeug import FileStorage
 from peewee import JOIN, fn, DoesNotExist
 from lxml import html, etree
 
 from .attachments import save_attachment
 from .db import Entry, Logbook, EntryLock, Attachment
+from .utils import request_wants_json
 
 
 entries = Blueprint('entries', __name__)
@@ -56,7 +57,8 @@ def edit_entry(entry_id):
     # can still be annoying.
     try:
         lock = EntryLock.get(EntryLock.entry == entry)
-        return render_template("entry_lock.jinja2", lock=lock)
+        if lock.owner_ip != request.remote_addr:
+            return render_template("entry_lock.jinja2", lock=lock)
     except DoesNotExist:
         lock = EntryLock.create(entry=entry, owner_ip=request.remote_addr)
 
@@ -67,6 +69,19 @@ def edit_entry(entry_id):
     logbook = entry.logbook
     return render_template('edit_entry.jinja2',
                            entry=entry, logbook=logbook, follows=follows)
+
+
+def decode_base64(data):
+    """Decode base64, padding being optional.
+
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+
+    """
+    missing_padding = len(data) % 4
+    if missing_padding != 0:
+        data += b'=' * (4 - missing_padding)
+    return decodestring(data)
 
 
 def handle_img_tags(text, entry_id=None, timestamp=None):
@@ -83,7 +98,11 @@ def handle_img_tags(text, entry_id=None, timestamp=None):
         if src.startswith("data:"):
             header, data = src[5:].split(",", 1)  # TODO: find a safer way
             filetype, encoding = header.split(";")
-            raw_image = decodestring(data.encode("ascii"))
+            try:
+                raw_image = decode_base64(data.encode("ascii"))
+            except binascii.Error as e:
+                print("failed to decode image!", e)
+                continue
             try:
                 # TODO: possible to be more clever about the filename?
                 filename = "decoded-{}-{}.{}".format(
@@ -122,36 +141,49 @@ def write_entry(entry_id=None):
 
     "Save a submitted entry (new or edited)"
 
-    data = request.form
+    if request.form:
+        data = request.form
 
-    logbook_id = int(data["logbook"])
-    logbook = Logbook.get(Logbook.id == logbook_id)
+        logbook_id = int(data["logbook"])
+        logbook = Logbook.get(Logbook.id == logbook_id)
 
-    # a list of attachment filenames
-    attachments = data.getlist("attachment")
-    print("attachments", attachments)
-    # for att in attachments:
-    #     if
+        # Pick up attributes
+        attributes = {}
+        for attr in logbook.attributes or []:
+            value = data.get("attribute-{}".format(attr["name"]))
+            if value:
+                # since we always get strings from the form, we need to
+                # convert the values to proper types
+                attributes[attr["name"]] = logbook.convert_attribute(
+                    attr["name"], value)
+        # a list of attachment filenames
+        attachments = data.getlist("attachment")
+        print("attachments", attachments)
+        # for att in attachments:
+        #     if
+        tags = data.getlist("tag") or None
+        print("taags", tags)
+        # Make a list of authors
+        authors = [author.strip()
+                   for author in data.getlist("author")
+                   if author]
+        metadata = None
+    else:
+        data = request.json
+        logbook_id = int(data["logbook"])
+        logbook = Logbook.get(Logbook.id == logbook_id)
+        attributes = data.get("attributes")
+        tags = data.get("tags")
+        metadata = data.get("metadata")
+        attachments = data.get("attachments", [])
+        authors = data.get("authors", [])
 
-    # Pick up attributes
-    attributes = {}
-    for attr in logbook.attributes or []:
-        value = data.get("attribute-{}".format(attr["name"]))
-        if value:
-            # since we always get strings from the form, we need to
-            # convert the values to proper types
-            attributes[attr["name"]] = logbook.convert_attribute(
-                attr["name"], value)
-
-    # Make a list of authors
-    authors = [author.strip()
-               for author in data.getlist("author")
-               if author]
-
+    new = False
     if entry_id:
         # editing an existing entry, first check for locks
         try:
             lock = EntryLock.get(EntryLock.entry_id == entry_id)
+            print("lock", lock.owner_ip, request.remote_addr)
             if lock.owner_ip == request.remote_addr:
                 # it's our lock
                 lock.delete_instance()
@@ -168,9 +200,11 @@ def write_entry(entry_id=None):
                                   authors=authors,
                                   content=data.get("content"),
                                   follows=int(data.get("follows", 0)) or None,
+                                  metadata=metadata,
                                   attributes=attributes,
                                   archived="archived" in data,
                                   attachments=attachments,
+                                  tags=tags,
                                   logbook=logbook)
                     return render_template("edit_entry.jinja2",
                                            entry=entry, lock=lock)
@@ -184,10 +218,11 @@ def write_entry(entry_id=None):
         change = entry.make_change(title=data.get("title"),
                                    content=data.get("content"),
                                    authors=authors,
+                                   metadata=metadata,
                                    attributes=attributes,
+                                   tags=tags,
                                    attachments=attachments)
         change.save()
-
     else:
         # creating a new entry
         if "created_at" in data:
@@ -200,10 +235,13 @@ def write_entry(entry_id=None):
                       created_at=created_at,
                       content=data.get("content"),
                       follows=int(data.get("follows", 0)) or None,
+                      metadata=metadata,
                       attributes=attributes,
+                      tags=tags,
                       archived="archived" in data,
                       attachments=attachments,
                       logbook=logbook)
+        new = True
 
     entry.save()
 
@@ -226,7 +264,11 @@ def write_entry(entry_id=None):
     except SyntaxError as e:
         print(e)
 
+    if request_wants_json():
+        return jsonify(entry_id=entry.id)
+
     follows = int(data.get("follows", 0))
+    query = "?new" if new else ""
     if follows:
-        return redirect("/entries/{}#{}".format(follows, entry.id))
-    return redirect("/entries/{}".format(entry.id))
+        return redirect("/entries/{}{}#{}".format(follows, query, entry.id))
+    return redirect("/entries/{}{}".format(entry.id, query))

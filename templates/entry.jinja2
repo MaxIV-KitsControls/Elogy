@@ -59,6 +59,9 @@
      border-radius: 10px;
  }
 
+ label.attribute {
+     background-color: white;
+ }
  
 </style>
 
@@ -68,15 +71,15 @@
         <span class="title">{{ entry.title or "(Untitled)"}}</span>
         <div class="commands">
             {% if entry.follows %}
-                <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.follows.id}}" target="_top">Parent</a>
+                <a href="/entry/{{entry.follows.id}}">Parent</a>
             {% else %}
                 <a href="new?follows={{ entry.id }}">Follow-up</a>
             {% endif %}
             |
-            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="entries">Find</a>
+            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="logbook">Find</a>
 
-            <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.previous.id}}" target="_top">Prev</a>            
-            <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.next.id}}" target="_top">Next</a>
+            <a href="/entries/{{entry.previous.id}}">Prev</a>            
+            <a href="/entries/{{entry.next.id}}">Next</a>
         </div>
     </header>
     
@@ -91,7 +94,7 @@
                 <div class="commands">                    
                     <a href="edit/{{entry.id}}">Edit</a>
                     |
-                    <a href="/#/logbook/{{entry.logbook.id}}/entry/{{entry.id}}" target="_top">Link</a>
+                    <a href="/#/logbooks/{{entry.logbook.id}}+/entries/{{entry.id}}" target="_top">Link</a>
                     {% if entry.followups %}
                         &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}
@@ -132,8 +135,7 @@
                                     {% endif %}
                                     {% if attribute.type == "option" %}
                                         {{ entry.attributes.get(attribute.name) }}
-                                    {% endif %}
-                                </span>
+                                    {% endif %}</span>
                             </label>
                         {% endfor %}
                     {% endif %}
@@ -158,7 +160,7 @@
 
                         <a href="/entries/edit/{{followup.id}}">Edit</a>
                         &nbsp;
-                        <a href="/#/logbook/{{followup.logbook.id}}/entry/{{entry.id}}/{{followup.id}}" target="_top">Link</a>
+                        <a href="/#/logbooks/{{followup.logbook.id}}+/entries/{{entry.id}}#{{followup.id}}" target="_top">Link</a>
                         
                         {% if loop.first %}
                             <a href="#{{entry.id}}">&nbsp;🠉&nbsp;</a>
@@ -239,3 +241,7 @@
 
 <script type="text/javascript" src="/static/color_attributes.js"></script>
 
+
+<script>
+ /*  top.window.eventbus.logbooks.add(function () {window.location = "about:blank"})*/
+</script>

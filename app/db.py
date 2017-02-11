@@ -52,7 +52,8 @@ class HTMLField(TextField):
     "Stores a HTML string. It applies a cleanup step before storing"
 
     def db_value(self, value):
-        return cleanup_html(value)
+        if value:
+            return cleanup_html(value)
 
 
 class Logbook(db.Model):
@@ -64,7 +65,7 @@ class Logbook(db.Model):
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
     name = CharField()
-    description = TextField()
+    description = TextField(null=True)
     parent = ForeignKeyField("self", null=True)
     attributes = JSONField(null=True)
     archived = BooleanField(default=False)
@@ -223,11 +224,12 @@ class Entry(db.Model):
     authors = JSONField(null=True)
     content = HTMLField(null=True)
     content_type = CharField(default="text/html; charset=UTF-8")  # TODO: should not default to HTML
+    metadata = JSONField(null=True)  # general
     attributes = JSONField(null=True)
+    tags = JSONField(null=True)
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True)
-    tags = JSONField(null=True)
     archived = BooleanField(default=False)
 
     # def __init__(self, *args, **kwargs):
@@ -309,6 +311,7 @@ class EntryRevision(db.Model):
     title = CharField(null=True)
     authors = JSONField(null=True)
     content = TextField(null=True)
+    metadata = JSONField(null=True)
     attributes = JSONField(null=True)
     follows_id = IntegerField(null=True)
     tags = JSONField(null=True)

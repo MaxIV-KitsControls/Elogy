@@ -19,6 +19,8 @@ def perform_search():
 
     print("parameters", parameters)
 
+    limit = int(parameters.get("limit", 100))
+
     results = Entry.select()
     if parameters.get("content"):
         regexp = ".*{content}.*".format(**parameters)
@@ -33,4 +35,4 @@ def perform_search():
                                 .contains(parameters["authors"]))
 
     return render_template('search_results.jinja2', parameters=parameters,
-                           entries=results)
+                           entries=results.limit(limit))

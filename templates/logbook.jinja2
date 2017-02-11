@@ -71,6 +71,16 @@
      content: attr(data-content); 
  }
 
+ .entry .tags {
+
+ }
+
+ .entry .tag {
+     font-size: 80%;
+     padding: 0 3px;
+     border: 1px solid #ccc;
+ }
+ 
  .entry .followups {
      background: grey;
      color: white;
@@ -131,7 +141,7 @@
             {% endif %}
             
             {% set parameters = "?followups=true" if followups else "" %}
-            {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
+            {% set entryUrl = "/{parameters}#/logbooks/{entry.logbook.id}+/entries/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
 
             <a href="{{entryUrl}}" target="_top">
                 {{ entry_item(entry) }}
@@ -160,7 +170,9 @@
 <script type="text/javascript">
 
  function markEntry(entryId, followupId) {
-     console.log("markEntry", entryId, followupId)
+
+     // Highlight the given entry in the list
+     
      // first remove all marks
      document.querySelectorAll('div.entry')
              .forEach(function (element) {
@@ -195,17 +207,14 @@
      }
  }
 
- window.addEventListener("load", function () {
-     if (window.location.hash) {
-         // highlight the selected entry
-         markEntry(window.location.hash.slice(1))
-     }
-     parent.window.eventbus.entrySelected.add(markEntry);
- });
-
- window.addEventListener("unload", function() {
-     parent.window.eventbus.entrySelected.remove(markEntry);
- })
+ // listen to changes in which entry is selected
+ parent.window.eventbus.entries.add(markEntry);
  
 </script>
 
+<script src="/static/js/colorize_elements.js"></script>
+<script>
+
+ colorizeElements(".tag", "name");
+ 
+</script>

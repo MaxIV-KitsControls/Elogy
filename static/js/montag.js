@@ -30,7 +30,11 @@ Montag = (function () {
 
         // make sure pre-existing inputs are 
         this.container.querySelectorAll("input")
-            .forEach(autosizeInput)
+            .forEach(function (input) {
+                autosizeInput(input,
+                              config.minWidth || 100,
+                              config.maxWidth || 300)
+            });
         
         addInput(this.container, this.config);  // add initial empty item
  
@@ -132,7 +136,7 @@ Montag = (function () {
         } else {
             container.appendChild(newInput);
         }
-        autosizeInput(newInput);
+        autosizeInput(newInput, config.minWidth, config.minHeight);
         return newInput;
     }
     
@@ -162,10 +166,11 @@ Montag = (function () {
 
     // Thanks to http://stackoverflow.com/a/7168967/229599
     // TODO: this is *heavy*
-    function autosizeInput(input) {
+    function autosizeInput(input, min, max) {
         
-        var min = 100, max = 300, pad_right = 5;
+        var pad_right = 5;
 
+        console.log("hej", input, min)
         input.style.width = min+'px';
         input.onkeypress = input.onkeydown = input.onkeyup = function(){
             var input = this;

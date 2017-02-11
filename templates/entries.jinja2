@@ -1,0 +1,72 @@
+{% macro entry_item(entry) %}
+    
+    <div class="entry" id="entry-{{entry.id}}">
+
+        {% if entry.attachments %}
+            {% for attachment in entry.attachments.limit(1) %}
+                {% set img_src = url_for("attachments.get_attachment", filename=attachment.path) %}
+                {% if attachment.metadata %}
+                    {% set thumb = attachment.metadata.get("thumbnail_size", {}) %}
+                    {# storing the img src in a 'data' attr, and
+                    using javascript to "lazy load" them as they
+                    scroll into view (see script below) #}
+                    <img class="thumbnail lazy" 
+                         data-src="{{ img_src }}.thumbnail"
+                         width="{{ thumb.width or 50 }}"
+                         height="{{ thumb.height or 50 }}"/>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        
+        <span class="timestamp">
+            {{ entry.created_at.strftime("%H:%M:%S") }}
+        </span>
+        
+        {% if entry.authors %}
+            <span class="authors">
+                {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
+            </span>
+        {% endif %}
+        
+        {% if entry.title %}
+            <div class="title">{{ entry.title }}</div>
+        {% elif entry.content %}
+            {# here, the data-* stuff is a hack just to make
+            the browser ignore the content preview when searching
+            in the page #}
+            <div class="content" data-content="{{ entry.stripped_content[:500] }}"> </div>
+        {% endif %}
+        
+        {% if entry.logbook.attributes %}                           
+            {% for attribute in entry.logbook.attributes if attribute.required %}
+                {% if entry.attributes.get(attribute.name) != "" %}
+                    <label class="attribute" data-name="{{attribute.name}}">
+                        {{entry.attributes[attribute.name]}}
+                    </label>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {% if entry.tags %}
+            <div class="tags">
+            {% for tag in entry.tags %}
+                <span class="tag" data-name="{{tag}}">{{ tag }}</span>
+            {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if entry.followups %}
+            {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
+            <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+                <div class="followups">
+                    {{ entry.n_followups }}
+                </div>
+            </a>
+        {% elif entry.follows %}
+            <div class="followups">*</div>
+        {% endif %}
+        
+    </div>
+    
+{% endmacro %}
+

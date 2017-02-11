@@ -1,4 +1,14 @@
-(function () {
+window.colorizeElements = (function () {
+
+    function colorizeElements(selector) {
+        [].forEach.call(
+            document.querySelectorAll(selector),
+            function (el) {
+                var color = stringToColour(el.dataset.name);
+                el.style.background = "rgba(" + color.join(",") + ",1)";
+            }
+        );
+    }
     
     function stringToColour(str) {
         // create a "random" color based on the given string
@@ -14,14 +24,7 @@
         }
         return colour;
     }
-    
-    [].forEach.call(
-        document.querySelectorAll('.attribute'),
-        function (el) {
-            var color = stringToColour(el.dataset.name);
-            console.log("color", color);
-            el.style.background = "rgba(" + color.join(",") + ",1)";
-        }
-    );
+
+    return colorizeElements;
     
 })();
