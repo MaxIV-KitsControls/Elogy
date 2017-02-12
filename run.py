@@ -3,8 +3,9 @@ A simple HTTP "REST like" API for creating and accessing logbooks.
 """
 
 import datetime
+import json
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 from flask.json import JSONEncoder
 import peewee
 from playhouse.shortcuts import model_to_dict
@@ -45,6 +46,11 @@ app.register_blueprint(entries, url_prefix="/entries")
 app.register_blueprint(logbooks, url_prefix="/logbooks")
 app.register_blueprint(attachments, url_prefix="/attachments")
 app.register_blueprint(search, url_prefix="/search")
+
+
+@app.template_filter()
+def to_json(value):
+    return json.dumps(value)
 
 
 db.init_app(app)

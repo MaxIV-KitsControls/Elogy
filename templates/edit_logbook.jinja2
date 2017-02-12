@@ -86,6 +86,7 @@
             <fieldset name="attributes">
                 <legend>Attributes</legend>
                 <table id="attributes">
+                    <!-- here go the attributes -->
                 </table>
                 <button type="button" id="add-attribute">Add attribute</button>
             </fieldset>
@@ -103,8 +104,10 @@
  // we're getting the configuration as a JSON string through the template.
  // Yea, it's a bit nasty but it works...
  var attributes = JSON.parse(
-     '{{ (logbook.attributes or "[]" if logbook else parent.attributes if parent else "[]") | safe }}');
+     '{{ (logbook.attributes or "[]" if logbook else parent.attributes if parent else "[]") | to_json }}');
 
+ console.log("attributes", attributes);
+ 
  // adds an attribute input line, possibly pre-populated
  function addAttribute(data) {
 
