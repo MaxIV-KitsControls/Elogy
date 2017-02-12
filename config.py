@@ -1,4 +1,4 @@
-TITLE = "Apology"
+TITLE = "elogy"
 
 SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
@@ -11,7 +11,6 @@ UPLOAD_FOLDER = '/tmp/attachments'
 
 # Currently we only care about images.
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'bmp'])
-
 
 # Don't change anything below this line unless you know what you're doing!
 # ------------------------------------------------------------------------
