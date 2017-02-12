@@ -229,11 +229,8 @@
                         {% endif %}
                         {% if attribute.type == "option" %}
                             <select name="attribute-{{ attribute.name }}"
-                                    
                                     {% if attribute.required %}required="true"{% endif %}>
-                                {% if attribute.required %}
-                                    <option name=""></option>
-                                {% endif %}
+                                <option name=""></option>
                                 {% for option in attribute.options %}
                                     <option name="{{ option }}"
                                             {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '') %} selected="selected" {% endif %}>{{option}}</option>
