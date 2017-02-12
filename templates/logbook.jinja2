@@ -250,7 +250,9 @@
  }
 
  // listen to changes in which entry is selected
- parent.window.eventbus.entries.add(markEntry);
+ if(parent.window.eventbus) {
+     parent.window.eventbus.entries.add(markEntry);
+ }
  
 </script>
 

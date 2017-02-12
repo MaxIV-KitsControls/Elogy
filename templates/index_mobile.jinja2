@@ -1,0 +1,87 @@
+<style>
+
+ html, body {
+     padding: 0;
+     margin: 0;
+     height: 100%;
+     width: 100%;
+ }
+ 
+ #app {
+     font-family: 'Avenir', Helvetica, Arial, sans-serif;
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+ }
+
+ header.main {
+     height: 50px;
+     border-bottom: 1px solid grey;
+ }
+
+ header.main .title {
+     font-size: 200%;
+     position: absolute;
+ }
+ 
+ section.main {
+     display: flex;
+     flex-direction: row;
+     width: 100%;
+     height: calc(100% - 50px);
+ }
+
+ #logbooks {
+     flex: 1;
+     background: #ddd;
+     height: 100%;
+     border-right: 5px solid #aaa;
+     padding: 0 10px;
+ }
+
+ ul {
+     padding-left: 20px;     
+ }
+
+</style>
+
+
+{% macro logbook_children(logbook) %}
+
+<div class="logbook" id="{{ logbook.id }}">
+    <a href="/logbooks/{{logbook.id}}">
+        {{logbook.name}}
+    </a>
+</div>
+    
+{% if logbook.children %}
+<ul>
+    {% for child in logbook.children %}
+    <li class="logbook">
+        {{logbook_children(child)}}
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% endmacro %}
+
+
+<div id="app">
+    <header class="main">
+        <div class="title">{{ title | safe }}</div>
+    </header>
+    <section class="main">
+        <nav id="logbooks">
+            <a href="/logbooks/new">New</a>
+            <ul>
+                {% for logbook in logbooks %}
+                <li class="logbook">
+                    {{ logbook_children(logbook) }}
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </section>
+</div>
+

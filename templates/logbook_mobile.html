@@ -1,0 +1,231 @@
+<link rel="stylesheet" type="text/css" href="/static/main.css"/>
+
+<style>
+
+ body {
+     background: #eee;
+ }
+
+ a {
+     text-decoration: none;
+ }
+
+ .container {
+     display: flex;
+     flex-direction: column;
+     height: 100%;
+ }
+
+ header {
+     flex: 0;
+     padding: 5px;
+     border-bottom: 1px solid grey;
+     background: #ddd;
+     position: relative;
+ }
+
+ header .name {
+     font-size: large;
+ }
+ 
+ .entries {
+     flex: 1;
+     max-height: 100%;
+     overflow-y: auto;
+ }
+ 
+ .entry {
+     position: relative;
+     padding: 5px;
+     border-bottom: 1px solid #aaa;
+ }
+
+ .entry.selected {
+     background: white;
+ }
+
+ .date-separator {
+     position: sticky;
+     top: 0;
+     border-bottom: 1px solid #aaa;
+     font-size: small;
+     background: #ddd;
+     color: black;
+     text-align: center;
+     z-index: 10;
+ }
+
+ .entry .content {
+     font-size: small;
+ }
+
+ .entry .followups {
+     background: grey;
+     color: white;
+     padding: 0 5px;
+     border-radius: 10px;
+     position: absolute;
+     right: 2px;
+     top: 2px;
+ }
+
+</style>
+
+
+<div class="container">
+
+    <header>
+        <span class="name">{{ logbook.name }}</span>
+
+        <span class="commands">
+            <a href="/logbooks/{{logbook.id}}/edit" target="_top">Edit</a>
+            <a href="/logbooks/new?parent={{ logbook.id }}" target="_top">Child</a>
+            | <a href="/entries/new?logbook={{logbook.id}}" target="_top">New</a>
+        </span>
+        
+        {% if logbook.attributes %}
+        <div class="attributes">
+            {% for attribute in logbook.attributes %}
+            <label class="attribute" data-name="{{attribute.name}}">
+                {% if attribute.required %}*{% endif %}
+                {{ attribute.name }}
+                <span class="value">
+                    {{ attribute.type }}
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </header>
+    
+    {% set entries=logbook.get_entries(n=n_entries, followups=followups) %}
+    
+    <div class="entries">
+
+        {% for entry in entries %}
+
+        <a id="{{ entry.id }}"></a>  {# link anchor #}
+
+        {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
+        <div class="date-separator">
+            {{entry.timestamp.date()}}
+        </div>
+        {% endif %}
+
+        {% set parameters = "?followups=true" if followups else "" %}
+        
+        {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
+
+        <div class="entry" id="entry-{{entry.id}}">
+            
+            <a href="{{entryUrl}}" target="_top">
+                <div>
+                    <span class="timestamp">
+                        {{ entry.timestamp.strftime("%H:%M:%S") }}
+                    </span>
+
+                    {% if entry.authors %}
+                    <span class="authors">
+                        {{ entry.authors[0] }}{% if entry.authors | length > 1 %}, et al. {% endif %}
+                    </span>
+                    {% endif %}
+                    
+                    {% if entry.title %}
+                    <div class="title">{{ entry.title }}</div>
+                    {% else %}
+                    <div class="content">
+                        {{ entry.stripped_content[:100] }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if logbook.attributes %}                            
+                    {% for attribute in logbook.attributes if attribute.required %}
+                    {% if entry.attributes.get(attribute.name) != "" %}
+                    <label class="attribute" data-name="{{attribute.name}}">
+                        {{entry.attributes[attribute.name]}}
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if entry.attachments %}
+                    {% for attachment in entry.attachments %}
+                    <img src="/attachments/{{attachment}}.thumbnail"></img>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </a>
+
+            {% if entry.followups %}
+            <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+                <div class="followups">
+                    {{ entry.n_followups }}
+                </div>
+            </a>
+            {% elif entry.follows %}
+            <div class="followups">*</div>
+            {% endif %}
+            
+        </div>
+        {% endfor %}        
+        {% if n_entries == entries | length %}
+        <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
+        {% endif %}
+        
+    </div>
+</div>
+
+<script type="text/javascript" src="/static/color_attributes.js"></script>
+
+<script type="text/javascript">
+
+ function markEntry(entryId, followupId) {
+     console.log("markEntry", entryId, followupId)
+     // first remove all marks
+     document.querySelectorAll('div.entry')
+             .forEach(function (element) {
+                 element.classList.remove("selected")
+             });
+     /* if (followupId) {
+      *     var element = document.getElementById("entry-" + followupId);
+      *     if (element) {
+      *         element.classList.add("selected")
+      *     } else if (entryId) {
+      *         var element = document.getElementById("entry-" + entryId);
+      *         if (element) {
+      *             element.classList.add("selected")
+      *         }
+      *     }
+      * }*/
+     if (followupId) {
+         var element = document.getElementById("entry-" + followupId);
+         if (element) {
+             element.classList.add("selected")
+         } else if (entryId) {
+             var element = document.getElementById("entry-" + entryId);
+             if (element) {
+                 element.classList.add("selected")
+             }
+         }
+     } else {
+         var element = document.getElementById("entry-" + entryId);
+         if (element) {
+             element.classList.add("selected")
+         }         
+     }
+ }
+
+ window.addEventListener("load", function () {
+     if (window.location.hash) {
+         // highlight the selected entry
+         markEntry(window.location.hash.slice(1))
+     }
+     parent.window.eventbus.entrySelected.add(markEntry);
+ });
+
+ window.addEventListener("unload", function() {
+     parent.window.eventbus.entrySelected.remove(markEntry);
+ })
+ 
+</script>
+
