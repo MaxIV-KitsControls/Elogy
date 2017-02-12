@@ -7,13 +7,14 @@ import os
 from jinja2 import TemplateNotFound
 from dateutil.parser import parse
 from flask import (Blueprint, abort, redirect, render_template, request,
-                   url_for, jsonify)
+                   url_for, jsonify, current_app)
 from werkzeug import FileStorage
 from peewee import JOIN, fn, DoesNotExist
 from lxml import html, etree
 
 from .attachments import save_attachment
 from .db import Entry, Logbook, EntryLock, Attachment
+from . import actions
 from .utils import request_wants_json
 
 
@@ -269,6 +270,13 @@ def write_entry(entry_id=None):
                 print("Did not find attachment", url)
     except SyntaxError as e:
         print(e)
+
+    # perform actions
+    app = current_app._get_current_object()
+    if new:
+        actions.new_entry.send(app, entry=entry)
+    else:
+        actions.edit_entry.send(app, entry=entry)
 
     if request_wants_json():
         return jsonify(entry_id=entry.id)

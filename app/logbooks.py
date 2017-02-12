@@ -1,10 +1,11 @@
 from flask import (Blueprint, render_template, abort, request, redirect,
-                   url_for, jsonify)
+                   url_for, jsonify, current_app)
 from jinja2 import TemplateNotFound
 from peewee import fn, JOIN, DoesNotExist
 
 from .db import Logbook
 from .utils import request_wants_json
+from . import actions
 
 
 logbooks = Blueprint('logbooks', __name__)
@@ -110,6 +111,8 @@ def write_logbook():
             abort(404)
     else:
         parent = None
+
+    new = False
     if int(data.get("logbook", 0)):
         lb = Logbook.get(Logbook.id == data["logbook"])
         lb.name = data["name"]
@@ -117,11 +120,19 @@ def write_logbook():
         lb.attributes = attributes
         lb.parent = parent
     else:
+        new = True
         lb = Logbook(name=data["name"],
                      description=data.get("description", ""),
                      attributes=attributes,
                      parent=parent)
     lb.save()
+
+    # perform actions
+    app = current_app._get_current_object()
+    if new:
+        actions.new_logbook.send(app, logbook=lb)
+    else:
+        actions.edit_logbook.send(app, logbook=lb)
 
     if request_wants_json():
         return jsonify(logbook_id=lb.id)
