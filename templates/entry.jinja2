@@ -82,9 +82,12 @@
         <span class="title">{{ entry.title or "(Untitled)"}}</span>
         <div class="commands">
             {% if entry.follows %}
-                <a href="/entry/{{entry.follows.id}}">Parent</a>
+                <a href="/entries/{{entry.follows.id}}">Parent</a>
             {% else %}
-                <a href="new?follows={{ entry.id }}">Follow-up</a>
+                <a href="new?follows={{ entry.id }}"
+                   title="Create a new entry, as a follow-up to this one.">
+                    Follow up
+                </a>
             {% endif %}
             |
             <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="logbook">Find</a>
@@ -95,7 +98,7 @@
     </header>
     
     <div class="body">
-
+        
         <a id="{{entry.id}}"></a>  {# link anchor #}
         
         <article>
@@ -105,7 +108,7 @@
                 <div class="commands">                    
                     <a href="edit/{{entry.id}}">Edit</a>
                     |
-                    <a href="/#/logbooks/{{entry.logbook.id}}@/entries/{{entry.id}}" target="_top">Link</a>
+                    <a href="/entries/{{entry.id}}">Link</a>
                     {% if entry.followups %}
                         &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}
@@ -114,18 +117,19 @@
                 <span class="timestamp">
                     {{entry.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                 </span>
-                {#
+                
+                {% if entry.authors %}
+                <span class="author">
+                    {{ ", ".join(entry.authors) }}
+                </span>
+                {% endif %}
+                
                 {% if entry.last_changed_at %}
                 <a href="/entries/change/{{entry.last_changed_at}}">
-                <span class="changed">(Changed at {{entry.last_changed_at}})</span>
+                    <div class="changed">(Last change at {{entry.last_changed_at}})</div>
                 </a>
                 {% endif %}            
-                #}
-                {% if entry.authors %}
-                    <span class="author">
-                        {{ ", ".join(entry.authors) }}
-                    </span>
-                {% endif %}
+                
                 <div class="attributes">
 
                     {% if entry.logbook.attributes and entry.attributes  %}
@@ -161,13 +165,9 @@
             <div class="attachments">
                 <ul>
                     {% for attachment in entry.attachments %}
-                    {% if not attachment.embedded %}
-                    <li>
-                        <a href="/attachments/{{ attachment.path }}">
-                            {{ attachment.path.rsplit("/")[-1] }}
-                        </a>
-                    </li>
-                    {% endif %}
+                        {% if not attachment.embedded %}
+                            <li><a href="/attachments/{{ attachment.path }}">{{ attachment.path.rsplit("/")[-1].strip() }}</a></li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             </div>
@@ -186,7 +186,7 @@
 
                         <a href="/entries/edit/{{followup.id}}">Edit</a>
                         &nbsp;
-                        <a href="/#/logbooks/{{followup.logbook.id}}@/entries/{{entry.id}}#{{followup.id}}" target="_top">Link</a>
+                        <a href="/entries/{{entry.id}}#{{followup.id}}">Link</a>
                         
                         {% if loop.first %}
                             <a href="#{{entry.id}}">&nbsp;🠉&nbsp;</a>
@@ -210,7 +210,7 @@
                     {% endif %}
                     {% if followup.last_changed_at %}
                         <a href="/entries/change/{{followup.last_changed_at}}">
-                            <span class="changed">(Changed at {{followup.last_changed_at}})</span>
+                            <div class="changed">(Last changed at {{followup.last_changed_at}})</div>
                         </a>
                     {% endif %}
                     {% if followup.title and followup.title != entry.title %}

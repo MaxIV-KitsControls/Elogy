@@ -160,7 +160,7 @@
     <section class="main">
         <nav id="logbooks">
             <div class="header">
-                <a href="/logbooks/new?parent={{parent}}">New</a>
+                <a href="/logbooks/new?parent={{parent.id if parent else 0}}">New logbook</a>
             </div>
             <div class="logbooks">
                 <div>
@@ -174,18 +174,24 @@
                 </div>
             </div>
             <div class="search">
-                Search entries
+                Quick search
                 <form action="/search/" target="logbook">
+
+                    <input type="hidden" name="logbook" value="0">
+                    
                     <div>
                         <label for="all-logbooks">
-                            <input name="all-logbooks" type="checkbox"/>
+                            <input name="this-logbook" type="checkbox"/>
                             This logbook
                         </label>
+                        {#
                         <label for="include-chidlren">
                             <input name="include-children" type="checkbox"/>
                             Include children
                         </label>
+                        #}
                     </div>
+
                     <input name="content" placeholder="Content"/>
                     <input name="title" placeholder="Title"/>
                     <input name="authors" placeholder="Author"/>
@@ -226,6 +232,8 @@
          var element = document.getElementById(logbookId);
          element.classList.add("selected")
      }
+     var searchLogbook = document.querySelector('.search input[name=logbook]')
+     searchLogbook.value = logbookId;
  }
 
  window.eventbus.logbooks.add(markLogbook);

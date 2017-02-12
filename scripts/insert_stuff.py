@@ -1,17 +1,25 @@
 """
-A quick and dirty script to import data from elog logbooks.
+A quick and dirty script to import data from elog logbooks. Tries
+to adapt logbooks, attributes etc to the elogy data model.
 
 Not thoroughly tested; probably does not support all elog features.
 
 Known issues:
+- Only works with the old "flat" ELOG file structure. Newer versions
+  (AFAIK) stores stuff in a nested date-based tree which would require
+  some changes to this script.
+
 - Links to other logbook posts will be broken, since the urls are
   different and entry IDs will change. For now, the old URLS
   are kept in the metadata ("original_elog_url"), so a
   post-processing step should be able to correct the links.
-- This also means that responses to entries may be broken. Maybe
+  (see "fix_elog_links.py")
+
+- This also means that replies to entries may be broken. Maybe
   a more serious effort to insert entries in chronological order
   would fix that (now uses file timestamps, but that will not
   be correct if entries are edited later.)
+
 """
 
 from glob import glob
@@ -19,7 +27,7 @@ import os
 import time
 import urllib
 
-from dateutil.parser import parse
+from dateutil.parser import parse as parse_time
 from lxml import html, etree
 
 
@@ -92,7 +100,7 @@ def import_logbook(create_logbook, create_entry, create_attachment,
         try:
             entries = load_elog_file(logfile)
             for entry in entries:
-                timestamp = parse(entry["date"])
+                timestamp = parse_time(entry["date"])
 
                 if entry.get("body"):
                     # here we upload any image attachments in the post
@@ -114,8 +122,7 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                                      if entry.get("encoding") == "HTML"
                                      else "text/plain"),
                     "metadata": {
-                        "original_elog_url": urllib.parse.quote(
-                            os.path.join(name, str(entry["mid"])))
+                        "original_elog_url": os.path.join(name, str(entry["mid"])).replace(" ", "+")
                     },
                     "attributes": {}
                 }
@@ -128,11 +135,10 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                 if "last edited" in entry:
                     try:
                         data["last_changed_at"] = (
-                            parse(entry["last edited"])
+                            parse_time(entry["last edited"])
                             .strftime('%Y-%m-%d %H:%M:%S.%f'))
-                    except ValueError:
-                        # bah who cares
-                        pass
+                    except ValueError as e:
+                        print("Could not parse change date", e)
 
                 if "in reply to" in entry:
                     follows = int(entry["in reply to"])

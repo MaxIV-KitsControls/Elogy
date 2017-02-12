@@ -22,15 +22,34 @@ def get_logbooks():
         abort(404)
 
 
-@logbooks.route('/<int:logbook_id>', methods=["GET"])
+@logbooks.route('/<int:logbook_id>', methods=["GET", "POST"])
 def show_logbook(logbook_id):
-    followups = request.args.get("followups", "").lower() == "true"
+    if request.args:
+        followups = request.args.get("followups", "").lower() == "true"
+        attribute_filters = {}
+        if "filters" in request.args:
+            for attr_filter in request.args["filters"].split(","):
+                attribute, value = attr_filter.split(":")
+                attribute_filters[attribute] = value
+    else:
+        followups = request.form.get("followups", "").lower() == "on"
+        attribute_filters = {}
+        for name, value in request.form.items():
+            if name.startswith("attribute-"):
+                attribute = name.split("-", 1)[-1]
+                if value != "[{}]".format(attribute):
+                    attribute_filters[attribute] = value
+
+    print("attribute_filters", attribute_filters)
     logbook = Logbook.get(Logbook.id == logbook_id)
     n_entries = int(request.args.get("n", 100))
-    print("n", n_entries)
+    entries = logbook.get_entries(n=n_entries, followups=followups,
+                                  attribute_filters=attribute_filters)
+
     return render_template(
-        "logbook.jinja2", logbook=logbook, followups=followups,
-        n_entries=n_entries)
+        "logbook.jinja2", logbook=logbook, entries=entries,
+        followups=followups, n_entries=n_entries,
+        attribute_filters=attribute_filters)
 
 
 @logbooks.route("/new")

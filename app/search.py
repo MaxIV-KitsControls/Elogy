@@ -19,20 +19,36 @@ def perform_search():
 
     print("parameters", parameters)
 
+    logbook = int(parameters.get("logbook", 0))
+    this_logbook = parameters.get("this-logbook") == "on"
+    include_children = parameters.get("include-children") == "on"
+
     limit = int(parameters.get("limit", 100))
+
+    terms = {}
 
     results = Entry.select()
     if parameters.get("content"):
         regexp = ".*{content}.*".format(**parameters)
         results = results.where((Entry.content != None) &
                                 Entry.content.regexp(regexp))
+        terms["content"] = parameters["content"]
     if parameters.get("title"):
         results = results.where((Entry.title != None) &
                                 Entry.title.regexp(parameters["title"]))
+        terms["title"] = parameters["title"]
     if parameters.get("authors"):
         results = results.where(Entry.authors
                                 .extract("")
                                 .contains(parameters["authors"]))
+        terms["authors"] = parameters["authors"]
+    if this_logbook and logbook:
+        if include_children:
+            results = results.where(Entry.logbook == logbook)
+            # TODO: figure out a good query here!
+        else:
+            results = results.where(Entry.logbook == logbook)
+        terms["logbook"] = parameters["logbook"]
 
-    return render_template('search_results.jinja2', parameters=parameters,
+    return render_template('search_results.jinja2', parameters=terms,
                            entries=results.limit(limit))

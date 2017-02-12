@@ -76,19 +76,8 @@ class Logbook(db.Model):
         #         for lb in Logbook.select().where(Logbook.parent == self)]
         return Logbook.select().where(Logbook.parent == self)
 
-    def get_entries_(self, followups=True,
-                    page=None, entries_per_page=None):
-        entries = (Entry.select()
-                   .where(Entry.logbook == self)
-                   .order_by(fn.coalesce(Entry.last_changed_at,
-                                         Entry.created_at).desc()))
-        if not followups:
-            entries = entries.where(Entry.follows == None)
-        if page is not None and entries_per_page is not None:
-            entries = entries.paginate(page, entries_per_page)
-        return entries
-
-    def get_entries(self, followups=True, archived=False, n=None):
+    def get_entries(self, followups=True, attribute_filters=None,
+                    archived=False, n=None):
         Followup = Entry.alias()
         entries = (
             Entry.select(
@@ -120,7 +109,14 @@ class Logbook(db.Model):
                        # .where(Entry.follows == None)
                        .order_by(Entry.created_at.desc()))
 
-        return entries.limit(n)
+        if attribute_filters:
+            for attr, value in attribute_filters.items():
+                attr_value = fn.json_extract(Entry.attributes, "$." + attr)
+                entries = entries.where(attr_value == value)
+
+        if n:
+            return entries.limit(n)
+        return entries
 
     @property
     def ancestors(self):

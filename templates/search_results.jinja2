@@ -82,6 +82,16 @@
      top: 2px;
  }
 
+ .entry .number-of-attachments {
+     background: white;
+     color: grey;
+     padding: 0 3px;
+     position: absolute;
+     right: 2px;
+     bottom: 2px;
+     border: 1px solid grey;
+ }
+ 
  img.thumbnail {
      float: right;
      clear: right;
@@ -125,17 +135,7 @@
                     {{ entry_item(entry) }}
                 </div>
             </a>
-            
-            {% if entry.followups %}
-                <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
-                    <div class="followups">
-                        {{ entry.n_followups }}
-                    </div>
-                </a>
-            {% elif entry.follows %}
-                <div class="followups">*</div>
-            {% endif %}
-            
+                        
         {% endfor %}
     </div>
 </div>

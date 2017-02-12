@@ -16,9 +16,11 @@
                          height="{{ thumb.height or 50 }}"/>
                 {% endif %}
             {% endfor %}
-            {% if entry.get_attachments() | length > 0 %}
-                <span class="n_attachments">
-                    {{ entry.get_attachments() | length }}
+            {% set n_attachments = entry.get_attachments() | length %}
+            {% if n_attachments > 0 %}
+                <span class="number-of-attachments"
+                      title="Number of attachments">
+                    {{ n_attachments }}
                 </span>
             {% endif %}
         {% endif %}
@@ -63,12 +65,12 @@
         {% if entry.followups %}
             {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
             <a href="{{entryUrl + ('#{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="entry">
-                <div class="followups">
+                <div class="followups" title="Number of follow-up entries">
                     {{ entry.n_followups }}
                 </div>
             </a>
         {% elif entry.follows %}
-            <div class="followups">*</div>
+            <div class="followups" title="This is a follow-up">*</div>
         {% endif %}
         
     </div>

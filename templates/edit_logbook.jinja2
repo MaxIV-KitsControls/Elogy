@@ -52,19 +52,18 @@
         Logbook:
         
         {% if logbook %}
-        {% for parent in logbook.ancestry %}
-        <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a> /
-        {% endfor %}
-        <a href="/logbooks/{{logbook.id}}"><b>{{ logbook.name }}</b></a>
+            {% for parent in logbook.ancestry %}
+                <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a> /
+            {% endfor %}
+            <a href="/logbooks/{{logbook.id}}"><b>{{ logbook.name }}</b></a>
         {% else %}
-        
-        {% for parent in parent.ancestry %}
-        <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a> /
-        {% endfor %}
-        <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a>
-        / <b>New logbook</b>
+            {% for parent in parent.ancestry %}
+                <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a> /
+            {% endfor %}
+            <a href="/logbooks/{{parent.id}}">{{ parent.name }}</a>
+            / <b>New logbook</b>
         {% endif %}
-
+        
     </div>
 </header>
     

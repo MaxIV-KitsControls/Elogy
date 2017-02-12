@@ -27,6 +27,10 @@
  header .name {
      font-size: 120%;
  }
+
+ header form {
+     margin: 0;
+ }
  
  .entries {
      flex: 1;
@@ -91,7 +95,7 @@
      top: 2px;
  }
 
- .entry .n_attachments {
+ .entry .number-of-attachments {
      background: white;
      color: grey;
      padding: 0 3px;
@@ -123,7 +127,8 @@
         <span class="commands">
             <a href="/entries/new?logbook={{logbook.id}}" target="entry">New entry</a>
         </span>
-        
+
+        {#
         {% if logbook.attributes %}
             <div class="attributes">
                 {% for attribute in logbook.attributes %}
@@ -134,10 +139,30 @@
                 {% endfor %}
             </div>
         {% endif %}
+        #}
+        {% if logbook.attributes %}
+            <form action="/logbooks/{{logbook.id}}" method="post">
+                <div class="attributes">
+                    {% for attribute in logbook.attributes %}
+                        {% if attribute.type == "option" %}
+                            <select name="attribute-{{attribute.name}}"
+                                    onchange="this.form.submit()">
+                                <option selected>[{{attribute.name}}]</option>
+                                {% for option in attribute.options %}
+                                    <option value="{{option}}"
+                                            {% if attribute_filters.get(attribute.name) == option %} selected="true" {% endif %}>
+                                        {{option}}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </form>
+        {% endif %}
+        
     </header>
-    
-    {% set entries=logbook.get_entries(n=n_entries, followups=followups) %}
-    
+        
     <div class="entries">
         
         {% for entry in entries %}
@@ -157,8 +182,10 @@
                 {{ entry_item(entry) }}
             </a>
         {% endfor %}        
-        {% if n_entries == entries | length %}
+        {% if n_entries > 0 and (n_entries == entries | length) %}
             <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
+            |
+            <a href="/logbooks/{{logbook.id}}?n=0">All</a>
         {% endif %}
         
     </div>

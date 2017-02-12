@@ -171,7 +171,7 @@ def write_entry(entry_id=None):
         metadata = None
     else:
         data = request.json
-        logbook_id = int(data["logbook"])
+        logbook_id = data["logbook"]
         logbook = Logbook.get(Logbook.id == logbook_id)
         attributes = data.get("attributes")
         tags = data.get("tags")
@@ -230,10 +230,15 @@ def write_entry(entry_id=None):
             created_at = parse(data.get("created_at"))
         else:
             created_at = datetime.now()
+        if "last_changed_at" in data:
+            last_changed_at = parse(data.get("last_changed_at"))
+        else:
+            last_changed_at = None
 
         entry = Entry(title=data.get("title"),
                       authors=authors,
                       created_at=created_at,
+                      last_changed_at=last_changed_at,
                       content=data.get("content"),
                       follows=int(data.get("follows", 0)) or None,
                       metadata=metadata,
