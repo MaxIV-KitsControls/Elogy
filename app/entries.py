@@ -1,15 +1,19 @@
+"""
+Blueprint that handles stuff related to individual entries; displaying,
+creating, editing etc.
+"""
+
 from base64 import decodestring
 import binascii
 from datetime import datetime
 import io
 import os
 
-from jinja2 import TemplateNotFound
 from dateutil.parser import parse
-from flask import (Blueprint, abort, redirect, render_template, request,
+from flask import (Blueprint, redirect, render_template, request,
                    url_for, jsonify, current_app)
 from werkzeug import FileStorage
-from peewee import JOIN, fn, DoesNotExist
+from peewee import DoesNotExist
 from lxml import html, etree
 
 from .attachments import save_attachment
@@ -160,11 +164,8 @@ def write_entry(entry_id=None):
                     attr["name"], value)
         # a list of attachment filenames
         attachments = data.getlist("attachment")
-        print("attachments", attachments)
-        # for att in attachments:
-        #     if
-        tags = data.getlist("tag") or None
-        print("taags", tags)
+        tags = [t.strip() for t in data.getlist("tag")] or None
+
         # Make a list of authors
         authors = [author.strip()
                    for author in data.getlist("author")
@@ -185,7 +186,6 @@ def write_entry(entry_id=None):
         # editing an existing entry, first check for locks
         try:
             lock = EntryLock.get(EntryLock.entry_id == entry_id)
-            print("lock", lock.owner_ip, request.remote_addr)
             if lock.owner_ip == request.remote_addr:
                 # it's our lock
                 lock.delete_instance()

@@ -1,7 +1,14 @@
+"""
+This blueprint does things to logbooks; shows them, creates them,
+etc.
+
+A logbook can contain entries and other logbooks.
+"""
+
 from flask import (Blueprint, render_template, abort, request, redirect,
-                   url_for, jsonify, current_app)
+                   jsonify, current_app)
 from jinja2 import TemplateNotFound
-from peewee import fn, JOIN, DoesNotExist
+from peewee import DoesNotExist
 
 from .db import Logbook
 from .utils import request_wants_json
@@ -41,7 +48,6 @@ def show_logbook(logbook_id):
                 if value != "[{}]".format(attribute):
                     attribute_filters[attribute] = value
 
-    print("attribute_filters", attribute_filters)
     logbook = Logbook.get(Logbook.id == logbook_id)
     n_entries = int(request.args.get("n", 100))
     entries = logbook.get_entries(n=n_entries, followups=followups,

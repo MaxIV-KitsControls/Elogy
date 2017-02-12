@@ -43,8 +43,8 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
         metadata = dict(size={"width": width, "height": height})
         if width > 100 or height > 100:
             # create a tiny preview version of the image
-            image.thumbnail((100, 100))
             image.convert("RGB")
+            image.thumbnail((100, 100))
             try:
                 image.save(path + ".thumbnail", "JPEG")
                 width, height = image.size
