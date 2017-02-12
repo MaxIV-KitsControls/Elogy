@@ -13,12 +13,15 @@ Based on Python and Flask, using SQLite to store data.
 Installation
 ============
 
-Requires python 3.x (currently only tested with 3.5, 3.4 should work.)
+Requires Python 3.x (currently only tested with 3.5, 3.4 should work.)
 
-$ pip -r requirements.txt
-$ python run.py
+```
+$ python -m venv env
+$ env/bin/pip install -r requirements.txt
+$ env/bin/python run.py
+```
 
-Also have a look in config.py for the settings.
+Also have a look in ```config.py``` for the settings.
 
 
 Features (present and planned)
