@@ -1,0 +1,4 @@
+flask
+peewee
+blinker
+pillow

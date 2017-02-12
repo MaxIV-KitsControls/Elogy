@@ -5,14 +5,14 @@ SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'  # !!!Change this!!!
 DEBUG = True  # !!!Change this to False for production use!!!
 
 # The name of the database file
-DATABASE = "/tmp/test.db"  # !!!Do not use /tmp for anything but testing!!!
+DATABASE = "/tmp/elogy.db"  # !!!Do not use /tmp for anything beyond testing!!!
 
 # The folder where all uploaded files will be stored.
-UPLOAD_FOLDER = '/tmp/attachments'  # !!!Again, /tmp is a bad choice!!!
+UPLOAD_FOLDER = '/tmp/elogy'  # !!!Again, /tmp is a bad choice!!!
 
 
-# Here you can define what to do when things happen, e.g. a new entry
-# has been created. You'll get the relevant, final db object.
+# Callbacks for various signals
+
 def new_entry(entry):
     print("new_entry", entry.id, entry.title)
 
