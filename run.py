@@ -63,9 +63,14 @@ except OperationalError:
 def get_index():
     parameters = request.args
     parent = parameters.get("parent")
+    if parent:
+        parent_logbook = Logbook.get(Logbook.id == parent)
+    else:
+        parent_logbook = None
     logbooks = Logbook.select().where(Logbook.parent == parent)
     return render_template("index.jinja2",
-                           parent=parent or 0, logbooks=logbooks,
+                           parent=parent_logbook,
+                           logbooks=logbooks,
                            title=app.config.get("TITLE", ""))
 
 

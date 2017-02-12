@@ -73,7 +73,7 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
 def post_attachment(entry_id=None):
     file_ = request.files["file"]
     timestamp = request.form.get("timestamp")
-    embedded = request.args.get("embedded") == "true"
+    embedded = request.form.get("embedded", "false").lower() == "true"
 
     if timestamp:
         timestamp = parse(timestamp)

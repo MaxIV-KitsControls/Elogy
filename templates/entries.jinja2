@@ -8,14 +8,19 @@
                 {% if attachment.metadata %}
                     {% set thumb = attachment.metadata.get("thumbnail_size", {}) %}
                     {# storing the img src in a 'data' attr, and
-                    using javascript to "lazy load" them as they
-                    scroll into view (see script below) #}
+                       using javascript to "lazy load" them as they
+                       scroll into view (see script below) #}
                     <img class="thumbnail lazy" 
                          data-src="{{ img_src }}.thumbnail"
                          width="{{ thumb.width or 50 }}"
                          height="{{ thumb.height or 50 }}"/>
                 {% endif %}
             {% endfor %}
+            {% if entry.get_attachments() | length > 0 %}
+                <span class="n_attachments">
+                    {{ entry.get_attachments() | length }}
+                </span>
+            {% endif %}
         {% endif %}
         
         <span class="timestamp">
@@ -56,8 +61,8 @@
         {% endif %}
         
         {% if entry.followups %}
-            {% set entryUrl = "/{parameters}#/logbook/{entry.logbook.id}/entry/{entry.id}".format(entry=entry, followups=followups, parameters=parameters) %}
-            <a href="{{entryUrl + ('/{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="_top">
+            {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
+            <a href="{{entryUrl + ('#{}'.format(entry.followups[-1].id) if entry.followups else '')}}" target="entry">
                 <div class="followups">
                     {{ entry.n_followups }}
                 </div>

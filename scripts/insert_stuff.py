@@ -17,7 +17,7 @@ Known issues:
 from glob import glob
 import os
 import time
-import urllib.parse
+import urllib
 
 from dateutil.parser import parse
 from lxml import html, etree
@@ -73,7 +73,9 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                     "required": attr_name.lower() in required}
             if attr["name"].lower() in attribute_config:
                 attr = attribute_config[attr["name"].lower()]
-            print(attr)
+                attr["name"] = attr_name.strip()
+                attr["required"] = (attr_name.lower() in required or
+                                    attr["required"])
             attributes.append(attr)
 
     # create a new logbook
@@ -100,6 +102,7 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                 else:
                     body = None
                     embedded = []
+                embedded = [e.replace("/", "_") for e in embedded]
                 data = {
                     "logbook": logbook_id,
                     "created_at": timestamp.strftime('%Y-%m-%d %H:%M:%S.%f'),
@@ -111,27 +114,17 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                                      if entry.get("encoding") == "HTML"
                                      else "text/plain"),
                     "metadata": {
-                        "original_elog_url": os.path.join(name,
-                                                          str(entry["mid"]))
+                        "original_elog_url": urllib.parse.quote(
+                            os.path.join(name, str(entry["mid"])))
                     },
                     "attributes": {}
                 }
+
                 for attr in attributes:
                     value = entry.get(attr["name"].lower())
                     if value:
                         data["attributes"][attr["name"]] = value.strip()
 
-                if entry.get("attachment"):
-                    attachments = [
-                        a.strip() for a in
-                        entry["attachment"].split(",")
-                    ]
-                    data["attachments"] = [
-                        create_attachment(os.path.join(logbook_path,
-                                                       attachment))
-                        for attachment in attachments
-                        if attachment not in embedded
-                    ]
                 if "last edited" in entry:
                     try:
                         data["last_changed_at"] = (
@@ -140,6 +133,7 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                     except ValueError:
                         # bah who cares
                         pass
+
                 if "in reply to" in entry:
                     follows = int(entry["in reply to"])
                     if follows in created_entries:
@@ -150,6 +144,22 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                 # and here we push the entry to the API
                 result = create_entry(data)
                 created_entries[entry["mid"]] = result["entry_id"]
+
+                # upload any attachments that are not embedded images
+                if entry.get("attachment"):
+                    attachments = [
+                        a.strip() for a in
+                        entry["attachment"].split(",")
+                    ]
+                    print(set(attachments) - set(embedded))
+                    data["attachments"] = [
+                        create_attachment(result["entry_id"],
+                                          os.path.join(logbook_path,
+                                                       attachment))
+                        for attachment in attachments
+                        if attachment not in embedded
+                    ]
+
         except UnicodeDecodeError as e:
             print("Error parsing logfile %s" % logfile)
             print(e)
@@ -217,7 +227,7 @@ def load_elog_file(filename):
 
 
 def handle_img_tags(create_attachment, text, timestamp, directory):
-    "Find all encoded images in an entry, extract and upload them"
+    "Find all linked images in an entry, and upload them"
     embedded_attachments = []
     try:
         doc = html.document_fromstring(text)
@@ -226,6 +236,7 @@ def handle_img_tags(create_attachment, text, timestamp, directory):
     for element in doc.xpath("//*[@src]"):
         src = element.attrib['src'].split("?", 1)[0]
         if not src.startswith("data:"):
+            embedded_attachments.append(src)
             filename = urllib.parse.unquote(src.replace("/", "_"))
             candidates = glob(os.path.join(directory, filename))
             if not candidates:
@@ -233,10 +244,10 @@ def handle_img_tags(create_attachment, text, timestamp, directory):
                 continue
             if len(candidates) > 1:
                 print("Multiple candidates for", src)
-            src = element.attrib['src'] = create_attachment(candidates[0])
+            src = element.attrib['src'] = create_attachment(0, candidates[0],
+                                                            embedded=True)
             if element.getparent().tag == "a":
                 element.getparent().attrib["href"] = src
-        embedded_attachments.append(src)
 
     return (html.tostring(doc).decode("utf-8"), embedded_attachments)
 
@@ -255,12 +266,13 @@ def create_entry(session, url, entry):
     return session.post(url, json=entry).json()
 
 
-def create_attachment(session, url, filename, embedded=False):
+def create_attachment(session, url, entry_id, filename, embedded=False):
     "helper to upload an attachment"
     try:
         timestamp = time.ctime(os.path.getctime(filename))
         with open(filename, "rb") as f:
-            response = session.post(url, files={"file": f},
+            response = session.post("{}{}".format(url, entry_id),
+                                    files={"file": f},
                                     data=dict(timestamp=timestamp,
                                               embedded=embedded))
             if response.status_code == 200:

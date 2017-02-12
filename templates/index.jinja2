@@ -17,11 +17,11 @@
  header.main {
      height: 50px;
      border-bottom: 1px solid grey;
+     padding-left: 10px;
  }
 
  header.main .title {
      font-size: 200%;
-     position: absolute;
  }
  
  section.main {
@@ -41,16 +41,25 @@
      flex-direction: column;
  }
 
+ #logbooks .header {
+     border-bottom: 1px solid #999;
+     padding: 5px;
+ }
+ 
  #logbooks .logbooks {
      flex: 1;
-     max-height: 100%;
      overflow: auto;
+     height: 100%;
  }
 
  #logbooks ul.logbooks {
      margin: 0;
  }
 
+ #logbooks li {
+     white-space: nowrap;
+ }
+ 
  #logbooks .search {
      flex: 0;
      padding: 10px;          
@@ -142,19 +151,27 @@
 
 <div id="app">
     <header class="main">
-        <div class="title">{{ title | safe }}</div>
+        <span class="title">{{ title | safe }}
+        {% if parent %}
+        <span>| {{ parent.name }}</span>
+        {% endif %}
+        </span>
     </header>
     <section class="main">
         <nav id="logbooks">
-            <a href="/logbooks/new?parent={{parent}}">New</a>            
+            <div class="header">
+                <a href="/logbooks/new?parent={{parent}}">New</a>
+            </div>
             <div class="logbooks">
-                <ul class="logbooks">
-                    {% for logbook in logbooks %}
-                    <li class="logbook">
-                        {{ logbook_children(logbook) }}
-                    </li>
-                    {% endfor %}
-                </ul>
+                <div>
+                    <ul class="logbooks">
+                        {% for logbook in logbooks %}
+                        <li class="logbook">
+                            {{ logbook_children(logbook) }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
             <div class="search">
                 Search entries

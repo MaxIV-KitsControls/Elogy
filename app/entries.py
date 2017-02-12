@@ -112,7 +112,8 @@ def handle_img_tags(text, entry_id=None, timestamp=None):
                 continue
             file_ = FileStorage(io.BytesIO(raw_image),
                                 filename=filename, content_type=filetype)
-            attachment = save_attachment(file_, timestamp, entry_id)
+            attachment = save_attachment(file_, timestamp, entry_id,
+                                         embedded=True)
             src = element.attrib["src"] = os.path.join(
                 url_for("attachments.get_attachment", filename=""),
                 attachment.path)

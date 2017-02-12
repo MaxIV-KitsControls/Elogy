@@ -299,6 +299,9 @@ class Entry(db.Model):
     def stripped_content(self):
         return strip_tags(self.content)
 
+    def get_attachments(self, embedded=False):
+        return self.attachments.filter(Attachment.embedded == embedded)
+
 
 DeferredEntry.set_model(Entry)
 

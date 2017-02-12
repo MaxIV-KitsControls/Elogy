@@ -36,7 +36,7 @@
      
      background: #eee;
      border-bottom: 1px solid #bbb;
-     padding: 10px;          
+     padding: 5px 10px;          
  }
 
  article {
@@ -61,6 +61,17 @@
 
  label.attribute {
      background-color: white;
+ }
+
+ .attachments {
+     border-top: 1px solid #aaa;
+     background: #eee;
+     font-size: 90%;
+ }
+
+ .attachments ul {
+     margin: 5px;
+     padding-bottom: 5px;
  }
  
 </style>
@@ -140,12 +151,27 @@
                         {% endfor %}
                     {% endif %}
                 </div>
-                
             </div>
             
             <div class="content">
                 {{ (entry.content or "") | safe }}
             </div>
+
+            {% if entry.get_attachments() %}
+            <div class="attachments">
+                <ul>
+                    {% for attachment in entry.attachments %}
+                    {% if not attachment.embedded %}
+                    <li>
+                        <a href="/attachments/{{ attachment.path }}">
+                            {{ attachment.path.rsplit("/")[-1] }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             
         </article>
 
@@ -221,8 +247,9 @@
                             {% endfor %}        
                         </div>
                     {% endif %}
-                    
+
                 </div>
+
                 
                 <div class="content">
                     {% if followup.content_type.split(";")[0] == "text/html" %}
