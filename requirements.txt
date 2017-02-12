@@ -2,3 +2,5 @@ flask
 peewee
 blinker
 pillow
+dateutils
+lxml
