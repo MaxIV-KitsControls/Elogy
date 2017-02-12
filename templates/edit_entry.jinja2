@@ -313,6 +313,7 @@
 
          formData = new FormData();
          formData.append('entry', '{{ entry.id if entry else 0 }}');
+         formData.append('embedded', 'true');         
          var blob = blobInfo.blob(); 
 
          /* var now = new Date();
