@@ -104,7 +104,7 @@
  // we're getting the configuration as a JSON string through the template.
  // Yea, it's a bit nasty but it works...
  var attributes = JSON.parse(
-     '{{ (logbook.attributes or "[]" if logbook else parent.attributes if parent else "[]") | to_json }}');
+     '{{ (logbook.attributes or [] if logbook else parent.attributes if parent else []) | to_json }}');
 
  console.log("attributes", attributes);
  
