@@ -287,7 +287,7 @@ def write_entry(entry_id=None):
         return jsonify(entry_id=entry.id)
 
     follows = int(data.get("follows", 0))
-    query = "?new" if new else ""
+    query = "?new={}".format(entry.id) if new else ""
     if follows:
         return redirect("/entries/{}{}#{}".format(follows, query, entry.id))
     return redirect("/entries/{}{}".format(entry.id, query))
