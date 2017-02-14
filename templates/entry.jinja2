@@ -158,7 +158,11 @@
             </div>
             
             <div class="content">
-                {{ (entry.content or "") | safe }}
+                {% if entry.content_type == "text/html" %}
+                    {{ (entry.content or "") | safe }}
+                {% else %}
+                    <pre>{{ entry.content or "" }}</pre>
+                {% endif %}
             </div>
 
             {% if entry.get_attachments() %}

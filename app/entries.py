@@ -171,6 +171,7 @@ def write_entry(entry_id=None):
                    for author in data.getlist("author")
                    if author]
         metadata = None
+        content_type = "text/html"
     else:
         data = request.json
         logbook_id = data["logbook"]
@@ -180,6 +181,7 @@ def write_entry(entry_id=None):
         metadata = data.get("metadata")
         attachments = data.get("attachments", [])
         authors = data.get("authors", [])
+        content_type = data.get("content-type", "text/html")
 
     new = False
     if entry_id:
@@ -201,6 +203,7 @@ def write_entry(entry_id=None):
                                   title=data.get("title"),
                                   authors=authors,
                                   content=data.get("content"),
+                                  content_type=content_type,
                                   follows=int(data.get("follows", 0)) or None,
                                   metadata=metadata,
                                   attributes=attributes,
@@ -219,6 +222,7 @@ def write_entry(entry_id=None):
         entry = Entry.get(Entry.id == entry_id)
         change = entry.make_change(title=data.get("title"),
                                    content=data.get("content"),
+                                   content_type=content_type,
                                    authors=authors,
                                    metadata=metadata,
                                    attributes=attributes,
@@ -241,6 +245,7 @@ def write_entry(entry_id=None):
                       created_at=created_at,
                       last_changed_at=last_changed_at,
                       content=data.get("content"),
+                      content_type=content_type,
                       follows=int(data.get("follows", 0)) or None,
                       metadata=metadata,
                       attributes=attributes,
