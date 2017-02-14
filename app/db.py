@@ -259,10 +259,9 @@ class Entry(db.Model):
             for attr, value in data.items()
             if getattr(self, attr) != value
         }
-        if "content" in data:
-            content = cleanup_html(data["content"])
-            diff = make_patch(content, self.content)
-            original_values["content"] = diff
+        content = cleanup_html(data.get("content", ""))
+        diff = make_patch(content, self.content or "")
+        original_values["content"] = diff
         change = EntryRevision(entry=self, **original_values)
         for attr, value in data.items():
             setattr(self, attr, value)

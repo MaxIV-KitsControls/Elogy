@@ -29,12 +29,12 @@ Montag = (function () {
         this.config = config;
 
         // make sure pre-existing inputs are 
-        this.container.querySelectorAll("input")
-            .forEach(function (input) {
-                autosizeInput(input,
-                              config.minWidth || 100,
-                              config.maxWidth || 300)
-            });
+        // this.container.querySelectorAll("input")
+        //     .forEach(function (input) {
+        //         autosizeInput(input,
+        //                       config.minWidth || 100,
+        //                       config.maxWidth || 300)
+        //     });
         
         addInput(this.container, this.config);  // add initial empty item
  
@@ -49,7 +49,11 @@ Montag = (function () {
                     event.preventDefault();
                 } else if (event.keyCode === 8  // backspace
                     || event.keyCode === 46) {  // delete
-                    setTimeout(function () {removeIfEmpty(event.target);});
+                    setTimeout(function () {
+                        if (removeIfEmpty(event.target)) {
+                            focusPrevInput(event.target);
+                        }
+                    });
                 } else if (event.keyCode === 37
                     && event.target.selectionStart === 0) {
                     focusPrevInput(event.target);
@@ -74,6 +78,9 @@ Montag = (function () {
         if (input.value.length === 0)
             return false;
         var cursorPosition = input.selectionStart;
+        console.log("cursorPosptoipn", cursorPosition, input.value.length)
+        if (cursorPosition == input.value.length)
+            return true;
         var newInput = addInput(input.parentNode, config, input.nextSibling);
         newInput.value = input.value.slice(cursorPosition);
         if (newInput.value.length > 0) {
@@ -106,7 +113,8 @@ Montag = (function () {
     }
 
     function focusPrevInput(input) {
-        var inputs = input.parentNode.querySelectorAll("input");
+        var inputs = Array.prototype.slice.call(
+            input.parentNode.querySelectorAll("input"));
         for (var i = 1; i < inputs.length; i++) {
             if (inputs[i] === input) {
                 var prev = inputs[i-1];
@@ -118,10 +126,14 @@ Montag = (function () {
     }
 
     function removeIfEmpty(input) {
-        if (input.parentNode.querySelectorAll("input").length > 1 &&
+        var inputs = Array.prototype.slice.call(
+            input.parentNode.querySelectorAll("input"));
+        if (inputs.length > 1 &&
+            inputs.indexOf(input) != inputs.length-1 &&
             input.value == "") {
             focusNextInput(input);
-            input.parentNode && input.parentNode.removeChild(input);            
+            input.parentNode && input.parentNode.removeChild(input);
+            return true;
         }
     }
         
@@ -136,7 +148,7 @@ Montag = (function () {
         } else {
             container.appendChild(newInput);
         }
-        autosizeInput(newInput, config.minWidth, config.minHeight);
+        // autosizeInput(newInput, config.minWidth, config.minHeight);
         return newInput;
     }
     
@@ -172,8 +184,8 @@ Montag = (function () {
 
         console.log("hej", input, min)
         input.style.width = min+'px';
-        input.onkeypress = input.onkeydown = input.onkeyup = function(){
-            var input = this;
+        input.onkeypress = input.onkeydown = input.onkeyup = function (event) {
+            var input = event.target;
             setTimeout(function(){
                 var tmp = document.createElement('div');
                 tmp.style.padding = '0';
