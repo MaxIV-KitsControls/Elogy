@@ -92,8 +92,21 @@
             |
             <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="logbook">Find</a>
 
-            <a href="/entries/{{entry.previous.id}}">Prev</a>            
-            <a href="/entries/{{entry.next.id}}">Next</a>
+            &nbsp;
+
+            {% set previous_entry = entry.previous %}
+            {% if previous_entry %}
+                <a href="/entries/{{ previous_entry.id }}">Prev</a>
+            {% else %}
+                Prev
+            {% endif %}
+            
+            {% set next_entry = entry.next %}
+            {% if next_entry %}
+                <a href="/entries/{{ next_entry.id }}">Next</a>
+            {% else %}
+                Next
+            {% endif %}
         </div>
     </header>
     
