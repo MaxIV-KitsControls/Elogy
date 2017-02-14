@@ -6,7 +6,7 @@ import datetime
 import json
 
 from flask import Flask, request, render_template, jsonify
-from flask.json import JSONEncoder
+
 import peewee
 from playhouse.shortcuts import model_to_dict
 from peewee import OperationalError
@@ -19,27 +19,11 @@ from app.entries import entries
 from app.logbooks import logbooks
 from app.attachments import attachments
 from app.search import search
+from app.utils import CustomJSONEncoder
 
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
-
-
-class CustomJSONEncoder(JSONEncoder):
-
-    """JSON serializer for objects not serializable by default json code"""
-
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            serial = obj.timestamp()
-            return serial
-        elif isinstance(obj, peewee.Model):
-            serial = model_to_dict(obj, recurse=False)
-            return serial
-
-        return JSONEncoder.default(self, obj)
-
-
 app.json_encoder = CustomJSONEncoder
 
 app.register_blueprint(entries, url_prefix="/entries")
