@@ -79,7 +79,9 @@
 <div class="container">
     
     <header>
-        <span class="title">{{ entry.title or "(Untitled)"}}</span>
+        <span class="title">
+            {{ entry.title or "(Untitled)"}}
+        </span>
         <div class="commands">
             {% if entry.follows %}
                 <a href="/entries/{{entry.follows.id}}">Parent</a>
@@ -136,7 +138,12 @@
                     {{ ", ".join(entry.authors) }}
                 </span>
                 {% endif %}
-                
+                <span class="logbook">
+                    in <a href="/logbooks/{{ entry.logbook.id }}" target="logbook">
+                    {{ entry.logbook.name or entry.logbook.id }}
+                    </a>
+                </span>
+                               
                 {% if entry.last_changed_at %}
                 <a href="/entries/change/{{entry.last_changed_at}}">
                     <div class="changed">(Last change at {{entry.last_changed_at}})</div>
