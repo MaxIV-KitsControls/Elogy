@@ -85,6 +85,10 @@
      padding: 2px;
      width: 0;
  }
+
+ .cancel {
+     float: right;
+ }
  
  /* Following some hacks to make TinyMCE fill the rest of the window */
  
@@ -262,6 +266,10 @@
                        {% if entry and entry.archived %}checked{% endif %}/> 
                 Archived
             </label>
+
+            {# a bit primitive, but we can't just blindly use the referrer
+               URL since that may not be an entry. #}
+            <a href="about:blank"><div class="cancel">Cancel</div></a>                        
         </div>
 
     </form>
