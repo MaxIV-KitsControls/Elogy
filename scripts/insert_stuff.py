@@ -147,6 +147,12 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                     else:
                         print("Could not find parent", follows)
 
+                if "encoding" in entry:
+                    if entry["encoding"] == "HTML":
+                        data["content-type"] = "text/html"
+                    else:
+                        data["content-type"] = "text/plain"
+
                 # and here we push the entry to the API
                 result = create_entry(data)
                 created_entries[entry["mid"]] = result["entry_id"]
