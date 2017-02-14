@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, abort, request, redirect, url_for
 
-from .db import Entry
+from .db import Entry, Attachment
+from peewee import JOIN
 
 
 search = Blueprint('search', __name__)
@@ -27,7 +28,18 @@ def perform_search():
 
     terms = {}
 
+    # start with all entries
     results = Entry.select()
+
+    if this_logbook and logbook:
+        if include_children:
+            results = results.where(Entry.logbook == logbook)
+            # TODO: figure out a good query here!
+        else:
+            results = results.where(Entry.logbook == logbook)
+        terms["logbook"] = parameters["logbook"]
+
+    # further filters on the results, depending on search criteria
     if parameters.get("content"):
         regexp = ".*{content}.*".format(**parameters)
         results = results.where((Entry.content != None) &
@@ -42,13 +54,16 @@ def perform_search():
                                 .extract("")
                                 .contains(parameters["authors"]))
         terms["authors"] = parameters["authors"]
-    if this_logbook and logbook:
-        if include_children:
-            results = results.where(Entry.logbook == logbook)
-            # TODO: figure out a good query here!
-        else:
-            results = results.where(Entry.logbook == logbook)
-        terms["logbook"] = parameters["logbook"]
+    if parameters.get("attachments"):
+        query = parameters["attachments"]
+        results = (results
+                   .join(Attachment)
+                   .where(
+                       (~ Attachment.embedded) &
+                       # Here, ** means "case insensitive like" or ILIKE
+                       (Attachment.path ** "%{}%".format(query)))
+                   # avoid multiple hits on the same entry
+                   .group_by(Entry.id))
 
     return render_template('search_results.jinja2', parameters=terms,
                            entries=results.limit(limit))
