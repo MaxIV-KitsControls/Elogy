@@ -111,6 +111,11 @@
      overflow-y: auto;
  }
 
+ .logbook {
+     position: relative;
+     width: 100%;
+ }
+ 
  .logbook.selected {
      background: white;
  }
@@ -119,33 +124,47 @@
      padding-left: 20px;     
  }
 
+ .set-parent-logbook {
+     position: absolute;
+     right: 0;
+ }
+
 </style>
 
 
 {% macro logbook_children(logbook) %}
 
-<div class="logbook" id="{{ logbook.id }}">
-    <!-- <a href="/#/logbook/{{logbook.id}}">
-         {{logbook.name}} ({{logbook.get_entries().count()}})
-         </a> -->
-    <a href="/logbooks/{{logbook.id}}" target="logbook">
-        {{ logbook.name.replace(" ", "&nbsp;") }}
-        {% if logbook.get_entries() %}
-        ({{ logbook.get_entries().count() }})
-        {% endif %}
-    </a>
-</div>
+    {% set n_entries = logbook.get_entries().count() %}
     
-{% if logbook.children %}
-<ul>
-    {% for child in logbook.children %}
-    <li class="logbook">
-        {{logbook_children(child)}}
-    </li>
-    {% endfor %}
-</ul>
-{% endif %}
+    <div class="logbook" id="{{ logbook.id }}">
+        
+        <a href="/logbooks/{{logbook.id}}" target="logbook"
+           title="{{logbook.description or 'No description'}}">
+            {{ logbook.name.replace(" ", "&nbsp;") }}
+            {% if n_entries > 0 %}
+                ({{ n_entries }})
+            {% endif %}
+        </a>
 
+        {% if logbook.children %}
+            <span class="set-parent-logbook">
+                <a href="/?parent={{ logbook.id }}"
+                   title="Only show this logbook">&nbsp;🡢&nbsp;</a>
+            </span>
+        {% endif %}
+
+    </div>
+    
+    {% if logbook.children %}
+        <ul>
+            {% for child in logbook.children %}
+                <li class="logbook">
+                    {{logbook_children(child)}}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    
 {% endmacro %}
 
 
@@ -161,6 +180,8 @@
         <nav id="logbooks">
             <div class="header">
                 <a href="/logbooks/new?parent={{parent.id if parent else 0}}">New logbook</a>
+                |
+                <a href="/">Show all</a>
             </div>
             <div class="logbooks">
                 <div>

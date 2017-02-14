@@ -71,9 +71,12 @@ def get_index():
     parent = parameters.get("parent")
     if parent:
         parent_logbook = Logbook.get(Logbook.id == parent)
+        logbooks = Logbook.select().where(Logbook.id == parent)
     else:
         parent_logbook = None
-    logbooks = Logbook.select().where(Logbook.parent == parent)
+        logbooks = (Logbook.select()
+                    .where(Logbook.parent == None)
+                    .order_by(Logbook.name))
     return render_template("index.jinja2",
                            parent=parent_logbook,
                            logbooks=logbooks,
