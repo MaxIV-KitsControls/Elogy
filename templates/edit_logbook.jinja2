@@ -81,7 +81,7 @@
             </fieldset>
             <fieldset>
                 <legend>Description</legend>
-                <textarea rows="10" class="description" name="description">{{ logbook.description if logbook else "" }}</textarea>
+                <textarea rows="10" class="description" name="description">{{ logbook.description if logbook and logbook.desctription else "" }}</textarea>
             </fieldset>
             <fieldset name="attributes">
                 <legend>Attributes</legend>
