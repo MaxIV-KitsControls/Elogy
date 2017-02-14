@@ -66,15 +66,9 @@ class Logbook(db.Model):
     last_changed_at = DateTimeField(null=True)
     name = CharField()
     description = TextField(null=True)
-    parent = ForeignKeyField("self", null=True)
+    parent = ForeignKeyField("self", null=True, related_name="children")
     attributes = JSONField(null=True)
     archived = BooleanField(default=False)
-
-    @property
-    def children(self):
-        # return [model_to_dict(lb, recurse=False)
-        #         for lb in Logbook.select().where(Logbook.parent == self)]
-        return Logbook.select().where(Logbook.parent == self)
 
     def get_entries(self, followups=True, attribute_filters=None,
                     archived=False, n=None):
@@ -225,24 +219,11 @@ class Entry(db.Model):
     tags = JSONField(null=True)
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
-    follows = ForeignKeyField("self", null=True)
+    follows = ForeignKeyField("self", null=True, related_name="followups")
     archived = BooleanField(default=False)
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     if "content" in kwargs:
-    #         EntrySearch(entry=self,
-    #                     content=strip_tags(kwargs["content"])).save()
 
     class Meta:
         order_by = ("-created_at",)
-
-    @property
-    def followups(self):
-        return [entry for entry in
-                (Entry.select()
-                 .where(Entry.follows_id == self.id)
-                 .order_by(Entry.id))]
 
     @property
     def next(self):
