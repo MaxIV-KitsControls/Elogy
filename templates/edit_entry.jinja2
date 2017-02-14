@@ -153,7 +153,7 @@
 
 <div class="container">
     
-    <form id="form" action="/entries/{{ entry.id if entry else 0 }}"
+    <form id="entry-form" action="/entries/{{ entry.id if entry else 0 }}"
           method="post" enctype="multipart/form-data">
 
         {# hidden fields used to identify the submission #}
@@ -165,8 +165,6 @@
         {% endif %}
         
         <div class="top">
-            
-            {# TODO: this is messy #}
             
             <div class="title">
                 <label for="title"> Title </label>
@@ -291,7 +289,8 @@
      // TODO: might be better to skip all the upload logic and just let
      // the editor include images in base64. We can decode them in the server.
      // That way, the association between entry and attachment should
-     // become easier.
+     // become easier. However, I've found no way to also keep the file
+     // name intact with TinyMCE when doing that :(
 
      function customUploadHandler (blobInfo, success, failure) {
 
@@ -326,19 +325,8 @@
          formData.append('entry', '{{ entry.id if entry else 0 }}');
          formData.append('embedded', 'true');         
          var blob = blobInfo.blob(); 
-
-         /* var now = new Date();
-          * var filePath = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate() + "/" + blob.size + "-" + blob.name;*/
-
          
          formData.append('file', blob, blob.name);
-
-         /* var entryForm = document.getElementById("form");
-          * var input = document.createElement("input");
-          * input.type = "hidden";
-          * input.name = "attachment";
-          * input.value = filePath;
-          * entryForm.appendChild(input);*/
          
          xhr.send(formData);
      }
@@ -372,11 +360,23 @@
  
  window.addEventListener(
      "load",
+
      function () {
 
+         // we don't want to bring up an "are you sure" dialog if the
+         // user is actually submitting the form...
+         var submitting = false;
+         
+         document.getElementById("submitButton")
+                 .addEventListener(
+                     "click", function () {
+                         submitting = true;
+                     });
+                                       
          // Open a confirmation dialog if the user tries to navigate away.
          // Note: this does not work properly in FF, chrome is OK.
          function checkUnloadDialog (e) {
+             if (submitting) {return}
              e.returnValue = "foo";
          }     
          window.addEventListener("beforeunload", checkUnloadDialog);
