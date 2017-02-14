@@ -114,6 +114,10 @@
      float: right;
      clear: right;
  }
+
+ .placeholder {
+     color: grey;
+ }
  
 </style>
 
@@ -169,28 +173,32 @@
     </header>
         
     <div class="entries">
-        
-        {% for entry in entries %}
-            
-            <a id="{{ entry.id }}"></a>  {# link anchor #}
-            
-            {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
-                <div class="date-separator">
-                    {{ entry.timestamp.strftime("%a %Y-%m-%d") }} 
-                </div>
-            {% endif %}
-            
-            {% set parameters = "?followups=true" if followups else "" %}
-            {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
 
-            <a href="{{entryUrl}}" target="entry">
-                {{ entry_item(entry) }}
-            </a>
-        {% endfor %}        
-        {% if n_entries > 0 and (n_entries == entries | length) %}
-            <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
-            |
-            <a href="/logbooks/{{logbook.id}}?n=0">All</a>
+        {% if entries %}
+            {% for entry in entries %}
+                
+                <a id="{{ entry.id }}"></a>  {# link anchor #}
+                
+                {% if loop.first or entries[loop.index0-1].timestamp.date() != entry.timestamp.date() %}
+                    <div class="date-separator">
+                        {{ entry.timestamp.strftime("%a %Y-%m-%d") }} 
+                    </div>
+                {% endif %}
+                
+                {% set parameters = "?followups=true" if followups else "" %}
+                {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
+
+                <a href="{{entryUrl}}" target="entry">
+                    {{ entry_item(entry) }}
+                </a>
+            {% endfor %}        
+            {% if n_entries > 0 and (n_entries == entries | length) %}
+                <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
+                |
+                <a href="/logbooks/{{logbook.id}}?n=0">All</a>
+            {% endif %}
+        {% else %}
+            <div class="placeholder">No matching entries</div>
         {% endif %}
         
     </div>
