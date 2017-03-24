@@ -124,17 +124,27 @@
 
 {% from 'entries.jinja2' import entry_item %}
 
+
 <div class="container">
     
     <header>
-        <span class="name">{{ logbook.name }}</span>
-        &nbsp;
-        <a href="/logbooks/{{logbook.id}}/edit" target="_top">Edit</a>
+        <div class="name">{{ logbook.name }}</div>
+
+        <a href="/logbooks/{{logbook.id}}/edit" target="_top"
+           title="Edit the properties of this logbook">
+            Edit
+        </a>
         | 
-        <a href="/logbooks/new?parent={{ logbook.id }}" target="_top">New child</a>
+        <a href="/logbooks/new?parent={{ logbook.id }}" target="_top"
+           title="Create a new logbook inside this logbook">
+            New child
+        </a>
         
         <span class="commands">
-            <a href="/entries/new?logbook={{logbook.id}}" target="entry">New entry</a>
+            <a href="/entries/new?logbook={{logbook.id}}" target="entry"
+               title="Create a new entry in this logbook">
+                New entry
+            </a>
         </span>
 
         {#
@@ -185,10 +195,9 @@
                     </div>
                 {% endif %}
                 
-                {% set parameters = "?followups=true" if followups else "" %}
                 {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
 
-                <a href="{{entryUrl}}" target="entry">
+                <a href="{{entryUrl}}" target="entry" draggable="false">
                     {{ entry_item(entry) }}
                 </a>
             {% endfor %}        

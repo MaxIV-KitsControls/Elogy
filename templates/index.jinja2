@@ -59,6 +59,10 @@
  #logbooks li {
      white-space: nowrap;
  }
+
+ #logbooks a {
+     text-decoration: none;
+ }
  
  #logbooks .search {
      flex: 0;
@@ -125,8 +129,7 @@
  }
 
  .set-parent-logbook {
-     position: absolute;
-     right: 0;
+
  }
 
 </style>
@@ -139,7 +142,7 @@
     <div class="logbook" id="{{ logbook.id }}">
         
         <a href="/logbooks/{{logbook.id}}" target="logbook"
-           title="{{logbook.description or 'No description'}}">
+           title="{{logbook.description or logbook.name}}">
             {{ logbook.name.replace(" ", "&nbsp;") }}
             {% if n_entries > 0 %}
                 ({{ n_entries }})
@@ -149,7 +152,7 @@
         {% if logbook.children %}
             <span class="set-parent-logbook">
                 <a href="/?parent={{ logbook.id }}"
-                   title="Only show this logbook">&nbsp;🡢&nbsp;</a>
+                   title="Only show this logbook">&nbsp;▶&nbsp;</a>
             </span>
         {% endif %}
 
@@ -166,7 +169,6 @@
     {% endif %}
     
 {% endmacro %}
-
 
 <div id="app">
     <header class="main">

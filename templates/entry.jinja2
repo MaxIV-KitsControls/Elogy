@@ -92,20 +92,27 @@
                 </a>
             {% endif %}
             |
-            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}" target="logbook">Find</a>
+            <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}"
+               target="logbook" title="Locate this entry in the logbook.">
+                Find
+            </a>
 
             &nbsp;
 
             {% set previous_entry = entry.previous %}
             {% if previous_entry %}
-                <a href="/entries/{{ previous_entry.id }}">Prev</a>
+                <a href="/entries/{{ previous_entry.id }}"
+                   title="'{{previous_entry.title}}'">
+                    Prev
+                </a>
             {% else %}
                 Prev
             {% endif %}
             
             {% set next_entry = entry.next %}
             {% if next_entry %}
-                <a href="/entries/{{ next_entry.id }}">Next</a>
+                <a href="/entries/{{ next_entry.id }}"
+                   title="'{{next_entry.title}}'">Next</a>
             {% else %}
                 Next
             {% endif %}
@@ -121,9 +128,15 @@
             <div class="info">
 
                 <div class="commands">                    
-                    <a href="edit/{{entry.id}}">Edit</a>
+                    <a href="edit/{{entry.id}}"
+                       title="Open this entry for editing">
+                        Edit
+                    </a>
                     |
-                    <a href="/entries/{{entry.id}}">Link</a>
+                    <a href="/entries/{{entry.id}}"
+                       title="This is a direct link to this entry">
+                        Link
+                    </a>
                     {% if entry.followups %}
                         &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}

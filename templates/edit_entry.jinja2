@@ -17,6 +17,21 @@
      padding: 5px;
      margin: 0;
  }
+
+ 
+ table tr.header {
+     font-size: 110%;
+     text-decoration: underline;
+ }
+ 
+ .label {
+     text-align: right;
+ }
+ 
+ 
+ .title .value {
+     width: 100%;
+ }
  
  div.warning {
      background: #faa;
@@ -128,30 +143,34 @@
                 <td colspan="2">
                     {% if entry %}
                         <div class="entry">
-                            Editing: <b>{{ entry.title }}</b>
+                            Editing entry <a href="/entries/{{entry.id}}">{{ entry.title }}</a> in logbook <b>{{logbook.name}}</b>...
                         </div>
                     {% elif follows %}    
                         <div class="entry">
-                            Followup to: <a href="/entries/{{follows.id}}">{{ follows.title }}</a>
+                            Making followup to entry <a href="/entries/{{follows.id}}">{{ follows.title }}</a> in logbook <b>{{logbook.name}}</b>...
                         </div>
                     {% else %}
                         <div class="entry">
-                            New entry
+                            Creating a new entry in logbook <b>{{logbook.name}}</b>...
                         </div>
                     {% endif %}
                 </td>
             </tr>
             
             <tr class="title">
-                <td for="title"> Title </td>
-                <td>
+                <td class="label">
+                    <label for="title"> Title </label>
+                </td>
+                <td class="value">
                     <input class="title" type="text" name="title"
                            value="{{ entry.title if entry else follows.title if follows else '' }}">
                 </td>
             </tr>
             
             <tr>
-                <td for="author">Author(s)</td>
+                <td>
+                    <label for="author">Author(s)</label>
+                </td>
                 <td>
                     <fieldset id="authors" class="authors">
                         {% if entry %}
@@ -172,12 +191,12 @@
             {% if logbook.attributes %}  {# may be null, perhaps this should be handled somewhere else #}
 
                 <tr>
-                    {% for attribute in logbook.attributes %}
-                        <td class="attribute" data-name="{{ attribute.name }}">
+                    <td colspan="2">
+                        {% for attribute in logbook.attributes %}
+                            <span class="attribute" data-name="{{ attribute.name }}">
                             {% if attribute.required %}*{% endif %}
                             {{attribute.name}}
-                        </td>
-                        <td>
+                            
                             {% if attribute.type == "text" %}
                                 <input type="text"
                                        name="attribute-{{ attribute.name }}"
@@ -205,15 +224,16 @@
                                     {% endfor %}
                                 </select>
                             {% endif %}
-                        </td>
+                        </span>
                     {% endfor %}
+                    </td>
                 </tr>
 
             {% endif %}
 
             <tr class="editor-container">
                 <td colspan="2">
-                    <textarea id="content" cols="100" rows="20" name="content">{{ (entry.content if entry else '') | safe }}</textarea>
+                    <textarea id="content" cols="100" rows="20" name="content">{{ (entry.content or '' if entry else '') | safe }}</textarea>
                 </td>
             </tr>
 
