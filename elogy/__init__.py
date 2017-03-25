@@ -1,5 +1,5 @@
 """
-A simple HTTP "REST like" API for creating and accessing logbooks.
+The main entrypoint of the Elogy web application
 """
 
 import json
