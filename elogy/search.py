@@ -41,9 +41,10 @@ def perform_search():
 
     # further filters on the results, depending on search criteria
     if parameters.get("content"):
-        regexp = ".*{content}.*".format(**parameters)
+        # let's do a stupid substring search for now
+        substring = parameters["content"].replace("*", "%")
         results = results.where((Entry.content != None) &
-                                Entry.content.regexp(regexp))
+                                Entry.content.contains(substring))
         terms["content"] = parameters["content"]
     if parameters.get("title"):
         results = results.where((Entry.title != None) &
