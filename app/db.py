@@ -71,7 +71,11 @@ class Logbook(db.Model):
     archived = BooleanField(default=False)
 
     def get_entries(self, followups=True, attribute_filters=None,
-                    archived=False, n=None):
+                    child_logbooks=False, archived=False, n=None):
+
+        "Convenient way to query for entries in this logbook"
+
+        # build a suitable query
         Followup = Entry.alias()
         entries = (
             Entry.select(
@@ -79,18 +83,29 @@ class Logbook(db.Model):
                 fn.count(Followup.id).alias("n_followups"),
                 Entry.created_at.alias("timestamp"))  # a helpful alias
         )
+        # we can include entries from logbooks that are contained in this one
+        if child_logbooks:
+            # TODO: we only get immediate children here, no grandchildren
+            # and so on. Figure out a way to do that!
+            entries = (entries.join(Logbook, JOIN.LEFT_OUTER)
+                       .where((Logbook.id == self.id) |
+                              (Logbook.parent == self)))
+        else:
+            entries = entries.where(Entry.logbook == self.id)
+
+        # Entries marked as "archived" should normally not be included
         if archived:
             entries = (entries
-                       .where(Entry.logbook == self.id)
                        .join(Followup, JOIN.LEFT_OUTER,
                              on=(Followup.follows == Entry.id)))
         else:
             entries = (entries
-                       .where((Entry.logbook == self.id) &
-                              ~Entry.archived)
+                       .where(~Entry.archived)
                        .join(Followup, JOIN.LEFT_OUTER,
                              on=((Followup.follows == Entry.id) &
                                  ~Followup.archived)))
+
+        # 'followups' are entries that relate to an earlier entry
         if not followups:
             entries = (entries.where(Entry.follows == None)
                        .group_by(Entry.id)
@@ -103,6 +118,7 @@ class Logbook(db.Model):
                        # .where(Entry.follows == None)
                        .order_by(Entry.created_at.desc()))
 
+        # filter on attribute values
         if attribute_filters:
             for attr, value in attribute_filters.items():
                 attr_value = fn.json_extract(Entry.attributes, "$." + attr)

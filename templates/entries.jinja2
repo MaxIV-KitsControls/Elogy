@@ -1,4 +1,4 @@
-{% macro entry_item(entry) %}
+{% macro entry_item(entry, logbook=None) %}
     
     <div class="entry" id="entry-{{entry.id}}">
 
@@ -23,6 +23,10 @@
                     {{ n_attachments }}
                 </span>
             {% endif %}
+        {% endif %}
+
+        {% if entry.logbook != logbook %}
+            <div class="entry-logbook">{{entry.logbook.name}}</div>
         {% endif %}
         
         <span class="timestamp">

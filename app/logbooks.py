@@ -51,6 +51,7 @@ def show_logbook(logbook_id):
     logbook = Logbook.get(Logbook.id == logbook_id)
     n_entries = int(request.args.get("n", 100))
     entries = logbook.get_entries(n=n_entries, followups=followups,
+                                  child_logbooks=True,  # TODO: make optional?
                                   attribute_filters=attribute_filters)
 
     return render_template(

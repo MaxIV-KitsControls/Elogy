@@ -50,6 +50,11 @@
      overflow: auto;
  }
 
+ .entry .entry-logbook {
+     font-size: 80%;
+     text-decoration: underline;
+ }
+ 
  .entry:hover {
      background: #f5f5f5;
  }
@@ -197,8 +202,9 @@
                 
                 {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
 
-                <a href="{{entryUrl}}" target="entry" draggable="false">
-                    {{ entry_item(entry) }}
+                <a href="{{entryUrl}}" target="entry">
+
+                    {{ entry_item(entry, logbook) }}
                 </a>
             {% endfor %}        
             {% if n_entries > 0 and (n_entries == entries | length) %}
