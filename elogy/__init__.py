@@ -7,19 +7,19 @@ import json
 from flask import Flask, request, render_template
 from peewee import OperationalError
 
-from app.db import (db,
-                    Logbook, LogbookRevision,
-                    Entry, EntryRevision, EntryLock,
-                    Attachment)
-from app.entries import entries
-from app.logbooks import logbooks
-from app.attachments import attachments
-from app.search import search
-from app.utils import CustomJSONEncoder
+from .db import (db,
+                 Logbook, LogbookRevision,
+                 Entry, EntryRevision, EntryLock,
+                 Attachment)
+from .entries import entries
+from .logbooks import logbooks
+from .attachments import attachments
+from .search import search
+from .utils import CustomJSONEncoder
 
 
 app = Flask(__name__)
-app.config.from_pyfile('config.py')
+app.config.from_envvar('ELOGY_CONFIG_FILE')
 app.json_encoder = CustomJSONEncoder
 
 # most entry points are defined in "blueprints"

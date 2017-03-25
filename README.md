@@ -15,10 +15,17 @@ Installation
 
 Requires Python 3.x (currently only tested with 3.5, 3.4 should work.)
 
+To run with flask's built-in development server:
 ```
 $ python -m venv env
 $ env/bin/pip install -r requirements.txt
-$ env/bin/python run.py
+$ env/bin/pip install -e .
+$ FLASK_APP=elogy ELOGY_CONFIG_FILE=$(pwd)/config.py env/bin/flask run
+```
+
+For actual deployment you probably want to run it with something else, such as:
+```
+$ gunicorn -k gevent --threads 3 elogy:app
 ```
 
 Also have a look in ```config.py``` for the settings.
