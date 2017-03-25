@@ -193,42 +193,43 @@
                 <tr>
                     <td colspan="2">
                         {% for attribute in logbook.attributes %}
-                            <span class="attribute" data-name="{{ attribute.name }}">
-                            {% if attribute.required %}*{% endif %}
-                            {{attribute.name}}
-                            
-                            {% if attribute.type == "text" %}
-                                <input type="text"
-                                       name="attribute-{{ attribute.name }}"
-                                       value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
-                                       {% if attribute.required %}required="true"{% endif %}>
-                            {% endif %}
-                            {% if attribute.type == "number" %}
-                                <input type="number" step="any"
-                                       name="attribute-{{ attribute.name }}"
-                                       value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
-                                       {% if attribute.required %}required="true"{% endif %}>
-                            {% endif %}
-                            {% if attribute.type == "boolean" %}
-                                <input type="checkbox"
-                                       name="attribute-{{ attribute.name }}"
-                                       {% if entry and entry.attributes[attribute.name] or follows and follows.attributes[attribute.name] %} checked {% endif %}>
-                            {% endif %}
-                            {% if attribute.type == "option" %}
-                                <select name="attribute-{{ attribute.name }}"
-                                        {% if attribute.required %}required="true"{% endif %}>
-                                    <option name=""></option>
-                                    {% for option in attribute.options %}
-                                        <option name="{{ option }}"
-                                                {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '') %} selected="selected" {% endif %}>{{option}}</option>
-                                    {% endfor %}
-                                </select>
-                            {% endif %}
-                        </span>
-                    {% endfor %}
+                            <span class="attribute"
+                                  data-name="{{ attribute.name }}">
+                                {% if attribute.required %}*{% endif %}
+                                {{attribute.name}}
+                                
+                                {% if attribute.type == "text" %}
+                                    <input type="text"
+                                           name="attribute-{{ attribute.name }}"
+                                           value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
+                                           {% if attribute.required %}required="true"{% endif %}>
+                                {% endif %}
+                                {% if attribute.type == "number" %}
+                                    <input type="number" step="any"
+                                           name="attribute-{{ attribute.name }}"
+                                           value="{{ entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '' }}"
+                                           {% if attribute.required %}required="true"{% endif %}>
+                                {% endif %}
+                                {% if attribute.type == "boolean" %}
+                                    <input type="checkbox"
+                                           name="attribute-{{ attribute.name }}"
+                                           {% if entry and entry.attributes[attribute.name] or follows and follows.attributes[attribute.name] %} checked {% endif %}>
+                                {% endif %}
+                                {% if attribute.type == "option" %}
+                                    <select name="attribute-{{ attribute.name }}"
+                                            {% if attribute.required %}required="true"{% endif %}>
+                                        <option name=""></option>
+                                        {% for option in attribute.options %}
+                                            <option name="{{ option }}"
+                                                    {%if option == (entry.attributes[attribute.name] if entry else follows.attributes[attribute.name] if follows else '') %} selected="selected" {% endif %}>{{option}}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% endif %}
+                            </span>
+                        {% endfor %}
                     </td>
                 </tr>
-
+                
             {% endif %}
 
             <tr class="editor-container">

@@ -44,16 +44,19 @@ div.attributes {
     flex-wrap: wrap;
 }
 
-label.attribute {
+span.attribute {
+    background: white;    
     font-size: 80%;
     background: #eee;
     border: 1px solid #aaa;
     padding: 2px 5px;
     margin: 2px;
     border-radius: 5px;
+    white-space: nowrap;
+    display: inline-block;
 }
 
-label.attribute .value::before {
+span.attribute .value::before {
     content: ":"
 }
 
@@ -65,9 +68,9 @@ article .info {
 
 }
 
-article .info span {
-    padding-right: 10px;
-}
+/* article .info span { */
+/*     padding-right: 10px; */
+/* } */
 
 
 article span.title {

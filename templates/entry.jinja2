@@ -38,7 +38,12 @@
      border-bottom: 1px solid #bbb;
      padding: 5px 10px;          
  }
-
+ 
+ .info .authors a:not(:last-child):after {
+     content: ", ";
+ }
+ 
+ 
  article {
      border-bottom: 2p solid black;
      background: white;
@@ -59,7 +64,7 @@
      border-radius: 10px;
  }
 
- label.attribute {
+ span.attribute {
      background-color: white;
  }
 
@@ -147,9 +152,12 @@
                 </span>
                 
                 {% if entry.authors %}
-                <span class="author">
-                    {{ ", ".join(entry.authors) }}
-                </span>
+                    <span class="authors">
+                        {% for author in entry.authors %}
+                            <a href="/search/?authors={{author}}"
+                               target="logbook">{{author}}</a>
+                        {% endfor %}
+                    </span>
                 {% endif %}
                 <span class="logbook">
                     in <a href="/logbooks/{{ entry.logbook.id }}" target="logbook">
@@ -165,28 +173,29 @@
                 
                 <div class="attributes">
 
-                    {% if entry.logbook.attributes and entry.attributes  %}
-                        {% for attribute in entry.logbook.attributes
-                        if attribute.name in entry.attributes %}
-                            <label class="attribute" data-name="{{attribute.name}}">
+                    {%- if entry.logbook.attributes and entry.attributes  %}
+                        {%- for attribute in entry.logbook.attributes
+                            if attribute.name in entry.attributes %}
+                            <span class="attribute" data-name="{{attribute.name}}">
                                 {% if attribute.required %}*{% endif %}
                                 {{attribute.name}}
                                 <span class="value">
-                                    {% if attribute.type == "text" %}
+                                    {%- if attribute.type == "text" %}
                                         {{ entry.attributes.get(attribute.name) }}
-                                    {% endif %}
-                                    {% if attribute.type == "number" %}
+                                    {% endif -%}
+                                    {%- if attribute.type == "number" %}
                                         {{ entry.attributes.get(attribute.name) }}
-                                    {% endif %}
-                                    {% if attribute.type == "boolean" %}
+                                    {% endif -%}
+                                    {%- if attribute.type == "boolean" %}
                                         {{ entry.attributes.get(attribute.name) }}
-                                    {% endif %}
-                                    {% if attribute.type == "option" %}
+                                    {% endif -%}
+                                    {%- if attribute.type == "option" %}
                                         {{ entry.attributes.get(attribute.name) }}
-                                    {% endif %}</span>
-                            </label>
-                        {% endfor %}
-                    {% endif %}
+                                    {% endif -%}
+                                </span>
+                            </span>
+                        {% endfor -%}
+                    {% endif -%}
                 </div>
             </div>
             
@@ -243,7 +252,11 @@
                         {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                     </span>
                     {% if followup.authors and followup.authors != entry.authors %}
-                        <span>{{ ", ".join(followup.authors) }}</span>
+                        <span class="authors">
+                            {% for author in followup.authors %}
+                                <span class="author">author</span>
+                            {% endfor %}
+                        </span>
                     {% endif %}
                     {% if followup.last_changed_at %}
                         <a href="/entries/change/{{followup.last_changed_at}}">
