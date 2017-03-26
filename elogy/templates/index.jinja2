@@ -151,10 +151,10 @@
             {% endif %}
         </a>
 
-        {% if logbook.children %}
+        {% if logbook.children and logbook != parent %}
             <span class="set-parent-logbook">
-                <a href="/?parent={{ logbook.id }}"
-                   title="Only show this logbook">&nbsp;▶&nbsp;</a>
+                <a href="/?parent={{ logbook.id }}#/logbooks/{{ logbook.id }}"
+                   title="Only show this logbook and children">&nbsp;▶&nbsp;</a>
             </span>
         {% endif %}
 
@@ -183,9 +183,10 @@
     <section class="main">
         <nav id="logbooks">
             <div class="header">
-                <a href="/logbooks/new?parent={{parent.id if parent else 0}}">New logbook</a>
+                <a href="/logbooks/new?parent={{parent.id if parent else 0}}"
+                   title="Create new logbook under '{{parent.name if parent else "root"}}'">New logbook</a>
                 |
-                <a href="/">Show all</a>
+                <a href="/" title="Display all logbooks">Show all</a>
             </div>
             <div class="logbooks">
                 <div>

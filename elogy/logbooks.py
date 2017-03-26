@@ -143,4 +143,6 @@ def write_logbook():
 
     if request_wants_json():
         return jsonify(logbook_id=lb.id)
-    return redirect("/#/logbook/{}".format(lb.id))
+    if parent:
+        return redirect("/?parent={}#/logbooks/{}".format(parent.id, lb.id))
+    return redirect("/#/logbooks/{}".format(lb.id))
