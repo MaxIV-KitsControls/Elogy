@@ -118,6 +118,7 @@
  img.thumbnail {
      float: right;
      clear: right;
+     border: 1px solid grey;
  }
 
  .placeholder {
@@ -202,10 +203,7 @@
                 
                 {% set entryUrl = "/entries/{entry.id}".format(entry=entry, followups=followups) %}
 
-                <a href="{{entryUrl}}" target="entry">
-
-                    {{ entry_item(entry, logbook) }}
-                </a>
+                {{ entry_item(entry, logbook) }}
             {% endfor %}        
             {% if n_entries > 0 and (n_entries == entries | length) %}
                 <a href="/logbooks/{{logbook.id}}?n={{n_entries*2}}">More</a>
