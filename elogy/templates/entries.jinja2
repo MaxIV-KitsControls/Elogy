@@ -5,6 +5,20 @@
     <a href="{{entryUrl}}" target="entry">
         <div class="entry" id="entry-{{entry.id}}">
 
+            {% if entry.logbook != logbook %}
+                <div class="entry-logbook">{{entry.logbook.name}}</div>
+            {% endif %}
+            
+            <span class="timestamp">
+                {{ entry.created_at.strftime("%H:%M:%S") }}
+            </span>
+            
+            {% if entry.authors %}
+                <span class="authors">
+                    {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
+                </span>
+            {% endif %}
+
             {% if entry.attachments %}
                 {% for attachment in entry.attachments.limit(1) %}
                     {% set img_src = url_for("attachments.get_attachment", filename=attachment.path) %}
@@ -28,19 +42,6 @@
                 {% endif %}
             {% endif %}
 
-            {% if entry.logbook != logbook %}
-                <div class="entry-logbook">{{entry.logbook.name}}</div>
-            {% endif %}
-            
-            <span class="timestamp">
-                {{ entry.created_at.strftime("%H:%M:%S") }}
-            </span>
-            
-            {% if entry.authors %}
-                <span class="authors">
-                    {{ entry.authors[0] }}{% if entry.authors | length > 1 %}&nbsp;et&nbsp;al. {% endif %}
-                </span>
-            {% endif %}
             
             {% if entry.title %}
                 <div class="title">{{ entry.title }}</div>
@@ -50,6 +51,7 @@
                 in the page #}
                 <div class="content" data-content="{{ entry.stripped_content[:500] }}"> </div>
             {% endif %}
+
             
             {% if entry.logbook.attributes %}                           
                 {% for attribute in entry.logbook.attributes if attribute.required %}
@@ -77,7 +79,7 @@
             {% elif entry.follows %}
                 <div class="followups" title="This is a follow-up">*</div>
             {% endif %}
-        
+            
         </div>
     </a>
     
