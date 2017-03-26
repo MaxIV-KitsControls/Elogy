@@ -71,6 +71,7 @@
  form select:invalid {
      background-color: #fcc;
  }
+
  
  .editor-container {
      height: 100%;
@@ -238,20 +239,21 @@
                 </td>
             </tr>
 
-            {% if entry %}
-                <tr class="attachments">
-                    <td colspan="2">
-                        
-                        {% for attachment in entry.attachments or [] %}
-                            {{ attachment }}
-                        {% endfor %}
-                    </td>
-                </tr>
-            {% endif %}
+            <tr>
+                <td colspan="2">
+                    <div id="attachments" class="attachments">
+                        {% if entry %}
+                            {% from 'attachment.jinja2' import attachment_thumbnails %}
+                            {{ attachment_thumbnails(entry) }}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
             
             <tr>
                 <td colspan="2">
-                    <input type="file" name="attachments[]" size="40" multiple="multiple">
+                    <input id="attachmentSelect" type="file"
+                           name="attachments[]" size="40" multiple="multiple">
                 </td>
             </tr>
 
@@ -349,9 +351,10 @@
          force_br_newlines: false,
          paste_data_images: true,
          //          automatic_uploads: false,  // don't immediately upload images
-         images_upload_handler: customUploadHandler
+         images_upload_handler: customUploadHandler,
+         image_dimensions: false
      });
- 
+     
  })();
  
 </script>  
@@ -382,6 +385,69 @@
          }     
          window.addEventListener("beforeunload", checkUnloadDialog);
 
+         var fileInput = document.getElementById("attachmentSelect");
+
+         // TODO: unify the upload handlers!
+         function customUploadHandler (blob, success, failure) {
+
+             // custom upload handler that keeps the filename intact
+
+             console.log("upload");
+             
+             var xhr, formData;
+
+             xhr = new XMLHttpRequest();
+             xhr.withCredentials = false;
+             xhr.open('POST', '/attachments/{{ entry.id if entry else 0 }}');
+
+             xhr.onload = function() {
+                 var json;
+
+                 if (xhr.status != 200) {
+                     failure('HTTP Error: ' + xhr.status);
+                     return;
+                 }
+
+                 json = JSON.parse(xhr.responseText);
+
+                 if (!json || typeof json.location != 'string') {
+                     failure('Invalid JSON: ' + xhr.responseText);
+                     return;
+                 }
+                 success(json);
+             };
+
+             formData = new FormData();
+             formData.append('entry', '{{ entry.id if entry else 0 }}');
+             
+             formData.append('file', blob, blob.name);
+             
+             xhr.send(formData);
+         }
+
+         function addThumbnail(info) {
+             var container = document.getElementById("attachments");
+             var element = document.createElement("img");
+             element.title = info.filename;
+             element.src = info.location + ".thumbnail";
+             element.className = "attachment thumbnail";
+             element.style.maxWidth = info.metadata.thumbnail_size.width / 2;
+             element.style.maxHeight = info.metadata.thumbnail_size.height / 2;
+             var linkElement = document.createElement("a");
+             linkElement.href = info.location;
+             linkElement.appendChild(element);
+             container.appendChild(linkElement);
+         }
+         
+         fileInput.addEventListener("change", function () {
+             Array.prototype.slice.call(fileInput.files)
+                  .forEach(function (f) {
+                      console.log(f);
+                      customUploadHandler(f, addThumbnail);
+                  });
+             
+         });
+                 
      });
 
 </script>
@@ -403,4 +469,3 @@
 
  
 </script>
-

@@ -92,3 +92,12 @@ article div.content table {
 article div.content img {
     max-width: 100%;
 }
+
+.attachments .attachment.thumbnail {
+    vertical-align: middle;
+    margin: 3px;
+    display: inline-block;
+    border: 1px solid grey;
+    background: #ccc;
+}
+

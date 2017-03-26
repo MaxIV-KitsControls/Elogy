@@ -326,11 +326,13 @@ class EntryLock(db.Model):
 class Attachment(db.Model):
     "Store information about an attachment"
     entry = ForeignKeyField(Entry, null=True, related_name="attachments")
+    filename = CharField(null=True)
     timestamp = DateTimeField(default=datetime.now)
     path = CharField()  # path within the upload folder
     content_type = CharField(null=True)
     embedded = BooleanField(default=False)  # i.e. an image in the content
     metadata = JSONField(null=True)  # may contain image size, etc
+    archived = BooleanField(default=False)
 
     class Meta:
         order_by = ("id",)

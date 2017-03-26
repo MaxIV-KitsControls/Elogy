@@ -12,7 +12,7 @@ from flask import (Blueprint, abort, request, url_for,
                    current_app, jsonify, send_from_directory)
 from PIL import Image
 
-from . import db
+from .db import Entry, Attachment
 
 attachments = Blueprint('attachments', __name__,
                         template_folder='templates')
@@ -25,6 +25,7 @@ def allowed_file(filename):
 
 
 def save_attachment(file_, timestamp, entry_id, embedded=False):
+    "Store an attachment in the proper place"
     # make up a path and unique filename using the timestamp
     # TODO: make this smarter, somehow
     today = timestamp.strftime("%Y/%m/%d")
@@ -58,14 +59,16 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
         metadata = None
 
     if entry_id:
-        entry = db.Entry.get(db.Entry.id == entry_id)
+        entry = Entry.get(Entry.id == entry_id)
     else:
         entry = None
-    attachment = db.Attachment.create(path="{}/{}".format(today, filename),
-                                      timestamp=timestamp,
-                                      content_type=file_.content_type,
-                                      entry=entry, embedded=embedded,
-                                      metadata=metadata)
+    print("attachment embedded", embedded)
+    attachment = Attachment.create(path="{}/{}".format(today, filename),
+                                   filename=file_.filename,
+                                   timestamp=timestamp,
+                                   content_type=file_.content_type,
+                                   entry=entry, embedded=embedded,
+                                   metadata=metadata)
     return attachment
 
 
@@ -75,7 +78,7 @@ def post_attachment(entry_id=None):
     file_ = request.files["file"]
     timestamp = request.form.get("timestamp")
     embedded = request.form.get("embedded", "false").lower() == "true"
-
+    print("embedded", embedded)
     if timestamp:
         timestamp = parse(timestamp)
     else:
@@ -83,10 +86,21 @@ def post_attachment(entry_id=None):
     if file_:  # and allowed_file(file_.filename):
         attachment = save_attachment(file_, timestamp, entry_id,
                                      embedded=embedded)
-        return jsonify({"location": url_for(".get_attachment",
-                                            filename=attachment.path)})
+        return jsonify({
+            "location": url_for(".get_attachment",
+                                filename=attachment.path),
+            "filename": attachment.filename,
+            "metadata": attachment.metadata
+        })
     else:
         abort(500)
+
+
+@attachments.route("/<int:attachment_id>", methods=["DELETE"])
+def delete_attachment(attachment_id):
+    attachment = Attachment.get(Attachment.id == attachment_id)
+    attachment.archived = True
+    attachment.save()
 
 
 @attachments.route("/<path:filename>")
