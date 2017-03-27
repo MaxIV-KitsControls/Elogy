@@ -1,0 +1,12 @@
+/* custom tweaks to TinyMCE (HTML editor) */
+
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;      
+    font-size: 15px;
+}
+
+/* Make large images scale down to the width of the editor */
+.mce-content-body img:not([width]) {
+    max-width: 100%;
+}
+

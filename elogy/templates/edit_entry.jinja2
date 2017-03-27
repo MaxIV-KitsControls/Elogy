@@ -77,6 +77,10 @@
      height: 100%;
      margin: 5px 0;
  }
+
+ td.attachments {
+     background: #ddd;
+ }
  
  .cancel {
      float: right;
@@ -138,6 +142,13 @@
             <input type="hidden" name="unlock" value="{{ lock.id }}">
         {% endif %}
 
+        <!--
+        Note: Everything is laid out in a table because there were issues
+        with doing it with flexbox. Mainly fullscreen height turned
+        out to be hard, and ff/chrome behave differently. Maybe
+        there's a better way to do it, but I got tired of trying :)
+        -->
+        
         <table class="container">
             
             <tr class="header">
@@ -240,23 +251,18 @@
             </tr>
 
             <tr>
-                <td colspan="2">
+                <td class="attachments" colspan="2">
                     <div id="attachments" class="attachments">
                         {% if entry %}
                             {% from 'attachment.jinja2' import attachment_thumbnails %}
                             {{ attachment_thumbnails(entry) }}
                         {% endif %}
                     </div>
-                </td>
-            </tr>
-            
-            <tr>
-                <td colspan="2">
                     <input id="attachmentSelect" type="file"
                            name="attachments[]" size="40" multiple="multiple">
                 </td>
             </tr>
-
+            
             <tr>
                 <td colspan="2">
                     
@@ -277,7 +283,6 @@
             
         </table>
     </form>
-
 
 
 <script type="text/javascript" src="/static/color_attributes.js"></script>
@@ -336,15 +341,15 @@
 
      tinymce.init({
          selector: '#content',
-         plugins: "image textcolor paste table",
+         plugins: "image textcolor paste table lists advlist",
          toolbar: (
-             "undo redo | styleselect |"
-             + " bold italic forecolor backcolor | alignleft" 
-             + " aligncenter alignright alignjustify |" 
+             "undo redo | removeformat | styleselect |"
+             + " bold italic forecolor backcolor |"
              + " bullist numlist outdent indent | link image table"
          ),
          menubar: false,
          statusbar: false,
+         content_css: "/static/tinymce-tweaks.css",
          height: "100%",
          relative_urls : false,  // otherwise images broken in editor
          apply_source_formatting: false,
@@ -361,10 +366,11 @@
 
 
 <script>
+
+ // setup
  
  window.addEventListener(
      "load",
-
      function () {
 
          // we don't want to bring up an "are you sure" dialog if the
@@ -431,8 +437,10 @@
              element.title = info.filename;
              element.src = info.location + ".thumbnail";
              element.className = "attachment thumbnail";
-             element.style.maxWidth = info.metadata.thumbnail_size.width / 2;
-             element.style.maxHeight = info.metadata.thumbnail_size.height / 2;
+             if (info.metadata) {
+                 element.style.maxWidth = info.metadata.thumbnail_size.width / 2;
+                 element.style.maxHeight = info.metadata.thumbnail_size.height / 2;
+             }
              var linkElement = document.createElement("a");
              linkElement.href = info.location;
              linkElement.appendChild(element);
