@@ -15,6 +15,8 @@ Installation
 
 Requires Python 3.x (currently only tested with 3.5, 3.4 should work.)
 
+In order to get WYSIWYG editing features, you need to grab a copy of the TinyMCE editor widget, unzip it and copy the `tinymce/js/tinymce` directory into `elogy/static`. I recommend  http://download.ephox.com/tinymce/community/tinymce_4.4.3.zip instead of the latest version since, at the time of writing, it has a bug affecting the 'list' toolbar buttons (see https://github.com/tinymce/tinymce/issues/3342).
+
 To run with flask's built-in development server:
 ```
 $ python -m venv env
