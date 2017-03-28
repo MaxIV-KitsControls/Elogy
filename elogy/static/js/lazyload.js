@@ -11,21 +11,23 @@ window.LazyImageLoad = (function () {
 
     function LazyImageLoad (container) {
         this.container = container;
-        this.images = Array.prototype.slice.call(
+        var images = Array.prototype.slice.call(
             container.querySelectorAll("img.lazy"));
         // Debouncing means that images won't start loading until
         // after scrolling has stopped for a moment.
-        container.addEventListener("scroll",
-                                   debounce(handleScroll.bind(this), 100));
-        handleScroll.bind(this)();
+        if (container) {
+            container.addEventListener(
+                "scroll", debounce(function() {handleScroll(container, images);}, 100));
+            handleScroll(container, images);
+        }
     }
     
-    function handleScroll() {
-        for (var i = 0; i<this.images.length; i++) {
-            var img = this.images[i];
-            if (elementInViewport(img, this.container)) {
+    function handleScroll(container, images) {
+        for (var i = 0; i<images.length; i++) {
+            var img = images[i];
+            if (elementInViewport(img, container)) {
                 img.src = img.getAttribute("data-src");
-                this.images.splice(i, 1)
+                images.splice(i, 1);
                 i--;  // ahem!
             }
         }

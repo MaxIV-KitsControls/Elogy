@@ -249,12 +249,15 @@
      logbooks: new signals.Signal()
  };
 
+ 
  function markLogbook(logbookId) {
      // highlight the currently selected logbook in the list
-     document.querySelectorAll('.logbook')
-             .forEach(function (element) {
-                 element.classList.remove("selected")
-             });
+     var logbooks = document.querySelectorAll('.logbook');
+     if (logbooks.forEach) {
+         logbooks.forEach(function (element) {
+             element.classList.remove("selected")
+         });
+     }
      if (logbookId) {
          var element = document.getElementById(logbookId);
          element.classList.add("selected")

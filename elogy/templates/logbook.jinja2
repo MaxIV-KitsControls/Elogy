@@ -237,10 +237,12 @@
      // Highlight the given entry in the list
      
      // first remove all marks
-     document.querySelectorAll('div.entry')
-             .forEach(function (element) {
-                 element.classList.remove("selected")
-             });
+     var entries = document.querySelectorAll('div.entry');
+     if (entries.forEach) {
+         entries.forEach(function (element) {
+             element.classList.remove("selected")
+         });
+     }
      /* if (followupId) {
       *     var element = document.getElementById("entry-" + followupId);
       *     if (element) {
