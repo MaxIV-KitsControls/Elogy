@@ -71,13 +71,16 @@
  .attachments {
      background: #ddd;
  }
-  
+ 
 </style>
 
 <div class="container">
     
     <header>
+
         <span class="title">
+            <a href="/logbooks/{{entry.logbook.id}} target="logbook">{{ entry.logbook.name }}</a>
+            /
             {{ entry.title or "(Untitled)"}}
         </span>
         <div class="commands">
@@ -136,7 +139,8 @@
                         Link
                     </a>
                     {% if entry.followups %}
-                        &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
+                        &nbsp;🠉&nbsp; 
+                        <a href="#{{entry.followups[0].id}}" title="Next followup">&nbsp;🠋&nbsp;</a>
                     {% endif %}
                 </div>
 
@@ -152,23 +156,16 @@
                         {% endfor %}
                     </span>
                 {% endif %}
-                <span class="logbook">
-                    in <a href="/logbooks/{{ entry.logbook.id }}" target="logbook">
-                    {{ entry.logbook.name or entry.logbook.id }}
-                    </a>
-                </span>
                                
                 {% if entry.last_changed_at %}
-                <a href="/entries/change/{{entry.last_changed_at}}">
-                    <div class="changed">(Last change at {{entry.last_changed_at}})</div>
-                </a>
+                    <div class="changed">(Last changed at {{entry.last_changed_at.strftime('%Y-%m-%d %H:%M:%S')}})</div>
                 {% endif %}            
                 
                 <div class="attributes">
 
                     {%- if entry.logbook.attributes and entry.attributes  %}
                         {%- for attribute in entry.logbook.attributes
-                            if attribute.name in entry.attributes %}
+                        if attribute.name in entry.attributes %}
                             <span class="attribute" data-name="{{attribute.name}}">
                                 {% if attribute.required %}*{% endif %}
                                 {{attribute.name}}
@@ -223,15 +220,18 @@
                         <a href="/entries/{{entry.id}}#{{followup.id}}">Link</a>
                         
                         {% if loop.first %}
-                            <a href="#{{entry.id}}">&nbsp;🠉&nbsp;</a>
+                            <a href="#{{entry.id}}"
+                               title="Entry">&nbsp;🠉&nbsp;</a>
                         {% else %}
-                            <a href="#{{entry.followups[loop.index0-1].id}}">&nbsp;🠉&nbsp;</a>
+                            <a href="#{{entry.followups[loop.index0-1].id}}"
+                               title="Previous followup">&nbsp;🠉&nbsp;</a>
                         {% endif %}
                         
                         {% if loop.last %}
                             &nbsp;🠋&nbsp;
                         {% else %}
-                            <a href="#{{entry.followups[loop.index0+1].id}}">&nbsp;🠋&nbsp;</a>
+                            <a href="#{{entry.followups[loop.index0+1].id}}"
+                               title="Next followup">&nbsp;🠋&nbsp;</a>
                         {% endif %}
                     </div>        
 
@@ -239,17 +239,20 @@
                     <span>
                         {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                     </span>
-                    {% if followup.authors and followup.authors != entry.authors %}
+                    {% if followup.authors %}
                         <span class="authors">
                             {% for author in followup.authors %}
-                                <span class="author">author</span>
+                                <span class="author">
+                                    <a href="/search/?authors={{author}}"
+                                       target="logbook">
+                                        {{author}}
+                                    </a>
+                                </span>
                             {% endfor %}
                         </span>
                     {% endif %}
                     {% if followup.last_changed_at %}
-                        <a href="/entries/change/{{followup.last_changed_at}}">
-                            <div class="changed">(Last changed at {{followup.last_changed_at}})</div>
-                        </a>
+                        <div class="changed">(Last changed at {{followup.last_changed_at.strftime('%Y-%m-%d %H:%M:%S')}})</div>
                     {% endif %}
                     {% if followup.title and followup.title != entry.title %}
                         <div>
@@ -263,7 +266,7 @@
                         <div class="attributes">        
                             {% for attribute in entry.logbook.attributes %}
                                 {% if followup.attributes.get(attribute.name) != entry.attributes.get(attribute.name) %}
-                                    <label class="attribute" data-name="{{attribute.name}}">
+                                    <span class="attribute" data-name="{{attribute.name}}">
                                         {% if attribute.required %}*{% endif %}
                                         {{attribute.name}}
                                         <span class="value">
@@ -280,7 +283,7 @@
                                                 {{ followup.attributes.get(attribute.name) }}
                                             {% endif %}
                                         </span>
-                                    </label>
+                                    </span>
                                 {% endif %}
                             {% endfor %}        
                         </div>
