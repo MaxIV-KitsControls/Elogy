@@ -3,15 +3,18 @@
         {% if not attachment.embedded %}
             {% set img_src = url_for("attachments.get_attachment", filename=attachment.path) %}
             <a href="{{img_src}}">
+                <!-- TODO: this should be smarter; always show a thumbnail if there is one,
+                   otherwise show a generic icon or something. -->
                 {% if attachment.metadata %}
                     {% set thumb = attachment.metadata.get("thumbnail_size", {}) %}                            
                     <img class="attachment thumbnail"
                          title="{{ attachment.filename or "[No filename]" }}"
-                         src="{{ img_src }}.thumbnail"
-                         width="{{ (thumb.width or 50) / 2}}"
-                         height="{{ (thumb.height or 50) / 2}}"/>
+                         src="{{ img_src }}.thumbnail">
+
                 {% else %}
-                    <div style="width: 25px; height: 25px;"
+                    <!-- TODO: should display some kind of icon, at least for the most
+                         common non-image file types -->
+                    <div style="width: 50px; height: 50px;"
                          class="attachment thumbnail"
                          title="{{ attachment.filename }}">
                     </div>
