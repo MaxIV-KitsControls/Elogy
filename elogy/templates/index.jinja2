@@ -28,7 +28,7 @@
      display: flex;
      flex-direction: row;
      width: 100%;
-     height: calc(100% - 50px);
+     height: 100%;
  }
 
  #logbooks {
@@ -134,6 +134,29 @@
 
  }
 
+ /* collapsible tree */
+ 
+ ul.tree {
+     position: relative;
+ }
+
+ ul.tree li {
+     position: relative;
+ }
+
+ ul.tree div {
+     position: relative;
+     left: 20px;
+ }
+ 
+ ul.tree input[type="checkbox"] {
+     position: absolute;
+ }
+
+ ul.tree input[type="checkbox"]:not(:checked) + div + ul {
+     display: none;
+ }
+ 
 </style>
 
 
@@ -161,25 +184,24 @@
     </div>
     
     {% if logbook.children %}
-        <ul>
+
+        <ul class="tree">
             {% for child in logbook.children %}
                 <li class="logbook">
+                    {% if child.children %}
+                        <input type="checkbox" class="toggle-children"/>
+                    {% endif %}
                     {{logbook_children(child)}}
                 </li>
             {% endfor %}
         </ul>
+
     {% endif %}
     
 {% endmacro %}
 
+
 <div id="app">
-    <header class="main">
-        <span class="title">{{ title | safe }}
-        {% if parent %}
-        <span>| {{ parent.name }}</span>
-        {% endif %}
-        </span>
-    </header>
     <section class="main">
         <nav id="logbooks">
             <div class="header">
@@ -190,11 +212,14 @@
             </div>
             <div class="logbooks">
                 <div>
-                    <ul class="logbooks">
+                    <ul class="logbooks tree">
                         {% for logbook in logbooks %}
-                        <li class="logbook">
-                            {{ logbook_children(logbook) }}
-                        </li>
+                            <li class="logbook">
+                                {% if logbook.children %}
+                                    <input type="checkbox" name="something"/>
+                                {% endif %}
+                                {{ logbook_children(logbook) }}
+                            </li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -265,11 +290,10 @@
      var searchLogbook = document.querySelector('.search input[name=logbook]')
      searchLogbook.value = logbookId;
  }
-
- window.eventbus.logbooks.add(markLogbook);
  
  window.addEventListener("load", function () {
+     window.eventbus.logbooks.add(markLogbook);     
      window.router = new Router(["logbook", "entry"]);
  });
-  
+ 
 </script>
