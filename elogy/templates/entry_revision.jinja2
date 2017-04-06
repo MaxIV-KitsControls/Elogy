@@ -38,20 +38,11 @@
      border-bottom: 1px solid #bbb;
      padding: 5px 10px;          
  }
- 
- .info .authors a:not(:last-child):after {
-     content: ", ";
- }
- 
- 
+
  article {
      border-bottom: 2p solid black;
      background: white;
  }   
-
- article .content img:not([width]) {
-     max-width: 100%;
- }
  
  article.followup {
      border-left: 10px solid #ddd;
@@ -68,60 +59,91 @@
      border-radius: 10px;
  }
 
- span.attribute {
+ label.attribute {
      background-color: white;
  }
 
  .attachments {
-     background: #ddd;
+     border-top: 1px solid #aaa;
+     background: #eee;
+     font-size: 90%;
  }
+
+ .attachments ul {
+     margin: 5px;
+     padding-bottom: 5px;
+ }
+
+ 
+ .insert, ins {
+     background: lightgreen;
+ }
+ 
+ .delete, del {
+     background: pink;
+ }
+
+ .tagdiff_replaced {
+     outline: 2px dashed orange;
+ }
+
+ header .revision {
+     background: grey;
+     color: white;
+     padding: 0 5px;
+     border-radius: 10px;
+ }
+ 
  
 </style>
 
 <div class="container">
     
     <header>
-
-        <span class="title">
-            <a href="/logbooks/{{entry.logbook.id}}" target="logbook">{{ entry.logbook.name }}</a>
-            /
-            {{ entry.title or "(Untitled)"}}
-        </span>
         <div class="commands">
-            {% if entry.follows %}
-                <a href="/entries/{{entry.follows.id}}">Parent</a>
+            {% if revision.prev_version is not none %}
+                <a href="/entries/{{entry.id}}/{{revision.prev_version+1}}">Older</a>
             {% else %}
-                <a href="new?follows={{ entry.id }}"
-                   title="Create a new entry, as a follow-up to this one.">
-                    Follow up
-                </a>
+                Older
             {% endif %}
             |
+            {% if revision.next_version is not none %}
+                <a href="/entries/{{entry.id}}/{{revision.next_version+1}}">Newer</a>
+            {% else %}
+                Newer
+            {% endif %}
+            
+        </div>
+        
+        <div>
+            <span class="revision"> Revision  #{{( entry.revisions | list).index(revision) + 1 }}</span>
+            <span class="timestamp">
+                {{revision.timestamp.strftime('%Y-%m-%d %H:%M:%S')}}
+            </span>
+
+        </div>
+        
+        <span class="title">
+
+            
+            <a href="/logbooks/{{entry.logbook.id}}" target="logbook">{{ entry.logbook.name }}</a> /
+            {% if revision.title %}
+                <del>{{ revision.title }}</del> → <ins>{{ revision.new_title }}</ins>
+            {% else %}
+                {{ revision.current_title or "(Untitled)"}}
+            {% endif %}
+        </span>
+
+        <div class="commands">
+            {% if entry.follows %}
+                <a href="/entries/{{entry.follows.id}}">Parent</a> |
+            {% endif %}
             <a href="/logbooks/{{entry.logbook.id}}#{{entry.id}}"
                target="logbook" title="Locate this entry in the logbook.">
                 Find
             </a>
-
-            &nbsp;
-
-            {% set previous_entry = entry.previous %}
-            {% if previous_entry %}
-                <a href="/entries/{{ previous_entry.id }}"
-                   title="'{{previous_entry.title}}'">
-                    Prev
-                </a>
-            {% else %}
-                Prev
-            {% endif %}
-            
-            {% set next_entry = entry.next %}
-            {% if next_entry %}
-                <a href="/entries/{{ next_entry.id }}"
-                   title="'{{next_entry.title}}'">Next</a>
-            {% else %}
-                Next
-            {% endif %}
         </div>
+        
     </header>
     
     <div class="body">
@@ -130,29 +152,16 @@
         
         <article>
             
-            <div class="info">
-
+            <div class="info">                
+                
                 <div class="commands">                    
-                    <a href="edit/{{entry.id}}"
-                       title="Open this entry for editing">
-                        Edit
-                    </a>
-                    |
                     <a href="/entries/{{entry.id}}"
                        title="This is a direct link to this entry">
                         Link
                     </a>
-                    {% if entry.revisions %}
-                    |
-                    <a href="/entries/{{entry.id}}/history"
-                       title="Show the changes to this entry">
-                        History
-                    </a>
-                    {% endif %}
 
                     {% if entry.followups %}
-                        &nbsp;🠉&nbsp; 
-                        <a href="#{{entry.followups[0].id}}" title="Next followup">&nbsp;🠋&nbsp;</a>
+                        &nbsp;🠉&nbsp; <a href="#{{entry.followups[0].id}}">&nbsp;🠋&nbsp;</a>
                     {% endif %}
                 </div>
 
@@ -160,60 +169,75 @@
                     {{entry.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                 </span>
                 
-                {% if entry.authors %}
-                    <span class="authors">
-                        {% for author in entry.authors %}
-                            <a href="/search/?authors={{author}}"
-                               target="logbook">{{author}}</a>
-                        {% endfor %}
-                    </span>
-                {% endif %}
-                               
-                {% if entry.last_changed_at %}
-                    <div class="changed">(Last changed at {{entry.last_changed_at.strftime('%Y-%m-%d %H:%M:%S')}})</div>
-                {% endif %}            
-                
+                <span class="author">
+                    {% if revision.authors %}
+                        <del>{{", ".join(revision.authors)}}</del>
+                        →
+                        <ins>{{", ".join(revision.new_authors)}}</ins>
+                    {% else %}
+                        {{ ", ".join(revision.current_authors) }}
+                    {% endif %}
+                </span>
+                                               
                 <div class="attributes">
+                    {% set new_attributes = revision.current_attributes %}
+                    {% set old_attributes = revision.attributes %}
 
-                    {%- if entry.logbook.attributes and entry.attributes  %}
-                        {%- for attribute in entry.logbook.attributes
-                        if attribute.name in entry.attributes %}
-                            <span class="attribute" data-name="{{attribute.name}}">
-                                {% if attribute.required %}*{% endif %}
-                                {{attribute.name}}
-                                <span class="value">
-                                    {%- if attribute.type == "text" %}
-                                        {{ entry.attributes.get(attribute.name) }}
-                                    {% endif -%}
-                                    {%- if attribute.type == "number" %}
-                                        {{ entry.attributes.get(attribute.name) }}
-                                    {% endif -%}
-                                    {%- if attribute.type == "boolean" %}
-                                        {{ entry.attributes.get(attribute.name) }}
-                                    {% endif -%}
-                                    {%- if attribute.type == "option" %}
-                                        {{ entry.attributes.get(attribute.name) }}
-                                    {% endif -%}
-                                </span>
-                            </span>
-                        {% endfor -%}
-                    {% endif -%}
+                    {% if attributes and entry.logbook.attributes %}
+                        {% for attribute in entry.logbook.attributes %}
+                            {% if attribute.name in old_attributes
+                               and attribute.name in new_attributes %}
+                                <label class="attribute"
+                                       data-name="{{attribute.name}}">
+                                    {% if attribute.required %}*{% endif %}
+                                    {{attribute.name}}
+                                    <span class="value">
+                                        {% if attribute.type == "text" %}
+                                            <del>{{ old_attributes.get(attribute.name) }}</del>
+                                            →
+             	                            <ins>{{ new_attributes.get(attribute.name) }}</ins>
+                                        {% endif %}
+                                        {% if attribute.type == "number" %}
+                                            <del>{{ old_attributes.get(attribute.name) }}</del>
+                                            →
+                                            <ins>{{ new_attributes.get(attribute.name) }}</ins>
+                                        {% endif %}
+                                        {% if attribute.type == "boolean" %}
+                                            <del>{{ old_attributes.get(attribute.name) }}</del>
+                                            →
+                                            <ins>{{ new_attributes.get(attribute.name) }}</ins>
+                                        {% endif %}
+                                        {% if attribute.type == "option" %}
+                                            <del>{{ old_attributes.get(attribute.name) }}</del>
+                                            →
+                                            <ins>{{ new_attributes.get(attribute.name) }}</ins>
+                                        {% endif %}
+                                    </span>
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
                 </div>
             </div>
             
             <div class="content">
                 {% if entry.content_type == "text/html" %}
-                    {{ (entry.content or "") | safe }}
+                    a{{ (revision.content_htmldiff or "") | safe }}
                 {% else %}
                     <pre>{{ entry.content or "" }}</pre>
                 {% endif %}
             </div>
 
-            {% from 'attachment.jinja2' import attachment_thumbnails %}
             {% if entry.get_attachments() %}
-                <div class="attachments">
-                    {{ attachment_thumbnails(entry) }}
-                </div>
+            <div class="attachments">
+                <ul>
+                    {% for attachment in entry.attachments %}
+                        {% if not attachment.embedded %}
+                            <li><a href="/attachments/{{ attachment.path }}">{{ attachment.path.rsplit("/")[-1].strip() }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
             {% endif %}
             
         </article>
@@ -232,18 +256,15 @@
                         <a href="/entries/{{entry.id}}#{{followup.id}}">Link</a>
                         
                         {% if loop.first %}
-                            <a href="#{{entry.id}}"
-                               title="Entry">&nbsp;🠉&nbsp;</a>
+                            <a href="#{{entry.id}}">&nbsp;🠉&nbsp;</a>
                         {% else %}
-                            <a href="#{{entry.followups[loop.index0-1].id}}"
-                               title="Previous followup">&nbsp;🠉&nbsp;</a>
+                            <a href="#{{entry.followups[loop.index0-1].id}}">&nbsp;🠉&nbsp;</a>
                         {% endif %}
                         
                         {% if loop.last %}
                             &nbsp;🠋&nbsp;
                         {% else %}
-                            <a href="#{{entry.followups[loop.index0+1].id}}"
-                               title="Next followup">&nbsp;🠋&nbsp;</a>
+                            <a href="#{{entry.followups[loop.index0+1].id}}">&nbsp;🠋&nbsp;</a>
                         {% endif %}
                     </div>        
 
@@ -251,20 +272,13 @@
                     <span>
                         {{followup.created_at.strftime('%Y-%m-%d %H:%M:%S')}}
                     </span>
-                    {% if followup.authors %}
-                        <span class="authors">
-                            {% for author in followup.authors %}
-                                <span class="author">
-                                    <a href="/search/?authors={{author}}"
-                                       target="logbook">
-                                        {{author}}
-                                    </a>
-                                </span>
-                            {% endfor %}
-                        </span>
+                    {% if followup.authors and followup.authors != entry.authors %}
+                        <span>{{ ", ".join(followup.authors) }}</span>
                     {% endif %}
                     {% if followup.last_changed_at %}
-                        <div class="changed">(Last changed at {{followup.last_changed_at.strftime('%Y-%m-%d %H:%M:%S')}})</div>
+                        <a href="/entries/change/{{followup.last_changed_at}}">
+                            <div class="changed">(Last changed at {{followup.last_changed_at}})</div>
+                        </a>
                     {% endif %}
                     {% if followup.title and followup.title != entry.title %}
                         <div>
@@ -278,7 +292,7 @@
                         <div class="attributes">        
                             {% for attribute in entry.logbook.attributes %}
                                 {% if followup.attributes.get(attribute.name) != entry.attributes.get(attribute.name) %}
-                                    <span class="attribute" data-name="{{attribute.name}}">
+                                    <label class="attribute" data-name="{{attribute.name}}">
                                         {% if attribute.required %}*{% endif %}
                                         {{attribute.name}}
                                         <span class="value">
@@ -295,7 +309,7 @@
                                                 {{ followup.attributes.get(attribute.name) }}
                                             {% endif %}
                                         </span>
-                                    </span>
+                                    </label>
                                 {% endif %}
                             {% endfor %}        
                         </div>

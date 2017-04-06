@@ -1,7 +1,5 @@
 from datetime import datetime
 from html.parser import HTMLParser
-import json
-from lxml import etree, html
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from playhouse.flask_utils import FlaskDB
@@ -12,48 +10,10 @@ from peewee import (CharField, TextField, IntegerField, BooleanField,
 from peewee import DoesNotExist, DeferredRelation, fn, JOIN
 
 from .patch import make_patch, apply_patch
+from .htmldiff import htmldiff
 
 
 db = FlaskDB()  # wrapper, to make config cleaner
-
-
-class JSONField_(TextField):
-
-    "Stores a JSON string. Encodes/decodes on access"
-
-    def db_value(self, value):
-        if value:
-            return json.dumps(value)
-
-    def python_value(self, value):
-        if value:
-            return json.loads(value)
-        return {}
-
-
-def cleanup_html(bad_html):
-    "Shape up a HTML string"
-    if not bad_html.strip():
-        return ""
-    tree = html.document_fromstring(bad_html)
-    # TODO: some intelligent cleanup here, removing evil tags such as
-    # <html>, <body>, <script>, <style>, <iframe>, ...
-    # Might also remove stuff like multiple empty <p>
-    return '\n'.join(
-        (etree.tostring(stree, pretty_print=True, method="xml")
-         .decode("utf-8")
-         .strip())
-        for stree in tree[0].iterchildren()
-    )
-
-
-class HTMLField(TextField):
-
-    "Stores a HTML string. It applies a cleanup step before storing"
-
-    def db_value(self, value):
-        if value:
-            return cleanup_html(value)
 
 
 class Logbook(db.Model):
@@ -228,7 +188,7 @@ class Entry(db.Model):
     logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField(null=True)
     authors = JSONField(null=True)
-    content = HTMLField(null=True)
+    content = TextField(null=True)
     content_type = CharField(default="text/html; charset=UTF-8")  # TODO: should not default to HTML
     metadata = JSONField(null=True)  # general
     attributes = JSONField(null=True)
@@ -239,7 +199,7 @@ class Entry(db.Model):
     archived = BooleanField(default=False)
 
     class Meta:
-        order_by = ("-created_at",)
+        order_by = ("created_at",)
 
     @property
     def next(self):
@@ -275,24 +235,33 @@ class Entry(db.Model):
             for attr, value in data.items()
             if getattr(self, attr) != value
         }
-        content = cleanup_html(data.get("content", ""))
-        diff = make_patch(content, self.content or "")
-        original_values["content"] = diff
         change = EntryRevision(entry=self, **original_values)
         for attr, value in data.items():
             setattr(self, attr, value)
         self.last_changed_at = change.timestamp
         return change
 
-    def get_old_version(self, change_id):
-        pass
+    def get_old_version(self, revision_id):
+        revisions = (EntryRevision.select()
+                     .where(EntryRevision.entry == self
+                            and EntryRevision.id >= revision_id)
+                     .order_by(EntryRevision.id.desc()))
+        content = self.content
+        print(content)
+        print("---")
+        for revision in revisions:
+            print(revision.content)
+            if revision.content:
+                content = apply_patch(content, revision.content)
+        return content
 
     @property
     def stripped_content(self):
         return strip_tags(self.content)
 
     def get_attachments(self, embedded=False):
-        return self.attachments.filter(Attachment.embedded == embedded)
+        return self.attachments.filter((Attachment.embedded == embedded) &
+                                       ~Attachment.archived)
 
 
 DeferredEntry.set_model(Entry)
@@ -315,7 +284,57 @@ class EntryRevision(db.Model):
     revision_authors = JSONField(null=True)
     revision_comment = TextField(null=True)
 
+    @property
+    def content_htmldiff(self):
+        if self.content:
+            #old_content = self.entry.get_old_version(self.id)
+            new_content = self.get_attribute("content")
+            print(self.content, new_content)
+            return htmldiff(self.content, new_content)
+        return self.get_attribute("content")
 
+    def get_attribute(self, attr):
+        try:
+            return getattr(
+                EntryRevision.select()
+                .where((EntryRevision.entry == self.entry) &
+                       (getattr(EntryRevision, attr) != None) &
+                       (EntryRevision.id > self.id))
+                .order_by(EntryRevision.id)
+                .get(), attr)
+        except DoesNotExist:
+            return getattr(self.entry, attr)
+
+    @property
+    def current_authors(self):
+        return self.get_attribute("authors")
+
+    @property
+    def current_title(self):
+        return self.get_attribute("title")
+
+    @property
+    def new_title(self):
+        return self.get_attribute("title")
+
+    @property
+    def new_authors(self):
+        return self.get_attribute("authors")
+
+    @property
+    def prev_version(self):
+        index = list(self.entry.revisions).index(self)
+        if index > 0:
+            return index - 1
+
+    @property
+    def next_version(self):
+        revisions = list(self.entry.revisions)
+        index = revisions.index(self)
+        if index < (len(revisions) - 1):
+            return index + 1
+
+    
 class EntryLock(db.Model):
     "Contains temporary edit locks, to prevent overwriting changes"
     entry = ForeignKeyField(Entry)
