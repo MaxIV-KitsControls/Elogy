@@ -266,7 +266,7 @@
             <tr>
                 <td colspan="2">
                     
-                    <button id="submitButton" type="submit">Submit</button>
+                    <button id="submitButton" name="submit" type="submit">Submit</button>
 
                     <label>
                         <input name="archived" type="checkbox" 
@@ -341,11 +341,11 @@
 
      tinymce.init({
          selector: '#content',
-         plugins: "image textcolor paste table lists advlist",
+         plugins: "image textcolor paste table lists advlist code",
          toolbar: (
              "undo redo | removeformat | styleselect |"
              + " bold italic forecolor backcolor |"
-             + " bullist numlist outdent indent | link image table"
+             + " bullist numlist outdent indent | link image table | code"
          ),
          menubar: false,
          statusbar: false,
