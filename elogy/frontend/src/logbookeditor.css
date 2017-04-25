@@ -1,0 +1,45 @@
+#logbookeditor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#logbookeditor header {
+    flex: 0;
+}
+
+#logbookeditor form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#logbookeditor form > fieldset.description {
+    flex: 1;
+}
+
+#logbookeditor input[name=name] {
+    width: 100%;
+}
+
+#logbookeditor textarea[name=description] {
+    width: 100%;
+}
+
+#logbookeditor fieldset.attributes {
+    flex: 1;
+}
+
+#logbookeditor fieldset.attributes > div {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#logbookeditor .attribute label {
+    padding: 0 5px;
+    white-space: nowrap;
+}
+
+#logbookeditor .attribute textarea {
+    vertical-align: top;
+}

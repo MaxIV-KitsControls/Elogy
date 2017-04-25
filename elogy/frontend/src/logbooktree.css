@@ -1,0 +1,60 @@
+#logbooktree {
+    flex: 1;
+    overflow: auto;
+}
+
+#logbooktree header {
+    border-bottom: 1px solid grey;
+    padding: 5px;    
+}
+
+#logbooktree .tree {
+    padding: 5px;
+}
+
+#logbooktree ul {
+    margin: 0px;
+    /* padding-left: 30px; */
+}
+
+#logbooktree li {
+    /* padding: 2px; */
+
+    /* padding-left: 1.5em; */
+    /* text-indent:-1.5em; */
+    /* padding-left: 0px; */
+}
+
+#logbooktree li a {
+    text-decoration: none;    
+}
+
+#logbooktree li.selected {
+    background: white;
+}
+
+
+#logbooktree li.has-children {
+    /* padding-left: 5px; */
+    position: relative;
+}
+
+#logbooktree li input {
+    position: absolute;
+    left: 0;
+}
+
+
+#logbooktree input[type='checkbox'] {
+    display: none;
+    /* width: 0; */
+}
+
+
+#logbooktree input[type='checkbox'] + label:before {
+    content: "▶";
+}
+
+#logbooktree input[type='checkbox']:checked + label:before {
+    content: "▼";
+}

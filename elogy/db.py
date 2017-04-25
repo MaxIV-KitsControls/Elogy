@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from html.parser import HTMLParser
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
@@ -30,63 +30,10 @@ class Logbook(db.Model):
     attributes = JSONField(null=True)
     archived = BooleanField(default=False)
 
-    def get_entries(self, followups=True, attribute_filters=None,
-                    child_logbooks=False, archived=False, n=None):
+    def get_entries(self, **kwargs):
 
         "Convenient way to query for entries in this logbook"
-
-        # build a suitable query
-        Followup = Entry.alias()
-        entries = (
-            Entry.select(
-                Entry,
-                fn.count(Followup.id).alias("n_followups"),
-                Entry.created_at.alias("timestamp"))  # a helpful alias
-        )
-        # we can include entries from logbooks that are contained in this one
-        if child_logbooks:
-            # TODO: we only get immediate children here, no grandchildren
-            # and so on. Figure out a way to do that!
-            entries = (entries.join(Logbook, JOIN.LEFT_OUTER)
-                       .where((Logbook.id == self.id) |
-                              (Logbook.parent == self)))
-        else:
-            entries = entries.where(Entry.logbook == self.id)
-
-        # Entries marked as "archived" should normally not be included
-        if archived:
-            entries = (entries
-                       .join(Followup, JOIN.LEFT_OUTER,
-                             on=(Followup.follows == Entry.id)))
-        else:
-            entries = (entries
-                       .where(~Entry.archived)
-                       .join(Followup, JOIN.LEFT_OUTER,
-                             on=((Followup.follows == Entry.id) &
-                                 ~Followup.archived)))
-
-        # 'followups' are entries that relate to an earlier entry
-        if not followups:
-            entries = (entries.where(Entry.follows == None)
-                       .group_by(Entry.id)
-                       .order_by(fn.coalesce(
-                           Followup.created_at,
-                           Entry.created_at).desc()))
-        else:
-            entries = (entries
-                       .group_by(Entry.id)
-                       # .where(Entry.follows == None)
-                       .order_by(Entry.created_at.desc()))
-
-        # filter on attribute values
-        if attribute_filters:
-            for attr, value in attribute_filters.items():
-                attr_value = fn.json_extract(Entry.attributes, "$." + attr)
-                entries = entries.where(attr_value == value)
-
-        if n:
-            return entries.limit(n)
-        return entries
+        return Entry.search(logbook=self, **kwargs)
 
     @property
     def ancestors(self):
@@ -127,21 +74,41 @@ class Logbook(db.Model):
                 .order_by(fn.date(Entry.created_at)))
         return [(e.date.timestamp(), e.id, e.count) for e in data]
 
-    def convert_attribute(self, name, value):
-        attributes = {
-            attr["name"]: attr
-            for attr in self.attributes
-        }
-        info = attributes[name]
+    def convert_attribute(self, info, value):
+        "Try to convert an attribute value to the format the logbook expects"
+        # Mainly useful when the logbook configuration may have changed, and
+        # trying to access attributes of previously created entries.
+        # Not much point in converting them until someone edits the entry.
         if value is None and not info["required"]:
             # ignore unset values if not required
             return
         if info["type"] == "number":
-            return float(value)
+            try:
+                return float(value)
+            except ValueError:
+                return 0
         elif info["type"] == "boolean":
             return bool(value)
-        else:  # string or option
-            return value
+        elif info["type"] == "text" and isinstance(value, list):
+            return ", ".join(str(item) for item in value)
+        elif info["type"] == "multioption" and isinstance(value, str):
+            return [value]
+        return value
+
+    def get_form_attributes(self, formdata):
+        result = {}
+        for attribute in self.attributes or []:
+            formitem = "attribute-{name}".format(**attribute)
+            if attribute["type"] == "multioption":
+                # In this case we'll get the data as a list of strings
+                value = formdata.getlist(formitem)
+            else:
+                # in all other cases as a single value
+                value = formdata.get(formitem)
+            if value:
+                result[attribute["name"]] = self.convert_attribute(
+                    attribute, value)
+        return result
 
 
 class LogbookRevision(db.Model):
@@ -189,10 +156,9 @@ class Entry(db.Model):
     title = CharField(null=True)
     authors = JSONField(null=True)
     content = TextField(null=True)
-    content_type = CharField(default="text/html; charset=UTF-8")  # TODO: should not default to HTML
+    content_type = CharField(default="text/html; charset=UTF-8")
     metadata = JSONField(null=True)  # general
     attributes = JSONField(null=True)
-    tags = JSONField(null=True)
     created_at = DateTimeField(default=datetime.now)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
@@ -218,13 +184,12 @@ class Entry(db.Model):
     def previous(self):
         "Previous entry (order by id)"
         try:
-            return model_to_dict(
-                Entry.select()
-                .where((Entry.logbook == self.logbook) &
-                       (Entry.follows == None) &
+            return (Entry.select()
+                    .where((Entry.logbook == self.logbook) &
+                           (Entry.follows == None) &
                        (Entry.created_at < self.created_at))
-                .order_by(Entry.created_at.desc())
-                .get(), recurse=False)
+                    .order_by(Entry.created_at.desc())
+                    .get())
         except DoesNotExist:
             pass
 
@@ -233,10 +198,11 @@ class Entry(db.Model):
         original_values = {
             attr: getattr(self, attr)
             for attr, value in data.items()
-            if getattr(self, attr) != value
+            if hasattr(self, attr) and getattr(self, attr) != value
         }
         change = EntryRevision(entry=self, **original_values)
-        for attr, value in data.items():
+        for attr in original_values:
+            value = data[attr]
             setattr(self, attr, value)
         self.last_changed_at = change.timestamp
         return change
@@ -263,12 +229,130 @@ class Entry(db.Model):
         return self.attachments.filter((Attachment.embedded == embedded) &
                                        ~Attachment.archived)
 
+    @property
+    def lock(self):
+        try:
+            return EntryLock.get((EntryLock.entry == self) &
+                                 (EntryLock.expires_at < datetime.now()))
+        except EntryLock.DoesNotExist:
+            return False
+
+    @classmethod
+    def search(cls, logbook=None, followups=True,
+               child_logbooks=False, archived=False,
+               n=None, offset=0, count=False,
+               attribute_filter=None, content_filter=None,
+               title_filter=None, author_filter=None,
+               attachment_filter=None):
+
+        # recursive query to get an entire "thread" (starting at 9586)
+        # with recursive entry1(id,logbook_id,title,authors,content,content_type,metadata,attributes,tags,created_at,last_changed_at,follows_id,archived) as (select * from entry where id=9586 union all select entry.* from entry,entry1 where entry.follows_id=entry1.id) select * from entry1;
+
+        # Note: this is all a little messy. The reason we're building
+        # the query as a raw string is that peewee does not (currently)
+        # support recursive queries, which we need in order to search
+        # through nested logbooks. This code can probably be cleaned
+        # up a bit though.
+
+        if attribute_filter:
+            # need to extract the attribute values from JSON here, so that
+            # we can match on them later
+            attributes = ", {}".format(
+                ", ".join(
+                    "json_extract(entry.attributes, '$.{attr}') as {attr_id}"
+                    .format(attr=attr, attr_id="attr{}".format(i))
+                    for i, (attr, _) in enumerate(attribute_filter)))
+        else:
+            attributes = ""
+
+        if author_filter:
+            # extract the authors as a separate table
+            authors = ", json_each(entry.authors) as authors"
+        else:
+            authors = ""
+
+        if logbook:
+            if child_logbooks:
+                # recursive query to find all entries in the given logbook
+                # or any of its descendants, to arbitrary depth
+                query = """
+with recursive logbook1(id,parent_id) as (
+    values({logbook}, null)
+    union all
+    select logbook.id, logbook.parent_id from logbook,logbook1
+    where logbook.parent_id=logbook1.id
+)
+select {what}{attributes}
+from entry{authors}
+join logbook1 where entry.logbook_id=logbook1.id
+""".format(attributes=attributes,
+           what="count()" if count else "entry.*",
+           authors=authors, logbook=logbook.id)
+            else:
+                # this could be done with peewee but since we're doing
+                # the rest manually we might as well do this one too
+                # since it's trivial.
+                query = (
+                    "select *{attributes} from entry{authors} where entry.logbook_id = {logbook}"
+                    .format(logbook=logbook,
+                            attributes=attributes,
+                            authors=authors))
+        else:
+            # same here
+            query = ("select *{attributes} from entry{authors} where 1"  # :)
+                     .format(attributes=attributes, authors=authors))
+
+        if not archived:
+            query += " and not entry.archived"
+
+        # further filters on the results, depending on search criteria
+        if content_filter:
+            # need to filter out null or REGEX will explode on them
+            query += " and entry.content is not NULL and entry.content REGEXP '{}'".format(content_filter)
+        if title_filter:
+            query += " and entry.title is not NULL and entry.title REGEXP '{}'".format(title_filter)
+        if author_filter:
+            query += " and authors.value LIKE '{}'".format(author_filter)
+
+        # if attachment_filter:
+        #     entries = (
+        #         entries
+        #         .join(Attachment)
+        #         .where(
+        #             (~ Attachment.embedded) &
+        #             # Here, ** means "case insensitive like" or ILIKE
+        #             (Attachment.path ** "%{}%".format(attachment_filter)))
+        #         # avoid multiple hits on the same entry
+        #         .group_by(Entry.id))
+
+        if attribute_filter:
+            for i, (attr, value) in enumerate(attribute_filter):
+                # attr_value = fn.json_extract(Entry.attributes, "$." + attr)
+                query += " and {} = '{}'".format("attr{}".format(i), value)
+
+        # sort newest first, taking into account the last edit if any
+        # TODO: does this make sense? Should we only consider creation date?
+        query += " order by coalesce(entry.last_changed_at, entry.created_at) desc"
+
+        if n:
+            query += " limit {}".format(n)
+            if offset:
+                query += " offset {}".format(offset)
+
+        return Entry.raw(query)
+
 
 DeferredEntry.set_model(Entry)
 
 
 class EntryRevision(db.Model):
-    "Represents a change of an entry"
+    """Represents a change of an entry.
+
+    Counter-intuitively, what's stored here is the *old* entry
+    data. The point is that then we only need to store the fields that
+    actually were changed! But it becomes a bit confusing when it's
+    time to reconstruct an old entry.
+    """
     entry = ForeignKeyField(Entry, related_name="revisions")
     logbook = ForeignKeyField(Logbook, null=True)
     timestamp = DateTimeField(default=datetime.now)
@@ -284,15 +368,6 @@ class EntryRevision(db.Model):
     revision_authors = JSONField(null=True)
     revision_comment = TextField(null=True)
 
-    @property
-    def content_htmldiff(self):
-        if self.content:
-            #old_content = self.entry.get_old_version(self.id)
-            new_content = self.get_attribute("content")
-            print(self.content, new_content)
-            return htmldiff(self.content, new_content)
-        return self.get_attribute("content")
-
     def get_attribute(self, attr):
         try:
             return getattr(
@@ -306,11 +381,22 @@ class EntryRevision(db.Model):
             return getattr(self.entry, attr)
 
     @property
+    def content_htmldiff(self):
+        if self.content:
+            new_content = self.get_attribute("content")
+            return htmldiff(self.content, new_content)
+        return self.get_attribute("content")
+
+    @property
     def current_authors(self):
+        if self.authors:
+            return self.authors
         return self.get_attribute("authors")
 
     @property
     def current_title(self):
+        if self.title:
+            return self.title
         return self.get_attribute("title")
 
     @property
@@ -334,16 +420,23 @@ class EntryRevision(db.Model):
         if index < (len(revisions) - 1):
             return index + 1
 
-    
+
 class EntryLock(db.Model):
     "Contains temporary edit locks, to prevent overwriting changes"
     entry = ForeignKeyField(Entry)
-    timestamp = DateTimeField(default=datetime.now)
+    expires_at = DateTimeField(default=lambda: datetime.now + timedelta(hours=1))
     owner_ip = CharField()
+
+    @property
+    def locked(self):
+        return self.timestamp > datetime.now()
 
 
 class Attachment(db.Model):
-    "Store information about an attachment"
+    """Store information about an attachment, e.g. an arbitrary file
+    associated with an entry. The file itself is not stored in the
+    database though, only a path to where it's expected to be.
+    """
     entry = ForeignKeyField(Entry, null=True, related_name="attachments")
     filename = CharField(null=True)
     timestamp = DateTimeField(default=datetime.now)

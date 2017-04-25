@@ -27,6 +27,9 @@ class CustomJSONEncoder(JSONEncoder):
         if isinstance(obj, datetime):
             serial = obj.timestamp()
             return serial
+        elif isinstance(obj, peewee.SelectQuery):
+            print("select")
+            return list(obj)
         elif isinstance(obj, peewee.Model):
             serial = model_to_dict(obj, recurse=False)
             return serial

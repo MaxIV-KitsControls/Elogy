@@ -1,0 +1,146 @@
+#entry {
+    background: #bbb;
+}
+    
+
+#entry header {
+    background: yellow;
+}
+
+#entry .container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#entry .container header {
+    flex: 0;
+    padding: 5px 10px;
+    background: #eee;
+}
+
+#entry header .title  {
+    font-size: 120%;
+    background: #ccc;
+    padding: 0 5px;
+}
+
+#entry header .commands {
+    float: right;
+}
+
+#entry .body {
+    flex: 1;
+    border-bottom: 1px;
+    max-height: 100%;
+    overflow: auto;
+}
+
+#entry .info {
+    /* this is the magic that keeps the entry headers floating along */
+    position: sticky;  
+    top: -1px;
+    background: #eee;
+    border-bottom: 1px solid #bbb;
+    padding: 5px 10px;          
+}
+
+#entry .info .commands {
+    float: right;
+}
+
+#entry .followups .info {
+    border-top: 1px solid #bbb;
+    background: #FFFF88;
+}
+
+#entry .followups {
+    border-left: 10px solid #bbb;
+}
+
+#entry .info .authors span:not(:last-child):after {
+    content: ", ";
+}
+
+#entry .info .attributes .attribute {
+    display: inline-block;
+    white-space: nowrap;
+    font-size: 80%;
+    padding: 0 4px;
+    margin: 0 2px;
+}
+
+#entry .info .attributes .attribute .value {
+    background: #666;
+    color: white;
+    padding: 0 4px;
+}
+
+#entry article {
+    border-bottom: 2p solid black;
+}   
+
+#entry article .content {
+    background: white;
+    padding: 5px 20px;
+}
+
+#entry article .content.plain {
+    white-space: pre-wrap;
+}
+ 
+#entry article .content img:not([width]) {
+    max-width: 100%;
+}
+
+#entry article .followups {
+    border-left: 10px solid #ddd;
+}
+
+/* #entry article .followups .info { */
+/*     border-left: 10px solid #ddd; */
+/* } */
+
+/* #entry article .followups .attachments { */
+/*     border-left: 10px solid #ddd; */
+/* } */
+ 
+/* #entry article .followups .followups { */
+/*     border-left: 10px solid #ddd; */
+/* } */
+ 
+#entry article .followups .followup-n {
+    background: grey;
+    color: white;
+    padding: 0 5px;
+    border-radius: 10px;
+}
+
+#entry article .attachments {
+    background: #ddd;
+    padding: 5px;
+    margin: 0;
+}
+
+#entry article .attachments .attachment {
+    padding: 2px;
+    margin: 0;
+}
+
+#entry article .attachments .attachment a {
+    padding: 0;    
+    margin: 0;
+}
+
+#entry table[width="98%"] {
+    border: 1px solid red;
+}
+
+#entry table {
+    border-collapse: collapse;
+}
+
+#entry td {
+    padding: 3px;
+    border: 1px solid #ccc;
+}

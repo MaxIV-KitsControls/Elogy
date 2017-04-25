@@ -1,0 +1,136 @@
+
+#logbook header {
+    padding: 5px;
+}
+
+#logbook dl {
+    padding: 0;
+    margin: 0;
+}
+
+#logbook .entries {
+    position: relative;
+}
+
+#logbook dd {
+    padding: 0;
+    margin: 0;
+    background: #eee;    
+}
+
+#logbook dd.entry {
+    list-style: none;
+    padding: 5px 5px 0 5px;
+    height: 80px;
+    overflow: hidden;
+}
+
+#logbook div.entry {
+    position: relative;
+    height: 100%;
+    mask-image: linear-gradient(rgba(0, 0, 0, 1.0), rgba(0, 0, 0, 1.0) 80%, transparent);        
+}
+
+#logbook .entry a {
+    text-decoration: none;
+}
+
+#logbook .entry .info {
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+
+#logbook .entry .logbook {
+    font-size: 90%;
+}
+
+#logbook .entry .authors {
+    padding-left: 10px;
+}
+
+#logbook .entry .authors .author:not(:last-child):after {
+    content: ", ";
+}
+
+#logbook .entry .author {
+    white-space: nowrap;
+}
+
+#logbook .entry .timestamp {
+    white-space: nowrap;
+}
+
+#logbook .entry .title {
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+
+#logbook .entry .title > span {
+    text-decoration: underline;
+}
+
+#logbook .entry .content {
+    font-size: 80%;
+    white-space: normal;
+    height: 100%;
+}
+
+#logbook .entry img {
+    border: 1px solid grey;
+}
+
+#logbook .entry .followups {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+#logbook .entry .attachments {
+    position: relative;
+    float: right;
+    height: 70px;
+}
+
+#logbook .entry .attachments span {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+
+
+#logbook dd.entry:not(:last-child) {
+    border-bottom: 1px solid #aaa;
+}
+
+#logbook dd.entry.selected {
+    background: white;
+}
+
+#logbook .date-group {
+    position: relative;
+    padding: 0;
+    margin: 0;
+    border-bottom: none
+}
+
+#logbook .date {
+    top: -1px;
+    position: sticky;    
+    font-size: 80%;
+    font-weight: bold;
+    color: white;
+    background: #aaa;
+    text-align: center;
+    z-index: 1;
+}
+
+
+#logbook .attributes {
+    
+}
+
+
+#logbook .attributes select {
+    font-size: 70%;
+    margin: 1px;
+}

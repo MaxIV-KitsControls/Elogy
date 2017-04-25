@@ -1,0 +1,101 @@
+#entryeditor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#entryeditor header {
+    padding: 5px;
+    flex: 0;
+    font-size: 80%;
+    background: #ddd;
+}
+
+#entryeditor header input[type=text] {
+    width: 100%;
+    box-sizing : border-box;
+    margin-bottom: 5px;
+}
+
+
+#entryeditor .content {
+    flex: 1;
+    background: red;
+    height: 100%;
+}
+
+#entryeditor footer {
+    flex: 0;
+}
+
+#entryeditor .attributes {
+
+    margin-top: 5px;
+}
+
+#entryeditor .attributes > span {
+    display: inline-block;    
+    white-space: nowrap;
+    margin: 1px 5px;
+}
+
+#entryeditor .attributes > span > label > * {
+    vertical-align: middle;    
+}
+
+#entryeditor .select-wrapper {
+    /* allow Select component to start small but grow as needed */
+    min-width: 150px;
+    display: inline-block;
+    margin: 0 1px;
+}
+
+#entryeditor .Select-input, #entryeditor .Select-control {
+    height: 24px;
+}
+
+#entryeditor .Select-placeholder,
+#entryeditor .Select-placeholder,
+#entryeditor .Select--single > .Select-control .Select-value {
+    line-height: 24px;
+}
+
+#entryeditor .Select--multi .Select-value {
+    margin-left: 2px;
+    margin-top: 1px;
+}
+
+#entryeditor .Select-input > input {
+    padding: 4px 0 8px;
+}
+
+ .mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
+     min-height: 100%;
+ }
+ /*Container body*/
+ .mce-container-body {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+ }
+ /*Editing area*/
+ .mce-container-body .mce-edit-area {
+     position: absolute;
+     top: 37px;
+     bottom: 0;
+     left: 0;
+     right: 0;
+ }
+ /*Footer*/
+ .mce-tinymce .mce-statusbar {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+ }
+
+
+ #entryeditor .attachments-drop {
+     min-height: 20px;
+ }

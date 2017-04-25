@@ -1,27 +1,42 @@
-"""
-This blueprint deals with attachments, e.g. arbitrary (well...) files that
-are uploaded as part of an entry. They are stored as original files,
-in a configurable location on disk.
+"""Utilities for dealing with attachments, e.g. arbitrary (well...)
+files that are uploaded as part of an entry. They are stored as
+original files, in a configurable location on disk.
 """
 
+from base64 import decodestring
+import binascii
 from datetime import datetime
 from dateutil.parser import parse
+import io
+import mimetypes
 import os
 
-from flask import (Blueprint, abort, request, url_for,
+from flask import (Blueprint, abort, request, url_for, redirect,
                    current_app, jsonify, send_from_directory)
+from lxml import html, etree
+from lxml.html.clean import Cleaner
 from PIL import Image
+from werkzeug import FileStorage
 
 from .db import Entry, Attachment
-
-attachments = Blueprint('attachments', __name__,
-                        template_folder='templates')
 
 
 def allowed_file(filename):
     return ('.' in filename and
             filename.rsplit('.', 1)[1].lower()
             in current_app.config["ALLOWED_EXTENSIONS"])
+
+
+def get_content_type(file_):
+    "Try to figure out the mimetype of the fiven file"
+    if file_.content_type is not None:
+        return file_.content_type
+    type_, encoding = mimetypes.guess_type(file_.filename)
+    if type_ is None:
+        return None
+    if encoding is not None:
+        return "{};{}".format(type_, encoding)
+    return type_
 
 
 def save_attachment(file_, timestamp, entry_id, embedded=False):
@@ -58,51 +73,92 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
         # Not a recognized image
         metadata = None
 
+    print("entry_id", entry_id)
     if entry_id:
         entry = Entry.get(Entry.id == entry_id)
     else:
         entry = None
-    print("attachment embedded", embedded)
-    attachment = Attachment.create(path="{}/{}".format(today, filename),
-                                   filename=file_.filename,
-                                   timestamp=timestamp,
-                                   content_type=file_.content_type,
-                                   entry=entry, embedded=embedded,
-                                   metadata=metadata)
+
+    content_type = get_content_type(file_)
+
+    attachment = Attachment(path="{}/{}".format(today, filename),
+                            filename=file_.filename,
+                            timestamp=timestamp,
+                            content_type=content_type,
+                            entry=entry, embedded=embedded,
+                            metadata=metadata)
     return attachment
 
 
-@attachments.route("/", methods=["POST"])
-@attachments.route("/<int:entry_id>", methods=["POST"])
-def post_attachment(entry_id=None):
-    file_ = request.files["file"]
-    timestamp = request.form.get("timestamp")
-    embedded = request.form.get("embedded", "false").lower() == "true"
-    print("embedded", embedded)
-    if timestamp:
-        timestamp = parse(timestamp)
-    else:
-        timestamp = datetime.now()
-    if file_:  # and allowed_file(file_.filename):
-        attachment = save_attachment(file_, timestamp, entry_id,
-                                     embedded=embedded)
-        return jsonify({
-            "location": url_for(".get_attachment",
-                                filename=attachment.path),
-            "filename": attachment.filename,
-            "metadata": attachment.metadata
-        })
-    else:
-        abort(500)
+html_clean = Cleaner(style=True, inline_style=False,
+                     safe_attrs=html.defs.safe_attrs | set(['style']))
 
 
-@attachments.route("/<int:attachment_id>", methods=["DELETE"])
-def delete_attachment(attachment_id):
-    attachment = Attachment.get(Attachment.id == attachment_id)
-    attachment.archived = True
-    attachment.save()
+def decode_base64(data):
+    """Decode base64, padding being optional.
+
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+
+    """
+    missing_padding = len(data) % 4
+    if missing_padding != 0:
+        data += b'=' * (4 - missing_padding)
+    return decodestring(data)
 
 
-@attachments.route("/<path:filename>")
-def get_attachment(filename):
-    return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+def handle_img_tags(text, entry_id=None, timestamp=None):
+    """Get image tags from the text. Extract embedded images and save
+    them as attachments"""
+    attachments = []
+    timestamp = timestamp or datetime.now()
+    try:
+        doc = html.document_fromstring(text)
+    except etree.ParserError:
+        return text, attachments
+
+    for i, element in enumerate(doc.xpath("//*[@src]")):
+        src = element.attrib['src'].split("?", 1)[0]
+        if src.startswith("data:"):
+            header, data = src[5:].split(",", 1)  # TODO: find a safer way
+            filetype, encoding = header.split(";")
+            try:
+                raw_image = decode_base64(data.encode("ascii"))
+            except binascii.Error as e:
+                print("failed to decode image!", e)
+                continue
+            try:
+                # TODO: possible to be more clever about the filename?
+                filename = "decoded-{}-{}.{}".format(
+                    len(raw_image), i, filetype.split("/")[1].lower())
+            except IndexError:
+                print("weird filetype!?", filetype)
+                continue
+            file_ = FileStorage(io.BytesIO(raw_image),
+                                filename=filename, content_type=filetype)
+            attachment = save_attachment(file_, timestamp, entry_id,
+                                         embedded=True)
+            # TODO: maybe it would be a better idea to use a URL like
+            # "/attachments/<id>" here, and then just have a redirect
+            # to the real URI? That way we could change the way the files
+            # are stored under the hood without bothering about having
+            # to keep URLs unchanged...
+            src = element.attrib["src"] = url_for("get_attachment", path=attachment.path)
+            if element.getparent().tag == "a":
+                element.getparent().attrib["href"] = src
+
+            attachments.append(attachment)
+
+    # throw in a cleanup here since we've already parsed the HTML
+    html_clean(doc)  # remove some evil tags
+    content = '\n'.join(
+        (etree
+         .tostring(stree, pretty_print=True, method="xml")
+         .decode("utf-8")
+         .strip())
+        for stree in doc[0].iterchildren()
+    )
+
+    return content, attachments
+
+
