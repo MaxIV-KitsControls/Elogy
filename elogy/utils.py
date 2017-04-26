@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.parser import parse
 
 from flask import request
 from flask.json import JSONEncoder
@@ -35,3 +36,14 @@ class CustomJSONEncoder(JSONEncoder):
             return serial
 
         return JSONEncoder.default(self, obj)
+
+
+def get_utc_datetime(datestring):
+    timestamp = parse(datestring)
+    # we want to store UTC since SQLite does not store the TZ
+    # information.
+    utc_offset = timestamp.utcoffset()
+    if utc_offset:
+        timestamp -= utc_offset
+    # turn our timestamp into a "naive" datetime object
+    return timestamp.replace(tzinfo=None)
