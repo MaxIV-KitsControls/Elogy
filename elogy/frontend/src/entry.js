@@ -8,12 +8,26 @@ import style from './entry.css';
 import {formatTimeString} from './util.js';
 
 
+const EntryAttribute = ({config, value}) => (
+    <span className="attribute">
+        <span className="name">{config.name}:</span>
+        <span className="value">
+        {
+            config.type === "multioption"?
+            value.map(v => <span className="option">{v}</span>)
+            : value
+        }
+        </span>
+    </span>
+);
+
+
 const EntryAttributes = ({attributes, logbook}) => (
     <div className="attributes">
         {
             logbook.attributes
                    .filter(attr => attributes[attr.name])
-                   .map((attr, i) => <span key={i} className="attribute">{attr.name}: <span className="value">{attributes[attr.name]}</span></span>)
+                   .map((attr, i) => <EntryAttribute key={i} config={attr} value={attributes[attr.name]}/>)
         }
     </div>
 );
@@ -222,15 +236,13 @@ class Entry extends React.Component {
 
                 <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.id}`}>
                     <span className="logbook">
-                        <i className="fa fa-book"/> 
-                        {this.state.logbook && this.state.logbook.name}
+                        <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}
                     </span>
                 </Link>
                 
-                <span className="title">
-                    <i className="fa fa-file-text-o"/> 
+                <div className="title">
                     {this.state.title}
-                </span>
+                </div>
                 </header>
                 {/* The body is scrollable */}
                 <div className="body">

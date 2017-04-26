@@ -27,7 +27,7 @@ const EntryPreview = ({logbook, entry, selected, search}) => (
             }
             {
                 logbook && (logbook.id !== entry.logbook.id)?
-                <div className="logbook">{entry.logbook.name}</div>
+                <div className="logbook"><i className="fa fa-book"/> {entry.logbook.name}</div>
                 : null
             }
         <div className="info">
@@ -246,8 +246,7 @@ class Logbook extends React.Component {
             <div>
                 <header>
                     <span className="name">
-                        <i className="fa fa-book"/> 
-                        { logbook.id && logbook.name }
+                        <i className="fa fa-book"/> { logbook.id === 0? "[All logbooks]" : logbook.name }
                     </span>
                     
                     { logbook.id?
