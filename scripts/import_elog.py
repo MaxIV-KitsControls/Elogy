@@ -1,19 +1,27 @@
-"""
-A quick and dirty script to import data from elog logbooks. Tries
-to adapt logbooks, attributes etc to the elogy data model.
+"""A quick and dirty script to import data from elog logbooks. Tries
+to adapt logbooks, attributes, attachments etc to the elogy data model.
 
-Not thoroughly tested; probably does not support all elog features.
+Not thoroughly tested, does not support all elog features.
+
+To run it, point it at a running elogy instance, an existing elog
+config file and corresponding logbook directory, like so:
+
+$ python3 import_elog.py localhost:8000 /etc/elogd.cfg /var/lib/elog/logbooks/
+
+If you have many logbooks or lots of attachments this can take some
+minutes to complete. There is currently no way to filter which logbooks
+to import.
 
 Known issues:
+
 - Only works with the old "flat" ELOG file structure. Newer versions
   (AFAIK) stores stuff in a nested date-based tree which would require
   some changes to this script.
 
 - Links to other logbook posts will be broken, since the urls are
-  different and entry IDs will change. For now, the old URLS
-  are kept in the metadata ("original_elog_url"), so a
-  post-processing step should be able to correct the links.
-  (see "fix_elog_links.py")
+  different and entry IDs will change. For now, the old URLS are kept
+  in the metadata ("original_elog_url"), so a post-processing step
+  should be able to correct the links.  (see "fix_elog_links.py")
 
 - This also means that replies to entries may be broken. Maybe
   a more serious effort to insert entries in chronological order
@@ -22,8 +30,8 @@ Known issues:
 
 - Thumbnailing some image attachments fails (e.g. GIF, TIFF).
   Example: 1486734443-130903_084110_BF3_self_triggered_2013-09-02.gif
-  It would be nice to have generic icons for the most common non
-  image types too, e.g. text, XLS, PDF, DOC, ...
+
+- No error handling.
 
 """
 
