@@ -127,12 +127,12 @@
 #entry article .attachments {
     background: #ddd;
     padding: 5px;
-    margin: 0;
 }
 
-#entry article .attachments .attachment {
-    padding: 2px;
-    margin: 0;
+#entry article .attachments .attachment img {
+    margin: 2px;
+    border: 1px solid grey;
+    vertical-align: top;    
 }
 
 #entry article .attachments .attachment a {
