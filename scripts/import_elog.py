@@ -50,7 +50,7 @@ EXCLUDED_ATTRIBUTES = set(["last edited", "author", "subject"])
 
 
 def import_logbook(create_logbook, create_entry, create_attachment,
-                   config, name, attribute_config={},
+                   config, name, attribute_config={}, attributes=[],
                    root_path=".", parent=None, logbooks={}):
 
     """Import logbooks and entries from an elog config"""
@@ -92,8 +92,9 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                 "options": options,
                 "required": attribute in required
             }
-    print(attribute_config)
-    attributes = []
+    # we need to update attributes that are now (re)configured
+    attributes = [attribute_config[attr["name"].lower().strip()]
+                  for attr in attributes]
     # Pick up attributes
     if "attributes" in props:
         for attr_name in props["attributes"].split(","):
@@ -234,7 +235,7 @@ def import_logbook(create_logbook, create_entry, create_attachment,
         for child in children:
             import_logbook(create_logbook, create_entry, create_attachment,
                            config, child, root_path=root_path,
-                           attribute_config=attribute_config,
+                           attribute_config=attribute_config, attributes=attributes,
                            parent=logbook_id, logbooks=logbooks)
 
 
@@ -355,6 +356,7 @@ if __name__ == "__main__":
     host_port = sys.argv[1]
     elogd_config = sys.argv[2]
     logbook_path = sys.argv[3]
+    logbooks = sys.argv[4:]
 
     s = Session()
 
@@ -377,8 +379,9 @@ if __name__ == "__main__":
     ]
     logbook_ids = {}
     for logbook in top_logbooks:
-        import_logbook(partial(create_logbook, s, LOGBOOK_URL),
-                       partial(create_entry, s, ENTRY_URL),
-                       partial(create_attachment, s, ATTACHMENT_URL),
-                       config, logbook,
-                       root_path=logbook_path, logbooks=logbook_ids)
+        if not logbooks or logbook in logbooks:
+            import_logbook(partial(create_logbook, s, LOGBOOK_URL),
+                           partial(create_entry, s, ENTRY_URL),
+                           partial(create_attachment, s, ATTACHMENT_URL),
+                           config, logbook,
+                           root_path=logbook_path, logbooks=logbook_ids)
