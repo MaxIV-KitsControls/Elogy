@@ -5,6 +5,7 @@ import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
 
 import style from './entry.css';
+import {formatTimeString} from './util.js';
 
 
 const EntryAttributes = ({attributes, logbook}) => (
@@ -25,11 +26,14 @@ const ICON_CLASS_MAP = {
     "text/plain": "fa fa-file-text",
     "text/csv": "fa fa-file-text",
     'application/zip': "fa fa-file-archive-o"
+    // TODO: detect more file types
 }
 
 
-
 export const AttachmentPreview = ({attachment}) => {
+    // display an appropriate icon for the given attachment
+    if (!attachment.content_type)
+        return <i className="fa fa-file-o fa-2x"/>
     const contentType = attachment.content_type.split(";")[0].toLowerCase();
     console.log("attachment", attachment, contentType);
     if (ICON_CLASS_MAP[contentType]) {
@@ -113,13 +117,13 @@ class InnerEntry extends React.Component {
                             }
 
                 <span className="created-at">
-                    {(new Date(Date.parse(this.props.created_at))).toString()}
+                    {formatTimeString(this.props.created_at)}
                 </span>
                 
                 {
                     this.props.last_changed_at?
                     <span className="last-changed-at">
-                        Last change: {(new Date(Date.parse(this.props.last_changed_at))).toString()}
+                        (Last change: {formatTimeString(this.props.last_changed_at)})
                     </span>
                     :null
                 }
