@@ -1,6 +1,16 @@
 
 #logbook header {
     padding: 5px;
+    position: relative;
+}
+
+#logbook header .name {
+    font-size: 120%;
+    font-weight: bold;
+}
+
+#logbook header .entry {
+    float: right;
 }
 
 #logbook dl {

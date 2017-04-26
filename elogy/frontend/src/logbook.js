@@ -245,21 +245,27 @@ class Logbook extends React.Component {
         return (
             <div>
                 <header>
-                    { logbook.id && logbook.name }
-                    { logbook.id &&
+                    <span className="name">{ logbook.id && logbook.name }</span>
+                    { logbook.id?
                       <div>
+
+                          <div className="entry">
+                              <Link to={`/logbooks/${this.state.logbook.id}/entries/new`}>New entry</Link>
+                          </div>
                           <Link to={`/logbooks/${this.state.logbook.id}?parent=${this.state.logbook.id}`}>
                               Make parent
+                          </Link> | <Link to={`/logbooks/${this.state.logbook.id}/edit`}>
+                              Edit
+                          </Link> | <Link to={`/logbooks/${this.state.logbook.id}/new`}>
+                              New
                           </Link>
-                          <Link to={`/logbooks/${this.state.logbook.id}/entries/new`}>New entry</Link>
                       </div>
-                      
+                      : null
                     }
-                    <Link to={`/logbooks/${this.state.logbook.id}/edit`}>Edit</Link>
-                    <div className="filters"> {filter} </div>
-                    <div className="attributes">
-                        {attributes}
-                    </div>
+                <div className="filters"> {filter} </div>
+                <div className="attributes">
+                    {attributes}
+                </div>
                 </header>
                 <div ref="entries">
                     <EntryPreviews logbook={logbook}

@@ -49,10 +49,10 @@ class LogbookTreeNode extends React.Component {
         const children = (
             this.state.expanded && this.state.children?
             (<ul>
-                {this.state.children.map(
-                     child => <LogbookTreeNode key={child.id}
-                                               selectedLogbookId={this.props.selectedLogbookId}
-                                               search={this.props.search} {...child}/>)}
+    {this.state.children.map(
+         child => <LogbookTreeNode key={child.id}
+                                   selectedLogbookId={this.props.selectedLogbookId}
+                                   search={this.props.search} {...child}/>)}
             </ul>)
             : null
         );
@@ -61,10 +61,10 @@ class LogbookTreeNode extends React.Component {
             this.props.n_children > 0?
             (
                 <span>
-                <input type="checkbox" checked={this.state.expanded}
-                       id={`check-${this.props.id}`}
-                       onClick={this.toggle.bind(this)}/> 
-                <label htmlFor={`check-${this.props.id}`}></label>
+                    <input type="checkbox" checked={this.state.expanded}
+                           id={`check-${this.props.id}`}
+                           onClick={this.toggle.bind(this)}/> 
+                    <label htmlFor={`check-${this.props.id}`}></label>
                 </span>
             )
             : null
@@ -73,14 +73,14 @@ class LogbookTreeNode extends React.Component {
         // make sure we keep any parent setting 
         const query = parseQuery(this.props.search);
         const parentQuery = query.parent? `?parent=${query.parent}` : "";
-                
+        
         return (
             <li key={this.props.id}
                 title={this.props.description || null}
                 className={
                     (this.props.selectedLogbookId === this.props.id? "selected " : "") +
-                    (this.state.n_children > 0? "has-children" : "")
-                }>
+                     (this.state.n_children > 0? "has-children" : "")
+                          }>
                 { expander }
                 <Link to={`/logbooks/${this.props.id}${parentQuery}`}>
                     { this.props.name }
@@ -132,9 +132,19 @@ class LogbookTree extends React.Component {
                     <Link to={`/logbooks/${this.state.id}?parent=${this.state.id}`}>
                         {this.state.name? this.state.name : "All"}
                     </Link>
+
+                    <div className="commands">
+                        <Link to={`/logbooks/${this.state.parent? this.state.parent.id : 0}/new`}>
+                            New
+                        </Link>
+                    </div>
+                    
                     {
                         this.state.id?
-                        <Link to={`/logbooks/${this.state.parent.id || 0}?parent=${this.state.parent.id || 0}`}>Up</Link>
+                        <span>
+                            
+                            <Link to={`/logbooks/${this.state.parent.id || 0}?parent=${this.state.parent.id || 0}`}>Up</Link>
+                        </span>
                         : null
                     }
                 </header>

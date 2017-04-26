@@ -8,6 +8,10 @@
     padding: 5px;    
 }
 
+#logbooktree header .commands {
+    float: right;
+}
+
 #logbooktree .tree {
     padding: 5px;
 }

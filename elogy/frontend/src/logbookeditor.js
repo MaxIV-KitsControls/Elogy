@@ -71,14 +71,17 @@ class LogbookEditor extends React.Component {
     }
 
     fetchLogbook () {
-        fetch(`/logbooks/${this.props.match.params.logbookId || 0}`,
+        fetch(`/api/logbooks/${this.props.match.params.logbookId || 0}`,
               {headers: {"Accept": "application/json"}})
                .then(response => response.json())
                .then(json => {this.setState(json)});
     }
 
     componentWillMount() {
-        this.fetchLogbook();
+        if (this.props.match.params.logbookId > 0) {
+            console.log("fetch", this.props.match.params.logbookId);
+            this.fetchLogbook();
+        }
     }
 
     changeName(event) {
@@ -127,15 +130,16 @@ class LogbookEditor extends React.Component {
 
     onSubmit (history) {
         if (this.state.id) {
+            // editing an existing logbook
             fetch(
-                `/logbooks/${this.state.id}`, {
+                `/api/logbooks/${this.state.id}`, {
                     method: "PUT",
                     headers: {
                         'Content-Type': 'application/json'
                     },                                            
                     body: JSON.stringify({
                         id: this.state.id,
-                        name: this.state.name,
+                        name: this.state.newName,
                         description: this.state.description,
                         attributes: this.state.attributes
                     })
@@ -146,21 +150,22 @@ class LogbookEditor extends React.Component {
                     state: {reloadLogbook: true}
                 }));
         } else {
+            // creating a new logbook
             fetch(
-                `/logbooks/`, {
+                `/api/logbooks/`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
                     },                    
                     body: JSON.stringify({
-                        name: this.state.name,
+                        name: this.state.newName,
                         description: this.state.description,
                         attributes: this.state.attributes
                     })
                 })
                 .then(result => result.json())
                 .then(result => history.push({
-                    pathname: `/logbooks/${result.logbook}`
+                    pathname: `/logbooks/${result.logbook_id}`
                 }));
         }
     }

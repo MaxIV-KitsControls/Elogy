@@ -106,7 +106,7 @@ class EntryEditor extends React.Component {
     }
 
     fetchUserSuggestions (input) {
-        return fetch(`/users`, 
+        return fetch(`/api/users`, 
               {
                   headers: {"Accept": "application/json"}
               })
@@ -161,7 +161,7 @@ class EntryEditor extends React.Component {
                 }));
         } else {
             // we're creating a new entry
-            fetch(`/logbooks/${this.state.logbook.id}/entries`, 
+            fetch(`/api/logbooks/${this.state.logbook.id}/entries`, 
                   {
                       method: "POST",
                       headers: {
