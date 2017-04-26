@@ -4,6 +4,7 @@
   "private": true,
   "proxy": "http://localhost:8000/",
   "dependencies": {
+    "date-fns": "^1.28.3",
     "immutability-helper": "^2.1.2",
     "isomorphic-fetch": "^2.2.1",
     "react": "^15.5.4",
