@@ -2,6 +2,9 @@
     background: #bbb;
 }
     
+#entry img {
+    image-orientation: from-image;
+}
 
 #entry header {
     background: yellow;
