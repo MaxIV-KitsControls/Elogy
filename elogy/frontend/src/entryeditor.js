@@ -16,40 +16,58 @@ import { EntryAttachments } from "./entry.js";
 
 class EntryAttributeEditor extends React.Component {
 
-    onChange () {
-        this.props.onChange(this.props.config.name, this.event.target.value);
+    constructor(props) {
+        super(props);
+        this.state = {
+            value: props.value
+        }
+    }
+
+    onChange (event) {
+        this.setState({value: event.target.value});
+        /*         this.props.onChange(this.props.config.name, event.target.value);*/
     }
 
     onChangeSelect (value) {
-        this.props.onChange(this.props.config.name, value.value);
+        this.setState({value: value.value})
+        /*         this.props.onChange(this.props.config.name, value.value);*/
     }    
 
     onChangeMultiSelect (value) {
-        this.props.onChange(this.props.config.name, value.map(o => o.value));
-    }    
+        this.setState({value: value.map(o => o.value)});
+    }
+
+    onBlur () {
+        this.props.onChange(this.props.config.name, this.state.value);
+    }
     
     makeInputElement () {
         switch(this.props.config.type) {
             case "text":
-                return <input type="text" value={this.props.value}
+                return <input type="text" value={this.state.value}
                               ref="attr"
-                              onChange={this.onChange.bind(this)}/>;
+                              onChange={this.onChange.bind(this)}
+                              onBlur={this.onBlur.bind(this)}/>;
             case "number":
-                return <input type="text" value={this.props.value}
+                return <input type="text" value={this.state.value}
                               ref="attr"
-                              onChange={this.onChange.bind(this)}/>;
+                              onChange={this.onChange.bind(this)}
+                              onBlur={this.onBlur.bind(this)}/>;
             case "boolean":
-                return <input type="checkbox" checked={this.props.value}
+                return <input type="checkbox" checked={this.state.value}
                               ref="attr"
-                              onChange={this.onChange.bind(this)}/>;
+                              onChange={this.onChange.bind(this)}
+                              onBlur={this.onBlur.bind(this)}/>;
             case "option":
-                return <Creatable value={this.props.value}
+                return <Creatable value={this.state.value}
                                   options={this.props.config.options.map(o => {return {value: o, label: o}})}
-                                  onChange={this.onChangeSelect.bind(this)}/>;
+                                  onChange={this.onChangeSelect.bind(this)}
+                                  onBlur={this.onBlur.bind(this)}/>;
             case "multioption":
-                return <Creatable value={this.props.value} multi={true}
+                return <Creatable value={this.state.value} multi={true}
                                   options={this.props.config.options.map(o => {return {value: o, label: o}})}
-                                  onChange={this.onChangeMultiSelect.bind(this)}/>;
+                                  onChange={this.onChangeMultiSelect.bind(this)}
+                                  onBlur={this.onBlur.bind(this)}/>;
         }
     }
                 
@@ -208,56 +226,61 @@ class EntryEditor extends React.Component {
         return (
             <div id="entryeditor">
                 <header>
-                    <input type="text" value={this.state.title}
-                           onChange={this.onTitleChange.bind(this)}/>
-                    <Async
-                        name="authors" placeholder="Authors"
-                        valueRenderer={o => o.label}
-                        multi={true} value={this.state.authors}
-                        optionRenderer={o => `${o.label} [${o.value}]`}
-                        options={this.state.authors.map(a => {return {value: a, label: a}})}
-                        loadOptions={this.fetchUserSuggestions.bind(this)}
-                        onChange={this.onAuthorsChange.bind(this)}
-                    />
+                    {
+                        this.state.title?
+                        <span className="old-title">
+                            Editing entry <span>{this.state.title}</span> in <span>{this.state.logbook.name}</span>
+                        </span>
+                        : <span>New entry in <span>{this.state.logbook.name}</span></span>
+                    }   
+                <input type="text" placeholder="title" value={this.state.title}
+                       onChange={this.onTitleChange.bind(this)}/>
+                <Async
+                    name="authors" placeholder="Authors"
+                    valueRenderer={o => o.label}
+                    multi={true} value={this.state.authors}
+                    optionRenderer={o => `${o.label} [${o.value}]`}
+                    options={this.state.authors.map(a => {return {value: a, label: a}})}
+                    loadOptions={this.fetchUserSuggestions.bind(this)}
+                    onChange={this.onAuthorsChange.bind(this)}
+                />
 
-                    <div className="attributes">
-                        {attributes}
-                    </div>
-                    
+                <div className="attributes">
+                    {attributes}
+                </div>
+                
                 </header>
                 <div className="content">
-                    {this.state.content?
-                        <TinyMCE
-                            content={this.state.content}
-                            config={{
-                                plugins: 'link image code',
-                                plugins: "image textcolor paste table lists advlist code",
-                                toolbar: (
-                                    "undo redo | removeformat | styleselect |"
-                                    + " bold italic forecolor backcolor |"
-                                    + " bullist numlist outdent indent | link image table | code"
-                                ),
-                                menubar: false,
-                                statusbar: false,
-                                content_css: "/static/tinymce-tweaks.css",
-                                height: "100%",
-                                relative_urls : false,  // otherwise images broken in editor
-                                apply_source_formatting: false,
-                                force_br_newlines: false,
-                                paste_data_images: true,
-                                //          automatic_uploads: false,  // don't immediately upload images
-                                //images_upload_handler: customUploadHandler,
-                                image_dimensions: false,
-                                forced_root_block : "",
-                                cleanup: true,
-                                remove_linebreaks: true,
-                                convert_newlines_to_brs: false,
-                                inline_styles : false,
-                                entity_encoding: 'raw',
-                                entities: '160,nbsp,38,amp,60,lt,62,gt'         
-                            }}
-                            onChange={this.onContentChange.bind(this)}/>
-                        :null}
+                     <TinyMCE
+                         content={this.state.content || ""}
+                         config={{
+                             plugins: 'link image code',
+                             plugins: "image textcolor paste table lists advlist code",
+                             toolbar: (
+                                 "undo redo | removeformat | styleselect |"
+                                 + " bold italic forecolor backcolor |"
+                                 + " bullist numlist outdent indent | link image table | code"
+                             ),
+                             menubar: false,
+                             statusbar: false,
+                             content_css: "/static/tinymce-tweaks.css",
+                             height: "100%",
+                             relative_urls : false,  // otherwise images broken in editor
+                             apply_source_formatting: false,
+                             force_br_newlines: false,
+                             paste_data_images: true,
+                             //          automatic_uploads: false,  // don't immediately upload images
+                             //images_upload_handler: customUploadHandler,
+                             image_dimensions: false,
+                             forced_root_block : "",
+                             cleanup: true,
+                             remove_linebreaks: true,
+                             convert_newlines_to_brs: false,
+                             inline_styles : false,
+                             entity_encoding: 'raw',
+                             entities: '160,nbsp,38,amp,60,lt,62,gt'         
+                         }}
+                         onChange={this.onContentChange.bind(this)}/>
                 </div>
                 <Dropzone onDrop={this.onAddAttachment.bind(this)}
                           className="attachments-drop">

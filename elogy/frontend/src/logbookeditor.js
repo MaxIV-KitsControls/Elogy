@@ -132,7 +132,7 @@ class LogbookEditor extends React.Component {
         if (this.state.id) {
             // editing an existing logbook
             fetch(
-                `/api/logbooks/${this.state.id}`, {
+                `/api/logbooks/${this.state.id}/`, {
                     method: "PUT",
                     headers: {
                         'Content-Type': 'application/json'

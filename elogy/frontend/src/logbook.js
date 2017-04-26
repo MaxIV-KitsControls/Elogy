@@ -245,7 +245,11 @@ class Logbook extends React.Component {
         return (
             <div>
                 <header>
-                    <span className="name">{ logbook.id && logbook.name }</span>
+                    <span className="name">
+                        <i className="fa fa-book"/> 
+                        { logbook.id && logbook.name }
+                    </span>
+                    
                     { logbook.id?
                       <div>
 

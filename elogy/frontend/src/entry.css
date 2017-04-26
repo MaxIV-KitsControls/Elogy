@@ -19,10 +19,18 @@
     background: #eee;
 }
 
+#entry header .logbook  {
+    font-size: 120%;
+}
+
 #entry header .title  {
     font-size: 120%;
-    background: #ccc;
-    padding: 0 5px;
+    font-weight: bold;    
+    padding-left: 10px;    
+}
+
+#entry header .title i {
+    padding-right: 3px;
 }
 
 #entry header .commands {

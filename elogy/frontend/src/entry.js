@@ -215,11 +215,18 @@ class Entry extends React.Component {
                      <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.next}`}>Next</Link>
                      </span>                     
                      : null}
-                <span className="logbook">
-                    {this.state.logbook && this.state.logbook.name}
+
+                <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.id}`}>
+                    <span className="logbook">
+                        <i className="fa fa-book"/> 
+                        {this.state.logbook && this.state.logbook.name}
+                    </span>
+                </Link>
+                
+                <span className="title">
+                    <i className="fa fa-file-text-o"/> 
+                    {this.state.title}
                 </span>
-                /
-                <span className="title">{this.state.title}</span>
                 </header>
                 {/* The body is scrollable */}
                 <div className="body">
