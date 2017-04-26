@@ -22,12 +22,12 @@ class Logbook(db.Model):
     A logbook is a collection of entries, and (possibly) other logbooks.
     """
 
-    created_at = DateTimeField(default=datetime.now)
+    created_at = DateTimeField(default=datetime.utcnow)
     last_changed_at = DateTimeField(null=True)
     name = CharField()
     description = TextField(null=True)
     parent = ForeignKeyField("self", null=True, related_name="children")
-    attributes = JSONField(null=True)
+    attributes = JSONField(default=[])
     archived = BooleanField(default=False)
 
     def get_entries(self, **kwargs):
@@ -113,7 +113,7 @@ class Logbook(db.Model):
 
 class LogbookRevision(db.Model):
     logbook = ForeignKeyField(Logbook)
-    timestamp = DateTimeField(default=datetime.now)
+    timestamp = DateTimeField(default=datetime.utcnow)
     name = CharField(null=True)
     description = TextField(null=True)
     attributes = JSONField(null=True)
@@ -154,12 +154,12 @@ class Entry(db.Model):
 
     logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField(null=True)
-    authors = JSONField(null=True)
+    authors = JSONField(default=[])
     content = TextField(null=True)
     content_type = CharField(default="text/html; charset=UTF-8")
-    metadata = JSONField(null=True)  # general
-    attributes = JSONField(null=True)
-    created_at = DateTimeField(default=datetime.now)
+    metadata = JSONField(default={})  # general
+    attributes = JSONField(default={})
+    created_at = DateTimeField(default=datetime.utcnow)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
     archived = BooleanField(default=False)
@@ -233,7 +233,7 @@ class Entry(db.Model):
     def lock(self):
         try:
             return EntryLock.get((EntryLock.entry == self) &
-                                 (EntryLock.expires_at < datetime.now()))
+                                 (EntryLock.expires_at < datetime.utcnow()))
         except EntryLock.DoesNotExist:
             return False
 
@@ -355,7 +355,7 @@ class EntryRevision(db.Model):
     """
     entry = ForeignKeyField(Entry, related_name="revisions")
     logbook = ForeignKeyField(Logbook, null=True)
-    timestamp = DateTimeField(default=datetime.now)
+    timestamp = DateTimeField(default=datetime.utcnow)
     title = CharField(null=True)
     authors = JSONField(null=True)
     content = TextField(null=True)
@@ -424,12 +424,13 @@ class EntryRevision(db.Model):
 class EntryLock(db.Model):
     "Contains temporary edit locks, to prevent overwriting changes"
     entry = ForeignKeyField(Entry)
-    expires_at = DateTimeField(default=lambda: datetime.now + timedelta(hours=1))
+    created_at = DateTimeField(default=datetime.utcnow)
+    lifetime = IntegerField(default=3600)
     owner_ip = CharField()
 
     @property
     def locked(self):
-        return self.timestamp > datetime.now()
+        return self.created_at + timedelta(seconds=self.lifetime) > datetime.utcnow()
 
 
 class Attachment(db.Model):
@@ -439,7 +440,7 @@ class Attachment(db.Model):
     """
     entry = ForeignKeyField(Entry, null=True, related_name="attachments")
     filename = CharField(null=True)
-    timestamp = DateTimeField(default=datetime.now)
+    timestamp = DateTimeField(default=datetime.utcnow)
     path = CharField()  # path within the upload folder
     content_type = CharField(null=True)
     embedded = BooleanField(default=False)  # i.e. an image in the content

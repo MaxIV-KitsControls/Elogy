@@ -10,6 +10,7 @@ from werkzeug import FileStorage
 
 from .db import Logbook, LogbookRevision, Entry, EntryRevision
 from .attachments import save_attachment, handle_img_tags
+from .utils import get_utc_datetime
 
 
 class NumberOfSomething(fields.Raw):
@@ -210,13 +211,13 @@ class EntryResource(Resource):
         data = entry_parser.parse_args()
         logbook_id = logbook_id or data["logbook_id"]
         if "created_at" in data:
-            data["created_at"] = parse(data["created_at"])
+            data["created_at"] = get_utc_datetime(data["created_at"])
         else:
-            data["created_at"] = datetime.now()
+            data["created_at"] = datetime.utcnow()
         if "last_changed_at" in data:
-            data["last_changed_at"] = parse(data["last_changed_at"])
-        data["content"], inline_attachments = handle_img_tags(data.get("content", ""),
-                                                              timestamp=data["created_at"])
+            data["last_changed_at"] = get_utc_datetime(data["last_changed_at"])
+        data["content"], inline_attachments = handle_img_tags(
+            data.get("content", ""), timestamp=data["created_at"])
         logbook = Logbook.get(Logbook.id == logbook_id)
         data["logbook"] = logbook
         entry = dict_to_model(Entry, data)
@@ -376,9 +377,9 @@ class AttachmentsResource(Resource):
         "Upload attachments to an entry"
         args = attachments_parser.parse_args()
         if args["timestamp"]:
-            timestamp = parse(args["timestamp"])
+            timestamp = get_utc_datetime(args["timestamp"])
         else:
-            timestamp = datetime.now()
+            timestamp = datetime.utcnow()
         for attachment in args["attachment"]:
             print(attachment.filename)
             attachment = save_attachment(attachment, timestamp,

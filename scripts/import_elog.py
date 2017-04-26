@@ -42,6 +42,7 @@ import time
 import urllib
 
 from dateutil.parser import parse as parse_time
+from dateutil.tz import tzlocal
 from lxml import html, etree
 
 
@@ -133,7 +134,7 @@ def import_logbook(create_logbook, create_entry, create_attachment,
 
                 data = {
                     "logbook_id": logbook_id,
-                    "created_at": timestamp.strftime('%Y-%m-%d %H:%M:%S.%f'),
+                    "created_at": str(timestamp),
                     "title": entry.get("subject"),
                     # "content": body,
                     "authors": [a.strip()
@@ -154,8 +155,16 @@ def import_logbook(create_logbook, create_entry, create_attachment,
 
                 if "last edited" in entry:
                     try:
+                        # This is a tricky one; it seems that elog
+                        # saves the create time with timezone info,
+                        # but the last change is missing the timezone.
+                        # Since we want to store UTC timestamps, we'll
+                        # just have to assume that the timezone is the
+                        # local one (at the time of running this
+                        # script...
                         data["last_changed_at"] = (
                             parse_time(entry["last edited"])
+                            .replace(tzinfo=tzlocal())
                             .strftime('%Y-%m-%d %H:%M:%S.%f'))
                     except ValueError as e:
                         print("Could not parse change date", e)
