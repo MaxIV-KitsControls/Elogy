@@ -79,7 +79,7 @@ class LogbookTreeNode extends React.Component {
                 title={this.props.description || null}
                 className={
                     (this.props.selectedLogbookId === this.props.id? "selected " : "") +
-                     (this.state.n_children > 0? "has-children" : "")
+                      (this.state.n_children > 0? "has-children" : "")
                           }>
                 { expander }
                 <Link to={`/logbooks/${this.props.id}${parentQuery}`}>
@@ -134,19 +134,20 @@ class LogbookTree extends React.Component {
                     </Link>
 
                     <div className="commands">
+                        {
+                            this.state.id?
+                            <span>
+                                
+                                <Link to={`/logbooks/${this.state.parent.id || 0}?parent=${this.state.parent.id || 0}`}>Up</Link> |
+                            </span>
+                            : null
+                        }
+
                         <Link to={`/logbooks/${this.state.parent? this.state.parent.id : 0}/new`}>
                             New
                         </Link>
                     </div>
                     
-                    {
-                        this.state.id?
-                        <span>
-                            
-                            <Link to={`/logbooks/${this.state.parent.id || 0}?parent=${this.state.parent.id || 0}`}>Up</Link>
-                        </span>
-                        : null
-                    }
                 </header>
                 <div className="tree">
                     {nodes}

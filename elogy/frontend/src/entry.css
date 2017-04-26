@@ -105,18 +105,6 @@
     border-left: 10px solid #ddd;
 }
 
-/* #entry article .followups .info { */
-/*     border-left: 10px solid #ddd; */
-/* } */
-
-/* #entry article .followups .attachments { */
-/*     border-left: 10px solid #ddd; */
-/* } */
- 
-/* #entry article .followups .followups { */
-/*     border-left: 10px solid #ddd; */
-/* } */
- 
 #entry article .followups .followup-n {
     background: grey;
     color: white;
@@ -129,8 +117,11 @@
     padding: 5px;
 }
 
+#entry article .attachments .attachment {
+    margin-right: 5px;
+}
+
 #entry article .attachments .attachment img {
-    margin: 2px;
     border: 1px solid grey;
     vertical-align: top;    
 }

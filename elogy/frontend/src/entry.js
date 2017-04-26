@@ -23,8 +23,8 @@ const ICON_CLASS_MAP = {
     "application/vnd.ms-excel": "fa fa-file-excel-o",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "fa fa-file-excel-o",
     'application/pdf': "fa fa fa-file-pdf-o",
-    "text/plain": "fa fa-file-text",
-    "text/csv": "fa fa-file-text",
+    "text/plain": "fa fa-file-text-o",
+    "text/csv": "fa fa-file-text-o",
     'application/zip': "fa fa-file-archive-o"
     // TODO: detect more file types
 }
