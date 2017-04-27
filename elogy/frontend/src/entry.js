@@ -80,10 +80,6 @@ export const EntryAttachments = ({attachments}) => (
 // An "entry" may have "followup" entries attached, and so on, so in
 // practice we may display a whole tree of related entries here.
 class InnerEntry extends React.Component {
-
-    componentDidUpdate() {
-        findDOMNode(this).scrollIntoView();
-    }
     
     render () {
 
@@ -178,6 +174,7 @@ class Entry extends React.Component {
     constructor () {
         super();
         this.state = {
+            loading: false,
             id: null,
             logbook: null,
             title: "",
@@ -187,10 +184,11 @@ class Entry extends React.Component {
     }
 
     fetchEntry (logbookId, entryId) {
+        /*         this.setState({loading: true});*/
         fetch(`/api/entries/${entryId}`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState(json));        
+            .then(json => this.setState({loading: false, ...json}));        
     }
     
     componentWillMount () {
@@ -206,10 +204,15 @@ class Entry extends React.Component {
                             newProps.match.params.entryId);
         }
     }
+
+    componentDidUpdate() {
+        setTimeout(() => findDOMNode(this.refs.body).scrollIntoView(), 10);
+    }
     
     render () {
 
-        console.log("render", this.state);
+        /* if (this.state.loading)
+         *     return <div>Loading entry...</div>;*/
 
         if (!(this.state.id && this.state.logbook)) {
             return <div>No entry selected!</div>
@@ -217,23 +220,26 @@ class Entry extends React.Component {
             
         return (
             <div className="container">
+                
                 {/* The header will always stay at the top */}
                 <header>
-                    {this.state.logbook?
-                     <span className="commands">
-                         
-                         {
-                             this.state.follows?
-                             <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.follows}`}>Parent</Link>
-                             : null
-                         }
-                         
-                         <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.previous}`}>Prev</Link>
-                     &nbsp;|&nbsp;
-                     <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.next}`}>Next</Link>
-                     </span>                     
-                     : null}
-
+                    {
+                        this.state.logbook?
+                        <span className="commands">
+                            
+                            {
+                                this.state.follows?
+                                <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.follows}`}>Parent</Link>
+                                : null
+                            }
+                            
+                            <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.previous}`}>Prev</Link>
+                        &nbsp;|&nbsp;
+                        <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.next}`}>Next</Link>
+                        </span>                     
+                        : null
+                    }
+                
                 <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.id}`}>
                     <span className="logbook">
                         <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}
@@ -244,9 +250,10 @@ class Entry extends React.Component {
                     {this.state.title}
                 </div>
                 </header>
+                
                 {/* The body is scrollable */}
                 <div className="body">
-                    <InnerEntry {...this.state}/>
+                    <InnerEntry ref="body" {...this.state}/>
                 </div>
             </div>
         );
