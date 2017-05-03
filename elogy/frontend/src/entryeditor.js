@@ -5,7 +5,8 @@
 import React from 'react';
 import {Link, Route} from 'react-router-dom';
 import update from 'immutability-helper';
-import TinyMCE from 'react-tinymce';
+/* import TinyMCE from 'react-tinymce';*/
+import TinyMCEInput from './TinyMCEInput.js';
 import {Select, Creatable, AsyncCreatable, Async} from 'react-select';
 import Dropzone from 'react-dropzone'
 import 'react-select/dist/react-select.css';
@@ -28,6 +29,11 @@ class EntryAttributeEditor extends React.Component {
         /*         this.props.onChange(this.props.config.name, event.target.value);*/
     }
 
+    onChangeBoolean (event) {
+        this.setState({value: event.target.checked});
+        /*         this.props.onChange(this.props.config.name, event.target.value);*/
+    }
+    
     onChangeSelect (value) {
         this.setState({value: value.value})
         /*         this.props.onChange(this.props.config.name, value.value);*/
@@ -56,7 +62,7 @@ class EntryAttributeEditor extends React.Component {
             case "boolean":
                 return <input type="checkbox" checked={this.state.value}
                               ref="attr"
-                              onChange={this.onChange.bind(this)}
+                              onChange={this.onChangeBoolean.bind(this)}
                               onBlur={this.onBlur.bind(this)}/>;
             case "option":
                 return <Creatable value={this.state.value}
@@ -72,8 +78,9 @@ class EntryAttributeEditor extends React.Component {
     }
                 
     render () {
+        const className = `attribute-wrapper ${this.props.config.type}-attribute`;
         return (
-            <div className="select-wrapper">
+            <div className={className}>
                 {this.makeInputElement()}
             </div>
         )
@@ -112,11 +119,17 @@ class EntryEditor extends React.Component {
     }
     
     componentWillMount () {
-        if (this.props.match.params.entryId)
-            this.fetchEntry(this.props.match.params.logbookId,
-                            this.props.match.params.entryId);
-        else
+        if (this.props.match.params.entryId) {
+            if (this.props.match.url.split("/").slice(-1)[0] === "edit") {
+                this.fetchEntry(this.props.match.params.logbookId,
+                                this.props.match.params.entryId);
+            } else {
+                this.setState({follows: parseInt(this.props.match.params.entryId)});
+                this.fetchLogbook(this.props.match.params.logbookId);
+            }
+        } else {
             this.fetchLogbook(this.props.match.params.logbookId);
+        }
     }
 
     onTitleChange (event) {
@@ -145,8 +158,8 @@ class EntryEditor extends React.Component {
         this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
     }
     
-    onContentChange (event) {
-        this.setState({content: event.target.getContent()});
+    onContentChange (value) {
+        this.setState({content: value});
     }
 
     onAddAttachment (acceptedFiles, rejectedFiles) {
@@ -165,9 +178,10 @@ class EntryEditor extends React.Component {
                       },
                       body: JSON.stringify({
                           id: this.state.id,
+                          follows: this.state.follows,
                           title: this.state.title,
                           authors: this.state.authors,
-                          content: this.state.content,
+                          content: this.state.content || this.state.logbook.template,
                           attributes: this.state.attributes
                       })
                   })
@@ -179,6 +193,9 @@ class EntryEditor extends React.Component {
                 }));
         } else {
             // we're creating a new entry
+            const followupTo = (this.props.match.params.entryId?
+                                parseInt(this.props.match.params.entryId)
+                              : null)
             fetch(`/api/logbooks/${this.state.logbook.id}/entries`, 
                   {
                       method: "POST",
@@ -186,16 +203,17 @@ class EntryEditor extends React.Component {
                           'Content-Type': 'application/json'
                       },
                       body: JSON.stringify({
+                          follows: this.state.follows,
                           title: this.state.title,
                           authors: this.state.authors,
-                          content: this.state.content,
+                          content: this.state.content || this.state.logbook.template,
                           attributes: this.state.attributes
                       })
                   })
                 .then(response => response.json())
             // TODO: handle errors 
                 .then(response => history.push({
-                    pathname: `/logbooks/${this.state.logbook.id}/entries/${response.entry}`,
+                    pathname: `/logbooks/${this.state.logbook.id}/entries/${response.entry_id}`,
                     state: {
                         reloadLogbook: true  // tell other components to refresh logbook info
                     }
@@ -208,6 +226,7 @@ class EntryEditor extends React.Component {
         // we need the router 'history' object injected here so that
         // we can automatically send the browser to the entry after submitting.
 
+        
         const attributes = this.state.logbook.attributes?
                            this.state.logbook.attributes
                                .map((attr, i) => (
@@ -233,29 +252,28 @@ class EntryEditor extends React.Component {
                         </span>
                         : <span>New entry in <span>{this.state.logbook.name}</span></span>
                     }   
-                <input type="text" placeholder="title" value={this.state.title}
-                       onChange={this.onTitleChange.bind(this)}/>
-                <Async
-                    name="authors" placeholder="Authors"
-                    valueRenderer={o => o.label}
-                    multi={true} value={this.state.authors}
-                    optionRenderer={o => `${o.label} [${o.value}]`}
-                    options={this.state.authors.map(a => {return {value: a, label: a}})}
-                    loadOptions={this.fetchUserSuggestions.bind(this)}
-                    onChange={this.onAuthorsChange.bind(this)}
-                />
-
-                <div className="attributes">
-                    {attributes}
-                </div>
-                
+                    <input type="text" placeholder="title" value={this.state.title}
+                           onChange={this.onTitleChange.bind(this)}/>
+                    <Async
+                        name="authors" placeholder="Authors"
+                        valueRenderer={o => o.label}
+                        multi={true} value={this.state.authors}
+                        optionRenderer={o => `${o.label} [${o.value}]`}
+                        options={this.state.authors.map(a => {return {value: a, label: a}})}
+                        loadOptions={this.fetchUserSuggestions.bind(this)}
+                        onChange={this.onAuthorsChange.bind(this)}
+                    />
+                    
+                    <div className="attributes">
+                        {attributes}
+                    </div>
+                    
                 </header>
                 <div className="content">
-                     <TinyMCE
-                         content={this.state.content || ""}
-                         config={{
-                             plugins: 'link image code',
-                             plugins: "image textcolor paste table lists advlist code",
+                     <TinyMCEInput
+                         value={this.state.content || this.state.logbook && this.state.logbook.template || ""}
+                         tinymceConfig={{
+                             plugins: "link image textcolor paste table lists advlist code",
                              toolbar: (
                                  "undo redo | removeformat | styleselect |"
                                  + " bold italic forecolor backcolor |"
@@ -274,19 +292,23 @@ class EntryEditor extends React.Component {
                              image_dimensions: false,
                              forced_root_block : "",
                              cleanup: true,
-                             remove_linebreaks: true,
-                             convert_newlines_to_brs: false,
+                             force_p_newlines : true,                             
+                             convert_newlines_to_brs: false,                             
                              inline_styles : false,
                              entity_encoding: 'raw',
-                             entities: '160,nbsp,38,amp,60,lt,62,gt'         
+                             entities: '160,nbsp,38,amp,60,lt,62,gt',
+                             resize: true,
+                             theme: "modern"
                          }}
                          onChange={this.onContentChange.bind(this)}/>
                 </div>
-                <Dropzone onDrop={this.onAddAttachment.bind(this)}
-                          className="attachments-drop">
-                    <EntryAttachments attachments={this.state.attachments}/>
-                </Dropzone>
                 <footer>
+                    <Dropzone onDrop={this.onAddAttachment.bind(this)}
+                              className="attachments-drop">
+                        Attachments
+                        <EntryAttachments attachments={this.state.attachments}/>
+                    </Dropzone>
+                    
                     <button onClick={this.onSubmit.bind(this, history)}>Submit</button>
                 </footer>
             </div>

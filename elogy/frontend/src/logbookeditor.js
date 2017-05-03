@@ -1,9 +1,11 @@
 import React from 'react';
 import { findDOMNode } from 'react-dom';
 import update from 'immutability-helper';
+import TinyMCEInput from './TinyMCEInput.js';
 
 import {Link, Route} from 'react-router-dom';
-import style from './logbookeditor.css';
+import './logbookeditor.css';
+
 
 
 class LogbookAttribute extends React.PureComponent {
@@ -20,37 +22,37 @@ class LogbookAttribute extends React.PureComponent {
     render () {
         return (
             <div className="attribute">
-                <label>
-                    <input type="text" ref="name"
-                           value={this.props.name}
-                           onChange={this.onChange.bind(this)}/>
-                </label>
-                <label>
-                    Type:
-                    <select name="type" ref="type" value={this.props.type}
-                            onChange={this.onChange.bind(this)}>
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="boolean">Boolean</option>                    
-                        <option value="option">Option</option>
-                        <option value="multioption">Multioption</option>
-                    </select>
-                </label>
-                <label>
-                    <input type="checkbox" ref="required"
-                           checked={this.props.required}
-                           onChange={this.onChange.bind(this)}/>
-                    Required                        
-                </label>
-                <label style={
-                    {display: (this.props.type == "option" ||
-                               this.props.type == "multioption")?
-                              "inline-block" : "none"}}>
-                    Options:
-                    <textarea rows="3" ref="options"
-                              value={this.props.options.join("\n")}
-                              onChange={this.onChange.bind(this)}/>
-                </label>
+            <label>
+            <input type="text" ref="name"
+            value={this.props.name}
+            onChange={this.onChange.bind(this)}/>
+            </label>
+            <label>
+            Type:
+                     <select name="type" ref="type" value={this.props.type}
+            onChange={this.onChange.bind(this)}>
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="boolean">Boolean</option>                    
+            <option value="option">Option</option>
+            <option value="multioption">Multioption</option>
+            </select>
+            </label>
+            <label>
+            <input type="checkbox" ref="required"
+            checked={this.props.required}
+            onChange={this.onChange.bind(this)}/>
+            Required                        
+            </label>
+            <label style={
+                {display: (this.props.type == "option" ||
+                           this.props.type == "multioption")?
+                          "inline-block" : "none"}}>
+            Options:
+                         <textarea rows="3" ref="options"
+            value={this.props.options.join("\n")}
+            onChange={this.onChange.bind(this)}/>
+            </label>
             </div>
         );
     }
@@ -65,6 +67,7 @@ class LogbookEditor extends React.Component {
         this.state = {
             name: "",
             description: "",
+            metadata: {},
             attributes: [],
             parent: {}
         }
@@ -73,8 +76,8 @@ class LogbookEditor extends React.Component {
     fetchLogbook () {
         fetch(`/api/logbooks/${this.props.match.params.logbookId || 0}`,
               {headers: {"Accept": "application/json"}})
-               .then(response => response.json())
-               .then(json => {this.setState(json)});
+            .then(response => response.json())
+            .then(json => {this.setState(json)});
     }
 
     componentWillMount() {
@@ -128,6 +131,10 @@ class LogbookEditor extends React.Component {
         this.setState(state);
     }
 
+    onTemplateChange(value) {
+        this.setState({template: value});
+    }
+    
     onSubmit (history) {
         if (this.state.id) {
             // editing an existing logbook
@@ -139,9 +146,11 @@ class LogbookEditor extends React.Component {
                     },                                            
                     body: JSON.stringify({
                         id: this.state.id,
-                        name: this.state.newName,
+                        name: this.state.newName || this.state.name,
                         description: this.state.description,
-                        attributes: this.state.attributes
+                        attributes: this.state.attributes,
+                        template: this.state.newTemplate || this.state.template,
+                        template_content_type: "text/html",
                     })
                 })
                 .then(result => result.json())
@@ -158,9 +167,11 @@ class LogbookEditor extends React.Component {
                         'Content-Type': 'application/json'
                     },                    
                     body: JSON.stringify({
-                        name: this.state.newName,
-                        description: this.state.description,
-                        attributes: this.state.attributes
+                        name: this.state.newName || this.state.name,
+                        description: this.state.newDescription || this.state.description,
+                        attributes: this.state.attributes,
+                        template: this.state.newTemplate || this.state.template,
+                        template_content_type: "text/html",
                     })
                 })
                 .then(result => result.json())
@@ -171,6 +182,7 @@ class LogbookEditor extends React.Component {
     }
     
     innerRender ({history}) {
+        console.log("eroadsom", this.state);        
 
         const attributes = this.state.attributes.map(
             (attr, i) => (
@@ -212,6 +224,40 @@ class LogbookEditor extends React.Component {
                         <textarea name="description" rows={5}
                                   value={this.state.description}
                                   onChange={this.changeDescription.bind(this)}/>
+                    </fieldset>
+                    <fieldset className="template">
+                        <legend>Template</legend>                        
+                        <TinyMCEInput
+                            value={this.state.template || "bralla"}
+                            tinymceConfig={{
+                                plugins: "image textcolor paste table lists advlist code",
+                                toolbar: (
+                                    "undo redo | removeformat | styleselect |"
+                                    + " bold italic forecolor backcolor |"
+                                    + " bullist numlist outdent indent | link image table | code"
+                                ),
+                                menubar: false,
+                                statusbar: false,
+                                content_css: "/static/tinymce-tweaks.css",
+                                height: "100%",
+                                relative_urls : false,  // otherwise images broken in editor
+                                apply_source_formatting: false,
+                                force_br_newlines: false,
+                                paste_data_images: true,
+                                //          automatic_uploads: false,  // don't immediately upload images
+                                //images_upload_handler: customUploadHandler,
+                                image_dimensions: false,
+                                forced_root_block : "",
+                                cleanup: false,
+                                force_p_newlines : true,
+                                remove_linebreaks: false,
+                                convert_newlines_to_brs: false,
+                                entity_encoding: 'raw',
+                                entities: '160,nbsp,38,amp,60,lt,62,gt',
+                                resize: true,
+                                theme: "modern"
+                            }}
+                            onChange={this.onTemplateChange.bind(this)}/>
                     </fieldset>
                     <fieldset className="attributes">
                         <legend>Attributes</legend>

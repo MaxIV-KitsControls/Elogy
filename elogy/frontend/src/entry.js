@@ -12,11 +12,15 @@ const EntryAttribute = ({config, value}) => (
     <span className="attribute">
         <span className="name">{config.name}:</span>
         <span className="value">
-        {
-            config.type === "multioption"?
-            value.map(v => <span className="option">{v}</span>)
-            : value
-        }
+            {
+                // TODO: Let's say an attribute is reconfigured in the logbook
+                // from "option" to "multioption". Should the backend always
+                // convert the value to an array in this case? What about the
+                // opposite case?
+                config.type == "multioption"?
+                value.map(v => <span className="option">{v}</span>)
+                : value
+            }
         </span>
     </span>
 );

@@ -51,7 +51,7 @@ const EntryPreview = ({logbook, entry, selected, search}) => (
             }
         </Link>
     </div>
-)
+);
 
 
 class EntryPreviews extends React.Component {
@@ -180,12 +180,15 @@ class Logbook extends React.Component {
              
     }
 
-    /* shouldComponentUpdate (newProps, newState) {
-     *     return ((newProps.match.params.logbookId !==
-     *         this.props.match.params.logbookId ||
-     *              newProps.location.search !== this.props.location.search) ||
-     *             newState.attributeFilters !== this.state.attributeFilters)
-     * }*/
+    shouldComponentUpdate (newProps, newState) {
+        console.log(parseInt(newProps.match.params.logbookId) !== this.state.logbook.id);
+        console.log(newProps.location.search !== this.props.location.search)
+        console.log(newState.attributeFilters !== this.state.attributeFilters);
+        
+        return ((parseInt(newProps.match.params.logbookId) !== this.state.logbook.id) ||
+                (newProps.location.search !== this.props.location.search) ||
+                (newState.attributeFilters !== this.state.attributeFilters));
+    }
 
     componentDidUpdate() {
         console.log("title", this.state.logbook);

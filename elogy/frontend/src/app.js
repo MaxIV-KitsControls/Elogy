@@ -56,8 +56,11 @@ const Elogy = () => (
                            component={EntryEditor}/>
                     <Route path="/logbooks/:logbookId/entries/:entryId/edit"
                            component={EntryEditor}/>
+                    <Route path="/logbooks/:logbookId/entries/:entryId/new"
+                           component={EntryEditor}/>
                     <Route path="/logbooks/:logbookId/entries/:entryId"
                            component={Entry}/>
+                    
                 </Switch>
             </div>
             

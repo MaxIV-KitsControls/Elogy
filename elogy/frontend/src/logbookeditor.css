@@ -16,6 +16,16 @@
 
 #logbookeditor form > fieldset.description {
     flex: 1;
+    height: 100%;    
+}
+
+#logbookeditor form > fieldset.description textarea {
+    height: 100%;
+}
+
+#logbookeditor .template {
+    flex: 3;
+    height: 100%;
 }
 
 #logbookeditor input[name=name] {
@@ -26,8 +36,8 @@
     width: 100%;
 }
 
-#logbookeditor fieldset.attributes {
-    flex: 1;
+#logbookeditor form > fieldset.attributes {
+    flex: 3;
 }
 
 #logbookeditor fieldset.attributes > div {
@@ -43,3 +53,38 @@
 #logbookeditor .attribute textarea {
     vertical-align: top;
 }
+
+#logbookeditor fieldset.template > div {
+    height: 100%;
+}
+
+ .mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
+     min-height: 100%;
+ }
+ /*Container body*/
+ .mce-container-body {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+ }
+ /*Editing area*/
+ .mce-container-body .mce-edit-area {
+     position: absolute;
+     top: 37px;
+     bottom: 0;
+     left: 0;
+     right: 0;
+ }
+ /*Footer*/
+ .mce-tinymce .mce-statusbar {
+     position: absolute;
+     bottom: 0;
+     left: 0;
+     right: 0;
+ }
+
+
+ #entryeditor .attachments-drop {
+     min-height: 20px;
+ }
