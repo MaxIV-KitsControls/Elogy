@@ -44,10 +44,12 @@ logbook_fields = {
     "id": fields.Integer,
     "name": fields.String,
     "description": fields.String,
+    "template": fields.String,
     "parent": fields.Nested(short_logbook_fields),
     "created_at": fields.String,
     "children": fields.List(fields.Nested(logbook_child_fields)),
-    "attributes": fields.List(fields.Nested(attribute_fields))
+    "attributes": fields.List(fields.Nested(attribute_fields)),
+    "metadata": fields.Raw
 }
 
 
@@ -55,8 +57,10 @@ logbooks_parser = reqparse.RequestParser()
 logbooks_parser.add_argument("parent", type=int)
 logbooks_parser.add_argument("name", type=str, required=True)
 logbooks_parser.add_argument("description", type=str)
+logbooks_parser.add_argument("template", type=str)
 logbooks_parser.add_argument("attributes", type=list,
                              location="json", default=[])
+logbooks_parser.add_argument("metadata", type=dict, location="json", default={})
 logbooks_parser.add_argument("archived", type=bool, default=False)
 
 
@@ -89,7 +93,7 @@ class LogbooksResource(Resource):
     def post(self):
         "Create a new logbook"
         args = logbooks_parser.parse_args()
-        print(args)
+        print("args", args)
         logbook = dict_to_model(Logbook, args)
         logbook.save()
         return jsonify(logbook_id=logbook.id)
@@ -97,7 +101,14 @@ class LogbooksResource(Resource):
     def put(self, logbook_id):
         "Update an existing logbook"
         logbook = Logbook.get(Logbook.id == logbook_id)
-        change = logbook.make_change(request.json)
+        print("hdwuih", logbook)
+        print(request.json)
+        try:
+            args = logbooks_parser.parse_args()
+        except Exception as e:
+            print(e)
+        print("args", args)
+        change = logbook.make_change(args)
         logbook.save()
         change.save()
         return jsonify(revision_id=change.id)
@@ -169,7 +180,7 @@ entry_fields = {
     "created_at": fields.DateTime,
     "last_changed_at": fields.DateTime,
     "authors": fields.List(fields.String),
-    "attributes": fields.Raw,
+    "attributes": fields.Raw(attribute="converted_attributes"),
     "attachments": fields.List(fields.Nested(attachment_fields)),
     "content": fields.String,
     "content_type": fields.String,
@@ -193,9 +204,9 @@ entry_parser.add_argument("created_at", type=str, store_missing=False)
 entry_parser.add_argument("last_changed_at", type=str, store_missing=False)
 entry_parser.add_argument("follows", type=int, store_missing=False)
 # entry_parser.add_argument("attachments", type=list, location="json")
-entry_parser.add_argument("attributes", type=dict, location="json", store_missing=False)
-entry_parser.add_argument("archived", type=bool, default=False, store_missing=False)
-entry_parser.add_argument("metadata", type=dict, location="json", store_missing=False)
+entry_parser.add_argument("attributes", type=dict, location="json", default={})
+entry_parser.add_argument("archived", type=bool, default=False)
+entry_parser.add_argument("metadata", type=dict, location="json", default={})
 
 
 class EntryResource(Resource):
@@ -209,6 +220,7 @@ class EntryResource(Resource):
     def post(self, logbook_id=None):
         "new entry"
         data = entry_parser.parse_args()
+        print(data)
         logbook_id = logbook_id or data["logbook_id"]
         if "created_at" in data:
             data["created_at"] = get_utc_datetime(data["created_at"])
@@ -220,6 +232,19 @@ class EntryResource(Resource):
             data.get("content", ""), timestamp=data["created_at"])
         logbook = Logbook.get(Logbook.id == logbook_id)
         data["logbook"] = logbook
+        # make sure the attributes are of proper types
+        if "attributes" in data:
+            print(data["attributes"])
+            attributes = {}
+            for attr_name, attr_value in data["attributes"].items():
+                converted_value = logbook.convert_attribute(attr_name, attr_value)
+                try:
+                    if converted_value is not None:
+                        attributes[attr_name] = converted_value
+                except ValueError:
+                    pass
+                # TODO: return a helpful error if this fails?
+            data["attributes"] = attributes
         entry = dict_to_model(Entry, data)
         entry.save()
         for attachment in inline_attachments:
@@ -231,6 +256,7 @@ class EntryResource(Resource):
         "update entry"
         print(request.json)
         args = entry_parser.parse_args()
+        print(args)
         entry_id = entry_id or args["id"]
         args["content"], inline_attachments = handle_img_tags(args["content"])
         entry = Entry.get(Entry.id == entry_id)
@@ -266,7 +292,7 @@ short_entry_fields = {
     "created_at": fields.DateTime,
     "last_changed_at": fields.DateTime,
     "authors": fields.List(fields.String),
-    "attributes": fields.Raw,
+    # "attributes": fields.Raw(attribute="converted_attributes"),
     # "attachments": fields.List(fields.Nested(attachment_fields)),
     "attachment_preview": FirstIfAny(attribute="attachments"),
     "n_attachments": NumberOfSomething(attribute="attachments"),

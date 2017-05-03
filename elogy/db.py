@@ -26,8 +26,11 @@ class Logbook(db.Model):
     last_changed_at = DateTimeField(null=True)
     name = CharField()
     description = TextField(null=True)
+    template = TextField(null=True)
+    template_content_type = CharField(default="text/html; charset=UTF-8")
     parent = ForeignKeyField("self", null=True, related_name="children")
     attributes = JSONField(default=[])
+    metadata = JSONField(default={})
     archived = BooleanField(default=False)
 
     def get_entries(self, **kwargs):
@@ -74,25 +77,35 @@ class Logbook(db.Model):
                 .order_by(fn.date(Entry.created_at)))
         return [(e.date.timestamp(), e.id, e.count) for e in data]
 
-    def convert_attribute(self, info, value):
+    def convert_attribute(self, name, value):
         "Try to convert an attribute value to the format the logbook expects"
         # Mainly useful when the logbook configuration may have changed, and
         # trying to access attributes of previously created entries.
         # Not much point in converting them until someone edits the entry.
-        if value is None and not info["required"]:
-            # ignore unset values if not required
-            return
-        if info["type"] == "number":
-            try:
+        # Note: does not exert itself to convert values and will raise
+        # ValueError if it fails.
+        try:
+            for info in self.attributes:
+                if info["name"] == name:
+                    break
+            else:
+                raise KeyError("Unknown attribute %s!" % name)
+            if value is None and not info.get("required"):
+                # ignore unset values if not required
+                return
+            if info["type"] == "text":
+                return str(value)
+            if info["type"] == "number":
                 return float(value)
-            except ValueError:
-                return 0
-        elif info["type"] == "boolean":
-            return bool(value)
-        elif info["type"] == "text" and isinstance(value, list):
-            return ", ".join(str(item) for item in value)
-        elif info["type"] == "multioption" and isinstance(value, str):
-            return [value]
+            elif info["type"] == "boolean":
+                # Hmm... this will almost always be True
+                return bool(value)
+            elif info["type"] == "text" and isinstance(value, list):
+                return value[0]
+            elif info["type"] == "multioption" and isinstance(value, str):
+                return [value]
+        except (ValueError, KeyError, IndexError) as e:
+            raise ValueError(e)
         return value
 
     def get_form_attributes(self, formdata):
@@ -228,6 +241,17 @@ class Entry(db.Model):
     def get_attachments(self, embedded=False):
         return self.attachments.filter((Attachment.embedded == embedded) &
                                        ~Attachment.archived)
+
+    @property
+    def converted_attributes(self):
+        "Ensure that the attributes conform to the logbook configuration"
+        converted = {}
+        for name, value in self.attributes.items():
+            try:
+                converted[name] = self.logbook.convert_attribute(name, value)
+            except ValueError:
+                pass
+        return converted
 
     @property
     def lock(self):
