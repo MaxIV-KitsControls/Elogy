@@ -3,62 +3,38 @@ import {Link} from 'react-router-dom';
 
 import './logbooktree.css';
 import {parseQuery} from './util.js';
+import EventSystem from './eventsystem.js';
 
 
 class LogbookTreeNode extends React.Component {
 
-    /* TODO: this is pretty inefficient since it always fetches
-       children to visible logbooks even if they are never expanded.
-       Instead we should be lazy and only fetch children as needed.
-     */
-    
-    constructor () {
-        super();
+    constructor (props) {
+        super(props);
         this.state = {
-            children: [],
             expanded: false
         };
-    }
-
-    fetchLogbooks() {
-        fetch("/api/logbooks/" + (this.props.id || ""),
-              {headers: {"Accept": "application/json"}})
-            .then(response => response.json())
-            .then(json => this.setState(json));        
-    }
-
-    componentWillMount (newProps, newState) {
-        this.fetchLogbooks();
     }
     
     toggle (event) {
         this.setState({expanded: !this.state.expanded});
     }
 
-    shouldComponentUpdate (newProps, newState) {
-        return (newState.logbooks != this.state.logbooks ||
-                newState.expanded != this.state.expanded ||
-                newProps.selectedLogbookId != this.props.selectedLogbookId
-        )
-    }
-    
     render () {
 
-        console.log("node", this.props);
-        
         const children = (
-            this.state.expanded && this.state.children?
+            this.state.expanded && this.props.children ?
             (<ul>
-    {this.state.children.map(
-         child => <LogbookTreeNode key={child.id}
-                                   selectedLogbookId={this.props.selectedLogbookId}
-                                   search={this.props.search} {...child}/>)}
+                {this.props.children.map(
+                     child => <LogbookTreeNode
+                                  key={child.id}
+                                  selectedLogbookId={this.props.selectedLogbookId}
+                                  search={this.props.search} {...child}/>)}
             </ul>)
             : null
         );
 
         const expander = (
-            this.props.n_children > 0?
+            this.props.children.length > 0?
             (
                 <span>
                     <input type="checkbox" checked={this.state.expanded}
@@ -102,7 +78,7 @@ class LogbookTree extends React.Component {
         };
     }    
 
-    fetchLogbooks (search) {
+    fetch (search) {
         fetch(`/api/logbooks/${search}`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
@@ -110,7 +86,22 @@ class LogbookTree extends React.Component {
     }        
     
     componentDidMount () {
-        this.fetchLogbooks(this.props.location.search);
+        this.fetch(this.props.location.search);
+        EventSystem.subscribe("logbook.reload", this.reload.bind(this));
+    }
+
+    componentWillReceiveProps ({location}) {
+        const query = parseQuery(location.search);
+        if (query.parent != this.state.parent)
+            this.fetch(location.search);
+    }
+    
+    componentWillUnmount() {
+        EventSystem.unsubscribe("logbook.reload", this.reload.bind(this));
+    }
+
+    reload () {
+        this.fetch(this.props.location.search);
     }
     
     render () {
@@ -118,18 +109,26 @@ class LogbookTree extends React.Component {
         const logbookId = (this.props.match.params.logbookId?
                            parseInt(this.props.match.params.logbookId)
                          : null);
-        console.log("tree", this.state);
-
         const nodes = this.state.children.map(
             logbook => <LogbookTreeNode key={logbook.id}
                                         selectedLogbookId={logbookId}
                                         search={this.props.location.search}
                                         {...logbook}/>);
+        const parentId = this.state.parent? (this.state.parent.id || 0) : 0;
+        const parentUrl = parentId?
+                          {
+                              pathname:`/logbooks/${parentId}`,
+                              search: `parent=${parentId}`
+                          } :
+                          "/logbooks/";
         
         return (
             <div id="logbooktree">
                 <header>
-                    <Link to={`/logbooks/${this.state.id}?parent=${this.state.id}`}>
+                    <Link to={{
+                        pathname: `/logbooks/${this.state.id}`,
+                        search: this.props.location.search
+                    }}>
                         {this.state.name? this.state.name : "All"}
                     </Link>
 
@@ -137,13 +136,12 @@ class LogbookTree extends React.Component {
                         {
                             this.state.id?
                             <span>
-                                
-                                <Link to={`/logbooks/${this.state.parent.id || 0}?parent=${this.state.parent.id || 0}`}>Up</Link> |
+                                <Link to={ parentUrl }>Up</Link> |
                             </span>
                             : null
                         }
 
-                        <Link to={`/logbooks/${this.state.parent? this.state.parent.id : 0}/new`}>
+                        <Link to={`/logbooks/${parentId}/new`}>
                             New
                         </Link>
                     </div>
@@ -154,8 +152,7 @@ class LogbookTree extends React.Component {
                 </div>
             </div>
         );
-    }
-    
+    }    
 }
 
 

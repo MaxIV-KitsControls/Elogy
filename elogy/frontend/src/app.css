@@ -23,23 +23,6 @@
     min-width: 25%;
 }
  
-#logbook > div {
-    display: flex;
-    flex-direction: column;
-    height: 100%;     
-}
-
- #logbook >div > header {
-     flex: 0;
- }
- 
- #logbook >div >div {
-     flex: 1;
-     background: #ddd;
-     max-height: 100%;
-     overflow-y: auto;
- }
-
  #entry {
      flex: 4;
      overflow: auto;

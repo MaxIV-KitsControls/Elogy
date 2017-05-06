@@ -5,80 +5,9 @@ import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
 
 import style from './entry.css';
-import {formatTimeString} from './util.js';
-
-
-const EntryAttribute = ({config, value}) => (
-    <span className="attribute">
-        <span className="name">{config.name}:</span>
-        <span className="value">
-            {
-                // TODO: Let's say an attribute is reconfigured in the logbook
-                // from "option" to "multioption". Should the backend always
-                // convert the value to an array in this case? What about the
-                // opposite case?
-                config.type == "multioption"?
-                value.map(v => <span className="option">{v}</span>)
-                : value
-            }
-        </span>
-    </span>
-);
-
-
-const EntryAttributes = ({attributes, logbook}) => (
-    <div className="attributes">
-        {
-            logbook.attributes
-                   .filter(attr => attributes[attr.name])
-                   .map((attr, i) => <EntryAttribute key={i} config={attr} value={attributes[attr.name]}/>)
-        }
-    </div>
-);
-
-
-const ICON_CLASS_MAP = {
-    "application/vnd.ms-excel": "fa fa-file-excel-o",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "fa fa-file-excel-o",
-    'application/pdf': "fa fa fa-file-pdf-o",
-    "text/plain": "fa fa-file-text-o",
-    "text/csv": "fa fa-file-text-o",
-    'application/zip': "fa fa-file-archive-o"
-    // TODO: detect more file types
-}
-
-
-export const AttachmentPreview = ({attachment}) => {
-    // display an appropriate icon for the given attachment
-    if (!attachment.content_type)
-        return <i className="fa fa-file-o fa-2x"/>
-    const contentType = attachment.content_type.split(";")[0].toLowerCase();
-    console.log("attachment", attachment, contentType);
-    if (ICON_CLASS_MAP[contentType]) {
-        return <i className={ICON_CLASS_MAP[attachment.content_type] + " fa-2x"}/>;
-    }
-    if (attachment.metadata && attachment.metadata.thumbnail_size)
-        return <img src={`/attachments/${attachment.path}.thumbnail`}
-                    width={attachment.metadata.thumbnail_size.width}
-                    height={attachment.metadata.thumbnail_size.height}/>
-    return <i className="fa fa-file-o fa-2x"/>;
-};
-
-
-export const EntryAttachments = ({attachments}) => (
-    <div className="attachments">
-        {
-            attachments
-                .map((att, i) => (
-                    <span className="attachment" key={i} title={att.filename}>
-                        <a href={`/attachments/${att.path}`}>
-                            <AttachmentPreview attachment={att}/>
-                        </a>
-                    </span>
-                ))
-        }
-    </div>
-)
+import {formatDateTimeString} from './util.js';
+import EntryAttributes from "./entryattributes.js";
+import EntryAttachments from "./entryattachments.js";
 
 
 // An "entry" may have "followup" entries attached, and so on, so in
@@ -87,6 +16,7 @@ class InnerEntry extends React.Component {
     
     render () {
 
+        const logbook = this.props.logbook;
         const followups = this.props.followups ?
                           this.props.followups.map(
                               (followup, i) => <InnerEntry key={followup.id}
@@ -100,73 +30,70 @@ class InnerEntry extends React.Component {
         const attachments = nonEmbeddedAttachments.length > 0?
                             <EntryAttachments attachments={nonEmbeddedAttachments}/>
                           : null;
-        
+        const followupNumber = this.props.followupNumber !== undefined ?
+                               <span className="followup-number">
+                                   {this.props.followupNumber + 1}
+                               </span> :
+                               null;
+        const lastChangedAt = this.props.last_changed_at?
+                              <span className="last-changed-at">
+                                  &nbsp;
+                                  <i className="fa fa-pencil"/>
+                                  {formatDateTimeString(this.props.last_changed_at)}
+                              </span>
+                             :null;
+        const authors = this.props.authors.map((author, i) =>
+            <span key={i} className="author">
+                {author}
+            </span>);
+
+        const attributes = this.props.logbook?
+                           <EntryAttributes {...this.props}/> :
+                           null;
+
+        const content = (
+            this.props.content_type.slice(0, 9) === "text/html"?
+            <div className="content"
+                 dangerouslySetInnerHTML={{__html: this.props.content}}/> :
+            <div className="content">{this.props.content}</div>
+        );
+            
         return (
             <div>
                 <article>
                     <div className="info">
-                        
                         <div className="commands">
-                            <Link to={`/logbooks/${this.props.logbook.id}/entries/${this.props.id}`}>
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}>
                                 Link
                             </Link>
-            &nbsp;|&nbsp;
-            <Link to={`/logbooks/${this.props.logbook.id}/entries/${this.props.id}/new`}>
-                Followup
-            </Link>
-            &nbsp;|&nbsp;
-            <Link to={`/logbooks/${this.props.logbook.id}/entries/${this.props.id}/edit`}>
-                Edit
-            </Link>
+                            &nbsp;|&nbsp;
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/new`}>
+                                Followup
+                            </Link>
+                            &nbsp;|&nbsp;
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}>
+                                Edit
+                            </Link>
                         </div>
-                        
                         <div>
-                            
-                            {
-                                this.props.followupNumber !== undefined ?
-                                <span className="followup-number">
-                                    {this.props.followupNumber + 1}
-                                </span>
-                                : null
-                            }
-
-                <span className="created-at">
-                    {formatTimeString(this.props.created_at)}
-                </span>
-                
-                {
-                    this.props.last_changed_at?
-                    <span className="last-changed-at">
-                        (Last change: {formatTimeString(this.props.last_changed_at)})
-                    </span>
-                    :null
-                }
-                
+                            { followupNumber }
+                            <span className="created-at">
+                                <i className="fa fa-clock-o"/> {formatDateTimeString(this.props.created_at)}
+                            </span>
+                            { lastChangedAt }
                         </div>
-                        
                         <div className="authors">
-                            {this.props.authors.map(
-                                 (author, i) => <span key={i} className="author">{author}</span>)}
+                            <i className="fa fa-user"/> { authors }
                         </div>
-                        
-                        {
-                            this.props.logbook?
-                            <EntryAttributes {...this.props}/>
-                            : null
-                        }
+                        { attributes }
                     </div>
-                    {
-                        this.props.content_type.slice(0, 9) === "text/html"?
-                        <div className="content"
-                             dangerouslySetInnerHTML={
-                                 {__html: this.props.content}
-                                                     }/>
-                        : <div className="content">{this.props.content}</div>
-                    }
-            
-                    {attachments}
+                    { content }
+                    { attachments }
                 </article>
-                <div className="followups">{ followups }</div>
+                
+                <div className="followups">
+                    { followups }
+                </div>
             </div>
         );
     }
@@ -215,13 +142,12 @@ class Entry extends React.Component {
     
     render () {
 
-        /* if (this.state.loading)
-         *     return <div>Loading entry...</div>;*/
-
         if (!(this.state.id && this.state.logbook)) {
             return <div>No entry selected!</div>
         }
-            
+
+        const logbook = this.state.logbook;
+        
         return (
             <div className="container">
                 
@@ -233,26 +159,26 @@ class Entry extends React.Component {
                             
                             {
                                 this.state.follows?
-                                <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.follows}`}>Parent</Link>
+                                <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}>Parent</Link>
                                 : null
                             }
                             
-                            <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.previous}`}>Prev</Link>
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.state.previous}`}>Prev</Link>
                         &nbsp;|&nbsp;
-                        <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.next}`}>Next</Link>
+                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}>Next</Link>
                         </span>                     
                         : null
                     }
                 
-                <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.id}`}>
-                    <span className="logbook">
-                        <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}
-                    </span>
-                </Link>
-                
-                <div className="title">
-                    {this.state.title}
-                </div>
+                    <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}`}>
+                        <span className="logbook">
+                            <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}
+                        </span>
+                    </Link>
+                    
+                    <div className="title">
+                        {this.state.title}
+                    </div>
                 </header>
                 
                 {/* The body is scrollable */}

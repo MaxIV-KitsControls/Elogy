@@ -336,7 +336,7 @@ join logbook1 where entry.logbook_id=logbook1.id
         if title_filter:
             query += " and entry.title is not NULL and entry.title REGEXP '{}'".format(title_filter)
         if author_filter:
-            query += " and authors.value LIKE '{}'".format(author_filter)
+            query += " and authors.value REGEXP '{}'".format(author_filter)
 
         # if attachment_filter:
         #     entries = (
@@ -357,7 +357,6 @@ join logbook1 where entry.logbook_id=logbook1.id
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
         query += " order by coalesce(entry.last_changed_at, entry.created_at) desc"
-
         if n:
             query += " limit {}".format(n)
             if offset:

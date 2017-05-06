@@ -12,7 +12,8 @@ import Dropzone from 'react-dropzone'
 import 'react-select/dist/react-select.css';
 
 import "./entryeditor.css";
-import { EntryAttachments } from "./entry.js";
+import { EntryAttachments } from "./entryattachments.js";
+import EventSystem from "./eventsystem.js";
 
 
 class EntryAttributeEditor extends React.Component {
@@ -187,10 +188,13 @@ class EntryEditor extends React.Component {
                   })
                 .then(response => response.json())
             // TODO: handle errors 
-                .then(response => history.push({
-                    // send the browser to the entry
-                    pathname: `/logbooks/${this.state.logbook.id}/entries/${this.state.id}`
-                }));
+                .then(response => {
+                    history.push({
+                        // send the browser to the entry
+                        pathname: `/logbooks/${this.state.logbook.id}/entries/${this.state.id}`
+                    });
+                    EventSystem.publish("logbook.reload", this.state.logbook.id);
+                });
         } else {
             // we're creating a new entry
             const followupTo = (this.props.match.params.entryId?
@@ -212,12 +216,15 @@ class EntryEditor extends React.Component {
                   })
                 .then(response => response.json())
             // TODO: handle errors 
-                .then(response => history.push({
-                    pathname: `/logbooks/${this.state.logbook.id}/entries/${response.entry_id}`,
-                    state: {
-                        reloadLogbook: true  // tell other components to refresh logbook info
-                    }
-                }));
+                .then(response => {
+                    history.push({
+                        pathname: `/logbooks/${this.state.logbook.id}/entries/${response.entry_id}`,
+                        state: {
+                            reloadLogbook: true  // tell other components to refresh logbook info
+                        }
+                    });
+                    EventSystem.publish("logbook.reload", this.state.logbook.id);
+                });
         }
     }
 

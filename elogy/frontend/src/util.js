@@ -20,6 +20,16 @@ export var groupBy = function(xs, keyFunc) {
 };
 
 
-export function formatTimeString(timestamp) {
+export function formatDateTimeString(timestamp) {
     return format(new Date(Date.parse(timestamp)), "HH:mm:ss, ddd MMM D YYYY");
+}
+
+
+export function formatTimeString(timestamp) {
+    return format(new Date(Date.parse(timestamp)), "HH:mm:ss");
+}
+
+
+export function formatDateString(timestamp) {
+    return format(new Date(Date.parse(timestamp)), "ddd MMM D YYYY");
 }

@@ -26,12 +26,6 @@ logbook_child_fields = {
 }
 
 
-short_logbook_fields = {
-    "id": fields.Integer,
-    "name": fields.String,
-}
-
-
 attribute_fields = {
     "type": fields.String,
     "name": fields.String,
@@ -40,14 +34,32 @@ attribute_fields = {
 }
 
 
+class LogbookField(fields.Raw):
+    "Helper for returning nested logbooks"
+    def format(self, value):
+        return marshal(value, logbook_short_fields)
+
+
+logbook_short_fields = {
+    "id": fields.Integer,
+    "parent_id": fields.Integer(attribute="parent.id"),
+    "name": fields.String,
+    "description": fields.String,
+    "children": fields.List(LogbookField),
+}
+
+
 logbook_fields = {
     "id": fields.Integer,
     "name": fields.String,
     "description": fields.String,
     "template": fields.String,
-    "parent": fields.Nested(short_logbook_fields),
+    "parent": fields.Nested({
+        "id": fields.Integer(default=None),
+        "name": fields.String
+    }),
     "created_at": fields.String,
-    "children": fields.List(fields.Nested(logbook_child_fields)),
+    "children": fields.List(LogbookField),
     "attributes": fields.List(fields.Nested(attribute_fields)),
     "metadata": fields.Raw
 }
@@ -60,7 +72,8 @@ logbooks_parser.add_argument("description", type=str)
 logbooks_parser.add_argument("template", type=str)
 logbooks_parser.add_argument("attributes", type=list,
                              location="json", default=[])
-logbooks_parser.add_argument("metadata", type=dict, location="json", default={})
+logbooks_parser.add_argument("metadata", type=dict, location="json",
+                             default={})
 logbooks_parser.add_argument("archived", type=bool, default=False)
 
 
@@ -72,10 +85,7 @@ class LogbooksResource(Resource):
     def get(self, logbook_id=None):
 
         if logbook_id:
-            print("logbook_id", logbook_id)
-            result = Logbook.get(Logbook.id == logbook_id)
-            print(result)
-            return result
+            return Logbook.get(Logbook.id == logbook_id)
 
         # Get either the direct children of a given parent, or else the
         # global list of top-level (no parent) logbooks
@@ -85,15 +95,13 @@ class LogbooksResource(Resource):
         parent_id = args.get("parent")
         if parent_id:
             return Logbook.get(Logbook.id == parent_id)
-        else:
-            children = (Logbook.select()
-                        .where(Logbook.parent == None))
-            return dict(children=children)
+        children = (Logbook.select()
+                    .where(Logbook.parent == None))
+        return dict(children=children)
 
     def post(self):
         "Create a new logbook"
         args = logbooks_parser.parse_args()
-        print("args", args)
         logbook = dict_to_model(Logbook, args)
         logbook.save()
         return jsonify(logbook_id=logbook.id)
@@ -101,37 +109,11 @@ class LogbooksResource(Resource):
     def put(self, logbook_id):
         "Update an existing logbook"
         logbook = Logbook.get(Logbook.id == logbook_id)
-        print("hdwuih", logbook)
-        print(request.json)
-        try:
-            args = logbooks_parser.parse_args()
-        except Exception as e:
-            print(e)
-        print("args", args)
+        args = logbooks_parser.parse_args()
         change = logbook.make_change(args)
         logbook.save()
         change.save()
         return jsonify(revision_id=change.id)
-
-
-def request_wants_json():
-    best = request.accept_mimetypes \
-        .best_match(['application/json', 'text/html'])
-    return best == 'application/json' and \
-        request.accept_mimetypes[best] > \
-        request.accept_mimetypes['text/html']
-
-
-# parser for validating query arguments to the entries resource
-entries_parser = reqparse.RequestParser()
-entries_parser.add_argument("title", type=str)
-entries_parser.add_argument("content", type=str)
-entries_parser.add_argument("authors", type=str)
-entries_parser.add_argument("attachments", type=str)
-entries_parser.add_argument("attributes", type=str)
-entries_parser.add_argument("archived", type=bool)
-entries_parser.add_argument("n", type=int, default=50)
-entries_parser.add_argument("offset", type=int, default=0)
 
 
 attachment_fields = {
@@ -198,8 +180,10 @@ entry_parser.add_argument("id", type=int, store_missing=False)
 # entry_parser.add_argument("logbook_id", type=int)
 entry_parser.add_argument("title", type=str, store_missing=False)
 entry_parser.add_argument("content", type=str, store_missing=False)
-entry_parser.add_argument("content_type", type=str, default="text/html", store_missing=False)
-entry_parser.add_argument("authors", type=str, action="append", store_missing=False)
+entry_parser.add_argument("content_type", type=str, default="text/html",
+                          store_missing=False)
+entry_parser.add_argument("authors", type=str, action="append",
+                          store_missing=False)
 entry_parser.add_argument("created_at", type=str, store_missing=False)
 entry_parser.add_argument("last_changed_at", type=str, store_missing=False)
 entry_parser.add_argument("follows", type=int, store_missing=False)
@@ -286,7 +270,7 @@ class ContentPreview(fields.Raw):
 
 short_entry_fields = {
     "id": fields.Integer,
-    "logbook": fields.Nested(short_logbook_fields),
+    "logbook": fields.Nested(logbook_short_fields),
     "title": fields.String,
     "content": ContentPreview,
     "created_at": fields.DateTime,
@@ -307,6 +291,20 @@ entries_fields = {
 }
 
 
+# parser for validating query arguments to the entries resource
+entries_parser = reqparse.RequestParser()
+entries_parser.add_argument("title", type=str)
+entries_parser.add_argument("content", type=str)
+entries_parser.add_argument("authors", type=str)
+entries_parser.add_argument("attachments", type=str)
+entries_parser.add_argument("attribute", type=str,
+                            dest="attributes",
+                            action="append", default=[])
+entries_parser.add_argument("archived", type=bool)
+entries_parser.add_argument("n", type=int, default=50)
+entries_parser.add_argument("offset", type=int, default=0)
+
+
 class EntriesResource(Resource):
 
     "Handle requests for entries from a given logbook, optionally filtered"
@@ -315,11 +313,8 @@ class EntriesResource(Resource):
     def get(self, logbook_id=None):
         args = entries_parser.parse_args()
 
-        if args.get("attributes"):
-            attributes = [attr.split(":")
-                          for attr in args.get("attributes", "").split(",")]
-        else:
-            attributes = None
+        attributes = [attr.split(":")
+                      for attr in args.get("attributes", [])]
 
         if logbook_id:
             # restrict search to the given logbook and its descendants

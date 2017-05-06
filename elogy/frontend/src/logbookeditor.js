@@ -4,6 +4,7 @@ import update from 'immutability-helper';
 import TinyMCEInput from './TinyMCEInput.js';
 
 import {Link, Route} from 'react-router-dom';
+import EventSystem from './eventsystem.js';
 import './logbookeditor.css';
 
 
@@ -22,37 +23,37 @@ class LogbookAttribute extends React.PureComponent {
     render () {
         return (
             <div className="attribute">
-            <label>
-            <input type="text" ref="name"
-            value={this.props.name}
-            onChange={this.onChange.bind(this)}/>
-            </label>
-            <label>
-            Type:
-                     <select name="type" ref="type" value={this.props.type}
-            onChange={this.onChange.bind(this)}>
-            <option value="text">Text</option>
-            <option value="number">Number</option>
-            <option value="boolean">Boolean</option>                    
-            <option value="option">Option</option>
-            <option value="multioption">Multioption</option>
-            </select>
-            </label>
-            <label>
-            <input type="checkbox" ref="required"
-            checked={this.props.required}
-            onChange={this.onChange.bind(this)}/>
-            Required                        
-            </label>
-            <label style={
-                {display: (this.props.type == "option" ||
-                           this.props.type == "multioption")?
-                          "inline-block" : "none"}}>
-            Options:
-                         <textarea rows="3" ref="options"
-            value={this.props.options.join("\n")}
-            onChange={this.onChange.bind(this)}/>
-            </label>
+                <label>
+                    <input type="text" ref="name"
+                           value={this.props.name}
+                           onChange={this.onChange.bind(this)}/>
+                </label>
+                <label>
+                    Type:
+                    <select name="type" ref="type" value={this.props.type}
+                            onChange={this.onChange.bind(this)}>
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Boolean</option>                    
+                        <option value="option">Option</option>
+                        <option value="multioption">Multioption</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" ref="required"
+                           checked={this.props.required}
+                           onChange={this.onChange.bind(this)}/>
+                    Required                        
+                </label>
+                <label style={
+                    {display: (this.props.type == "option" ||
+                               this.props.type == "multioption")?
+                              "inline-block" : "none"}}>
+                    Options:
+                    <textarea rows="3" ref="options"
+                              value={this.props.options.join("\n")}
+                              onChange={this.onChange.bind(this)}/>
+                </label>
             </div>
         );
     }
@@ -74,7 +75,7 @@ class LogbookEditor extends React.Component {
     }
 
     fetchLogbook () {
-        fetch(`/api/logbooks/${this.props.match.params.logbookId || 0}`,
+        fetch(`/api/logbooks/${this.props.match.params.logbookId || 0}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
             .then(json => {this.setState(json)});
@@ -146,6 +147,7 @@ class LogbookEditor extends React.Component {
                     },                                            
                     body: JSON.stringify({
                         id: this.state.id,
+                        parent: this.state.parent.id,
                         name: this.state.newName || this.state.name,
                         description: this.state.description,
                         attributes: this.state.attributes,
@@ -154,10 +156,12 @@ class LogbookEditor extends React.Component {
                     })
                 })
                 .then(result => result.json())
-                .then(result => history.push({
-                    pathname: `/logbooks/${this.state.id}`,
-                    state: {reloadLogbook: true}
-                }));
+                .then(result => {
+                    history.push({
+                        pathname: `/logbooks/${this.state.id}`,
+                    });
+                    EventSystem.publish("logbook.reload", this.state.id);
+                });
         } else {
             // creating a new logbook
             fetch(
@@ -167,6 +171,7 @@ class LogbookEditor extends React.Component {
                         'Content-Type': 'application/json'
                     },                    
                     body: JSON.stringify({
+                        parent: this.state.parent.id,
                         name: this.state.newName || this.state.name,
                         description: this.state.newDescription || this.state.description,
                         attributes: this.state.attributes,
@@ -211,6 +216,7 @@ class LogbookEditor extends React.Component {
                     {this.props.match.url.substr(-4) == "edit"?
                      `Editing logbook ${this.state.parent.name || ""}/${this.state.name}`:
                      `New logbook in "${this.state.parent.name}"`}
+                    {this.state.parent.id}
                 </header>
                 <form>
                     <fieldset>

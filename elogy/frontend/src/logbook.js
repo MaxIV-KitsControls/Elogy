@@ -3,110 +3,10 @@ import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
 import update from 'immutability-helper';
 
-import {parseQuery, groupBy} from "./util.js";
-import style from './logbook.css';
-import {AttachmentPreview} from "./entry.js";
-
-
-const EntryPreview = ({logbook, entry, selected, search}) => (
-    <div key={entry.id} className="entry">
-        <Link to={`/logbooks/${logbook && logbook.id || 0}/entries/${entry.id}${search || ""}`}>
-            
-            {
-                entry.n_attachments?
-                <div className="attachments">
-                    {entry.attachment_preview?
-                     <AttachmentPreview attachment={entry.attachment_preview}/>
-                     :null
-                    }
-                {/* width={entry.attachments[0].thumbnail_size.width}
-                    height={entry.attachments[0].thumbnail_size.height}/> */}
-                    <span>{ entry.n_attachments }</span>
-                </div>
-                : null
-            }
-            {
-                logbook && (logbook.id !== entry.logbook.id)?
-                <div className="logbook"><i className="fa fa-book"/> {entry.logbook.name}</div>
-                : null
-            }
-        <div className="info">
-            <span className="timestamp">
-                { (new Date(Date.parse(entry.last_changed_at || entry.created_at))).toLocaleTimeString() }
-            </span>
-            <span className="authors">
-                { entry.authors.slice(0, 2).map(
-                      (author, i) => <span key={i} className="author">{author}</span>) }
-                { entry.authors.length > 2? `, (+${entry.authors.length-2})` : null }
-            </span>            
-        </div>
-
-            <div className="title"><span>{ entry.title }</span></div>
-            <div className="content"> {entry.content}</div>
-
-            {
-                entry.n_followups > 0?
-                <div className="followups">{ entry.n_followups }</div>
-                : null
-            }
-        </Link>
-    </div>
-);
-
-
-class EntryPreviews extends React.Component {
-    
-    constructor () {
-        super();
-        this.state = {
-            entries: []            
-        }
-    }
-
-    /* componentDidUpdate (oldProps) {
-     *     if (oldProps.selectedEntryId !== this.props.selectedEntryId)
-     *         this.refs[this.props.selectedEntryId].scrollIntoView();
-     * }*/
-    
-    render () {
-
-        /* First, we'll group the entries according to date of creation */
-        const dateGroups = groupBy(
-            this.props.entries,
-            entry => (new Date(
-                Date.parse(entry.last_changed_at || entry.created_at))
-                .toDateString())
-        );
-
-        /* Now we'll build a nested DOM structure where each date contains 
-           the entries for that date. */
-        const entries = Object
-            .keys(dateGroups)
-            .map(date => (
-                <dl key={date} className="date-group">
-                    <dt className="date">{date}</dt>
-                    {dateGroups[date]
-                        .map((entry, i) => (
-                            <dd key={i}
-                                className={"entry" + (this.props.selectedEntryId == entry.id? " selected" : "")}
-                                ref={entry.id}>
-                                <EntryPreview
-                                    key={entry.id}
-                                    search={this.props.search}
-                                    logbook={this.props.logbook} entry={entry}/>
-                            </dd>
-                        ))
-                    }
-                </dl>
-            ));
-
-        return (
-            <div ref="container" className="entries">
-                {entries}
-            </div>
-        );
-    }
-}
+import {parseQuery, formatTimeString} from "./util.js";
+import EventSystem from "./eventsystem.js";
+import EntryPreviews from "./entrypreviews.js";
+import './logbook.css';
 
 
 class Logbook extends React.Component {
@@ -116,45 +16,40 @@ class Logbook extends React.Component {
         this.state = {
             logbook: {},
             entries: [],
-            attributeFilters: {}
+            attributeFilters: {},
+            loading: false
         }
     }
 
     // Fetch all information (but only the first few entries)
     fetch (logbookId, search, attributeFilters, offset, n) {
+        // build a nice query string with the query
+        // we'll start with the parameters in the browser URL
         const query = search? parseQuery(search) : {};
-        query.attributes = Object.keys(attributeFilters)
-                                 .filter(key => attributeFilters[key])
-                                 .map(key => `${key}:${attributeFilters[key]}`)
-                                 .join(",");
         query["n"] = n || query["n"] || 50;
-        query["offset"] = offset || query["offset"] || 0;
+        query["offset"] = offset || 0;  // || query["offset"] || 0;
+        const attributes = Object.keys(attributeFilters)
+            .filter(key => attributeFilters[key])
+            .map(key => `attribute=${key}:${attributeFilters[key]}`)
+            .join("&");
         const newSearch = Object.keys(query)
                                 .map(key => `${key}=${query[key]}`)
-                                .join("&");
+                                .join("&") + "&" + attributes;
+        this.setState({loading: true});
         fetch(`/api/logbooks/${logbookId || 0}/entries/?${newSearch || ""}`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState(json));
-    }
-
-    // fill with more entries
-    // TODO: lots of repetition here...
-    fetchMoreEntries (n) {
-        const query = this.props.location.search? parseQuery(this.props.location.search) : {};
-        query.attributes = Object.keys(this.state.attributeFilters)
-                                 .filter(key => this.state.attributeFilters[key])
-                                 .map(key => `${key}:${this.state.attributeFilters[key]}`)
-                                 .join(",");
-        query["n"] = n || query["n"] || 50;
-        query["offset"] = this.state.entries.length;
-        const newSearch = Object.keys(query)
-                                .map(key => `${key}=${query[key]}`)
-                                .join("&");
-        fetch(`/api/logbooks/${this.props.match.params.logbookId || 0}/entries/?${newSearch || ""}`,
-              {headers: {"Accept": "application/json"}})
-            .then(response => response.json())
-            .then(json => this.setState(update(this.state, {entries: {$push: json.entries}})));
+            .then(json => {
+                this.setState({loading: false});
+                if (offset) {
+                    // append the new entries 
+                    this.setState(
+                        update(this.state, {entries: {$push: json.entries}}));
+                } else {
+                    // replace entries
+                    this.setState(json)                    
+                }
+            });
     }
     
     componentWillMount () {
@@ -164,6 +59,7 @@ class Logbook extends React.Component {
     }
     
     componentWillUpdate (newProps, newState) {
+        // if needed, we fetch info from the server
         if ((newProps.match.params.logbookId !==
             this.props.match.params.logbookId ||
              newProps.location.search !== this.props.location.search) ||
@@ -173,29 +69,42 @@ class Logbook extends React.Component {
                        newProps.location.search,
                        newState.attributeFilters);
         }
+        // reset the filters if we've moved to another logbook
         if (newProps.match.params.logbookId !==
             this.props.match.params.logbookId) {
             this.setState(update(this.state, {attributeFilters: {$set: {}}}));
-        }
-             
+        }             
     }
 
-    shouldComponentUpdate (newProps, newState) {
-        console.log(parseInt(newProps.match.params.logbookId) !== this.state.logbook.id);
-        console.log(newProps.location.search !== this.props.location.search)
-        console.log(newState.attributeFilters !== this.state.attributeFilters);
-        
-        return ((parseInt(newProps.match.params.logbookId) !== this.state.logbook.id) ||
-                (newProps.location.search !== this.props.location.search) ||
-                (newState.attributeFilters !== this.state.attributeFilters));
+    componentDidMount () {
+        // setup a subscription that makes sure we reload the current
+        // logbook whenever e.g. an entry has been added.
+        EventSystem.subscribe("logbook.reload", this.reload.bind(this));
     }
 
-    componentDidUpdate() {
-        console.log("title", this.state.logbook);
+    componentWillUnmount() {
+        EventSystem.unsubscribe("logbook.reload", this.reload.bind(this));
+    }
+
+    reload (logbookId) {
+        // only need to refresh if we're actually visiting the given logbook
+        if (logbookId == this.state.logbook.id)
+            this.fetch(this.props.match.params.logbookId,
+                       this.props.location.search,
+                       this.state.attributeFilters);              
+    }
+    
+    componentDidUpdate({match}) {
+        // set the browser title
         document.title = `${this.state.logbook.name}`
+        // make sure the entry list is scrolled to the top
+        if (match.params.logbookId !== this.props.match.params.logbookId)
+            findDOMNode(this.refs.entries).scrollIntoView();
     }
     
     onChangeAttributeFilter (attribute, event) {
+        // TODO: this should be encoded in the URL search string, like
+        // the other search parameters!
         if (event.target.selectedIndex == 0) {
             this.setState(update(
                 this.state, {
@@ -213,12 +122,13 @@ class Logbook extends React.Component {
     }
 
     onLoadMore () {
-        this.fetchMoreEntries();
+        this.fetch(this.props.match.params.logbookId,
+                   this.props.location.search,
+                   this.state.attributeFilters,
+                   this.state.entries.length);
+        
+        /*         this.fetchMoreEntries();*/
     }
-
-    componentDidUpdate() {
-        findDOMNode(this.refs.entries).scrollIntoView();
-    }    
     
     render() {
 
@@ -246,40 +156,47 @@ class Logbook extends React.Component {
                          : null;
         
         return (
-            <div>
+            <div className="container">
                 <header>
                     <span className="name">
-                        <i className="fa fa-book"/> { logbook.id === 0? "[All logbooks]" : logbook.name }
+                        <i className="fa fa-book"/>
+                        { logbook.id === 0? "[All logbooks]" : logbook.name }
                     </span>
                     
                     { logbook.id?
                       <div>
 
                           <div className="entry">
-                              <Link to={`/logbooks/${this.state.logbook.id}/entries/new`}>New entry</Link>
+                              <Link to={`/logbooks/${logbook.id}/entries/new`}>New entry</Link>
                           </div>
-                          <Link to={`/logbooks/${this.state.logbook.id}?parent=${this.state.logbook.id}`}>
-                              Make parent
-                          </Link> | <Link to={`/logbooks/${this.state.logbook.id}/edit`}>
+                          <Link to={`/logbooks/${logbook.id}?parent=${logbook.id}`}>
+                            Enter
+                          </Link> | <Link to={`/logbooks/${logbook.id}/edit`}>
                               Edit
-                          </Link> | <Link to={`/logbooks/${this.state.logbook.id}/new`}>
+                          </Link> | <Link to={`/logbooks/${logbook.id}/new`}>
                               New
                           </Link>
                       </div>
                       : null
                     }
-                <div className="filters"> {filter} </div>
-                <div className="attributes">
-                    {attributes}
-                </div>
+                    <div className="filters"> {filter} </div>
+                    <div className="attributes">
+                        {attributes}
+                    </div>
                 </header>
-                <div ref="entries">
-                    <EntryPreviews logbook={logbook}
-                                   entries={this.state.entries}
-                                   search={this.props.location.search}
-                                   selectedEntryId={entryId}/>
-                    <div onClick={this.onLoadMore.bind(this)}>
-                        Load more (showing {this.state.entries.length} of {this.state.count})
+                <div className="entries-container">
+                    <div ref="entries">
+                        <EntryPreviews logbook={logbook}
+                                       entries={this.state.entries}
+                                       search={this.props.location.search}
+                                       selectedEntryId={entryId}/>
+                        {
+                            this.state.loading?
+                            <i className="fa fa-refresh fa-spin"/> :
+                            <div onClick={this.onLoadMore.bind(this)}>
+                                Load more (showing {this.state.entries.length} of {this.state.count})
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
