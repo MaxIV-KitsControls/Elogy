@@ -44,7 +44,7 @@ class InnerEntry extends React.Component {
                              :null;
         const authors = this.props.authors.map((author, i) =>
             <span key={i} className="author">
-                {author}
+                { author.name }
             </span>);
 
         const attributes = this.props.logbook?

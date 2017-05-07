@@ -2,14 +2,18 @@
 The main entrypoint of the Elogy web application
 """
 
-from flask import Flask, current_app, send_from_directory
+from time import time
+
+from flask import Flask, current_app, send_from_directory, g
 from flask_restful import Api
+import logging
 from peewee import OperationalError
 
 from .db import (db,
                  Logbook, LogbookRevision,
                  Entry, EntryRevision, EntryLock,
                  Attachment)
+from .api import errors as api_errors
 from .api import (LogbooksResource, EntriesResource, EntryResource,
                   UsersResource, AttachmentsResource)
 
@@ -19,6 +23,18 @@ app = Flask(__name__,
             static_folder="frontend/build/static",
             static_url_path="/static")
 app.config.from_envvar('ELOGY_CONFIG_FILE')
+
+
+# add some hooks for debugging purposes
+@app.before_request
+def before_request():
+    g.start = time()
+
+
+@app.teardown_request
+def teardown_request(exception=None):
+    duration = time() - g.start
+    current_app.logger.debug("Request took %f s", duration)
 
 
 # Database setup
@@ -42,7 +58,7 @@ def per_request_callbacks(response):
 
 # API endpoints
 
-api = Api(app, prefix="/api")
+api = Api(app, prefix="/api", errors=api_errors)
 
 api.add_resource(LogbooksResource,
                  "/logbooks/",
@@ -64,7 +80,6 @@ api.add_resource(AttachmentsResource,
 
 
 # other routes
-
 @app.route('/attachments/<path:path>')
 def get_attachment(path):
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], path)

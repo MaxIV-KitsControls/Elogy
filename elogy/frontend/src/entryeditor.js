@@ -49,29 +49,32 @@ class EntryAttributeEditor extends React.Component {
     }
     
     makeInputElement () {
+        const required = this.props.config.required;
         switch(this.props.config.type) {
             case "text":
                 return <input type="text" value={this.state.value}
-                              ref="attr"
+                              ref="attr" required={required}
                               onChange={this.onChange.bind(this)}
                               onBlur={this.onBlur.bind(this)}/>;
             case "number":
                 return <input type="text" value={this.state.value}
-                              ref="attr"
+                              ref="attr" required={required}
                               onChange={this.onChange.bind(this)}
                               onBlur={this.onBlur.bind(this)}/>;
             case "boolean":
                 return <input type="checkbox" checked={this.state.value}
-                              ref="attr"
+                              ref="attr" required={required}
                               onChange={this.onChangeBoolean.bind(this)}
                               onBlur={this.onBlur.bind(this)}/>;
             case "option":
                 return <Creatable value={this.state.value}
+                                  required={required}
                                   options={this.props.config.options.map(o => {return {value: o, label: o}})}
                                   onChange={this.onChangeSelect.bind(this)}
                                   onBlur={this.onBlur.bind(this)}/>;
             case "multioption":
                 return <Creatable value={this.state.value} multi={true}
+                                  required={required}
                                   options={this.props.config.options.map(o => {return {value: o, label: o}})}
                                   onChange={this.onChangeMultiSelect.bind(this)}
                                   onBlur={this.onBlur.bind(this)}/>;
@@ -143,14 +146,14 @@ class EntryEditor extends React.Component {
               })
             .then(response => response.json())
             .then(response => {return {
-                options: (this.state.authors.map(a => {return {value: a, label: a}})
-                              .concat(response.users.map(u => {return {value: u.login, label: u.name}}))),
+                options: (this.state.authors
+                              .concat(response.users)),
                 complete: false
             }});
     }
     
     onAuthorsChange (newAuthors) {
-        this.setState({authors: newAuthors.map(a => a.value)});
+        this.setState({authors: newAuthors});
     }
 
     onAttributeChange (name, value) {
@@ -253,9 +256,9 @@ class EntryEditor extends React.Component {
             <div id="entryeditor">
                 <header>
                     {
-                        this.state.title?
+                        this.state.entry?
                         <span className="old-title">
-                            Editing entry <span>{this.state.title}</span> in <span>{this.state.logbook.name}</span>
+                            Editing entry <span>{this.state.entry.title}</span> in <span>{this.state.logbook.name}</span>
                         </span>
                         : <span>New entry in <span>{this.state.logbook.name}</span></span>
                     }   
@@ -264,10 +267,11 @@ class EntryEditor extends React.Component {
                            onChange={this.onTitleChange.bind(this)}/>
                     <Async
                         name="authors" placeholder="Authors"
-                        valueRenderer={o => o.label}
+                        valueRenderer={o => o.name}
                         multi={true} value={this.state.authors}
-                        optionRenderer={o => `${o.label} [${o.value}]`}
-                        options={this.state.authors.map(a => {return {value: a, label: a}})}
+                        optionRenderer={o => `${o.login} [${o.name}]`}
+                        valueKey="login" labelKey="name"
+                        options={this.state.authors}
                         loadOptions={this.fetchUserSuggestions.bind(this)}
                         onChange={this.onAuthorsChange.bind(this)}
                     />

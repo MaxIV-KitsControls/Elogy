@@ -138,7 +138,8 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                     "created_at": str(timestamp),
                     "title": entry.get("subject"),
                     # "content": body,
-                    "authors": [a.strip()
+                    "authors": [{"login": a.strip().replace(" ", "_").lower(),
+                                 "name": a.strip()}
                                 for a in entry.get("author", "").split(",")],
                     "content_type": ("text/html"
                                      if entry.get("encoding").upper() == "HTML"

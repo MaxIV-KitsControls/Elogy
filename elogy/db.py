@@ -283,15 +283,17 @@ class Entry(db.Model):
             # we can match on them later
             attributes = ", {}".format(
                 ", ".join(
-                    "json_extract(entry.attributes, '$.{attr}') as {attr_id}"
+                    "json_extract(entry.attributes, '$.{attr}') AS {attr_id}"
                     .format(attr=attr, attr_id="attr{}".format(i))
                     for i, (attr, _) in enumerate(attribute_filter)))
         else:
             attributes = ""
 
         if author_filter:
-            # extract the authors as a separate table
-            authors = ", json_each(entry.authors) as authors"
+            # extract the author names as a separate table, so that
+            # they can be searched
+            # TODO: maybe also take login?
+            authors = ", json_each(entry.authors) AS authors"
         else:
             authors = ""
 
@@ -300,15 +302,15 @@ class Entry(db.Model):
                 # recursive query to find all entries in the given logbook
                 # or any of its descendants, to arbitrary depth
                 query = """
-with recursive logbook1(id,parent_id) as (
-    values({logbook}, null)
-    union all
-    select logbook.id, logbook.parent_id from logbook,logbook1
-    where logbook.parent_id=logbook1.id
+WITH recursive logbook1(id,parent_id) AS (
+    values({logbook}, NULL)
+    UNION ALL
+    SELECT logbook.id, logbook.parent_id FROM logbook,logbook1
+    WHERE logbook.parent_id=logbook1.id
 )
-select {what}{attributes}
-from entry{authors}
-join logbook1 where entry.logbook_id=logbook1.id
+SELECT {what}{attributes}
+FROM entry{authors}
+JOIN logbook1 WHERE entry.logbook_id=logbook1.id
 """.format(attributes=attributes,
            what="count()" if count else "entry.*",
            authors=authors, logbook=logbook.id)
@@ -323,20 +325,20 @@ join logbook1 where entry.logbook_id=logbook1.id
                             authors=authors))
         else:
             # same here
-            query = ("select *{attributes} from entry{authors} where 1"  # :)
+            query = ("SELECT *{attributes} FROM entry{authors} WHERE 1"  # :)
                      .format(attributes=attributes, authors=authors))
 
         if not archived:
-            query += " and not entry.archived"
+            query += " AND NOT entry.archived"
 
         # further filters on the results, depending on search criteria
         if content_filter:
             # need to filter out null or REGEX will explode on them
-            query += " and entry.content is not NULL and entry.content REGEXP '{}'".format(content_filter)
+            query += " AND entry.content IS NOT NULL AND entry.content REGEXP '{}'".format(content_filter)
         if title_filter:
-            query += " and entry.title is not NULL and entry.title REGEXP '{}'".format(title_filter)
+            query += " AND entry.title IS NOT NULL AND entry.title REGEXP '{}'".format(title_filter)
         if author_filter:
-            query += " and authors.value REGEXP '{}'".format(author_filter)
+            query += " AND json_extract(authors.value, '$.name') REGEXP '{}'".format(author_filter)
 
         # if attachment_filter:
         #     entries = (
@@ -352,15 +354,15 @@ join logbook1 where entry.logbook_id=logbook1.id
         if attribute_filter:
             for i, (attr, value) in enumerate(attribute_filter):
                 # attr_value = fn.json_extract(Entry.attributes, "$." + attr)
-                query += " and {} = '{}'".format("attr{}".format(i), value)
+                query += " AND {} = '{}'".format("attr{}".format(i), value)
 
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
-        query += " order by coalesce(entry.last_changed_at, entry.created_at) desc"
+        query += " ORDER BY coalesce(entry.last_changed_at, entry.created_at) DESC"
         if n:
-            query += " limit {}".format(n)
+            query += " LIMIT {}".format(n)
             if offset:
-                query += " offset {}".format(offset)
+                query += " OFFSET {}".format(offset)
 
         return Entry.raw(query)
 

@@ -13,6 +13,20 @@ from .attachments import save_attachment, handle_img_tags
 from .utils import get_utc_datetime
 
 
+# Catch exceptions raised in API endpoints and translate them
+# into useful error messages.
+errors = {
+    "LogbookDoesNotExist": dict(
+        message="Logbook does not exist!",
+        status=404
+    ),
+    "EntryDoesNotExist": dict(
+        message="Entry does not exist!",
+        status=404
+    )
+}
+
+
 class NumberOfSomething(fields.Raw):
     def format(self, value):
         return len(value)
@@ -135,7 +149,7 @@ followup_fields = {
     "id": fields.Integer,
     "title": fields.String,
     "created_at": fields.DateTime,
-    "authors": fields.List(fields.String),
+    "authors": fields.List(fields.String(attribute="name")),
     "attachments": fields.List(fields.Nested(attachment_fields)),
     "attributes": fields.Raw,
     "content": fields.String,
@@ -146,7 +160,6 @@ followup_fields = {
 
 class EntryId(fields.Raw):
     def format(self, value):
-        print(value)
         return value.id if value else None
 
 
@@ -161,7 +174,8 @@ entry_fields = {
     "title": fields.String,
     "created_at": fields.DateTime,
     "last_changed_at": fields.DateTime,
-    "authors": fields.List(fields.String),
+    "authors": fields.List(fields.Nested({"name": fields.String,
+                                          "login": fields.String})),
     "attributes": fields.Raw(attribute="converted_attributes"),
     "attachments": fields.List(fields.Nested(attachment_fields)),
     "content": fields.String,
@@ -182,7 +196,7 @@ entry_parser.add_argument("title", type=str, store_missing=False)
 entry_parser.add_argument("content", type=str, store_missing=False)
 entry_parser.add_argument("content_type", type=str, default="text/html",
                           store_missing=False)
-entry_parser.add_argument("authors", type=str, action="append",
+entry_parser.add_argument("authors", type=dict, action="append",
                           store_missing=False)
 entry_parser.add_argument("created_at", type=str, store_missing=False)
 entry_parser.add_argument("last_changed_at", type=str, store_missing=False)
@@ -204,7 +218,6 @@ class EntryResource(Resource):
     def post(self, logbook_id=None):
         "new entry"
         data = entry_parser.parse_args()
-        print(data)
         logbook_id = logbook_id or data["logbook_id"]
         if "created_at" in data:
             data["created_at"] = get_utc_datetime(data["created_at"])
@@ -218,7 +231,6 @@ class EntryResource(Resource):
         data["logbook"] = logbook
         # make sure the attributes are of proper types
         if "attributes" in data:
-            print(data["attributes"])
             attributes = {}
             for attr_name, attr_value in data["attributes"].items():
                 converted_value = logbook.convert_attribute(attr_name, attr_value)
@@ -238,9 +250,7 @@ class EntryResource(Resource):
 
     def put(self, logbook_id=None, entry_id=None):
         "update entry"
-        print(request.json)
         args = entry_parser.parse_args()
-        print(args)
         entry_id = entry_id or args["id"]
         args["content"], inline_attachments = handle_img_tags(args["content"])
         entry = Entry.get(Entry.id == entry_id)
@@ -275,7 +285,7 @@ short_entry_fields = {
     "content": ContentPreview,
     "created_at": fields.DateTime,
     "last_changed_at": fields.DateTime,
-    "authors": fields.List(fields.String),
+    "authors": fields.List(fields.String(attribute="name")),
     # "attributes": fields.Raw(attribute="converted_attributes"),
     # "attachments": fields.List(fields.Nested(attachment_fields)),
     "attachment_preview": FirstIfAny(attribute="attachments"),
@@ -402,7 +412,6 @@ class AttachmentsResource(Resource):
         else:
             timestamp = datetime.utcnow()
         for attachment in args["attachment"]:
-            print(attachment.filename)
             attachment = save_attachment(attachment, timestamp,
                                          args["entry_id"],
                                          embedded=args["embedded"])
