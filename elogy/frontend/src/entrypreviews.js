@@ -7,7 +7,7 @@ import {groupBy, formatTimeString, formatDateString} from "./util.js";
 
 const EntryPreview = ({logbook, entry, selected, search=""}) => {
     
-    const url = `/logbooks/${logbook.id}/entries/${entry.id}${search}`
+    const url = `/logbooks/${logbook.id}/entries/${entry.id}/${search}`
     const attachments = (
         entry.n_attachments ?
         <div className="attachments">

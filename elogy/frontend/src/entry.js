@@ -116,7 +116,7 @@ class Entry extends React.Component {
 
     fetchEntry (logbookId, entryId) {
         /*         this.setState({loading: true});*/
-        fetch(`/api/entries/${entryId}`,
+        fetch(`/api/logbooks/${logbookId}/entries/${entryId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
             .then(json => this.setState({loading: false, ...json}));        
@@ -137,7 +137,7 @@ class Entry extends React.Component {
     }
 
     componentDidUpdate() {
-        setTimeout(() => findDOMNode(this.refs.body).scrollIntoView(), 10);
+        requestAnimationFrame(() => findDOMNode(this.refs.body).scrollIntoView());
     }
     
     render () {
@@ -185,8 +185,10 @@ class Entry extends React.Component {
                 </header>
                 
                 {/* The body is scrollable */}
-                <div className="body">
-                    <InnerEntry ref="body" {...this.state}/>
+                <div className="">
+                    <div ref="body">
+                        <InnerEntry {...this.state}/>
+                    </div>
                 </div>
             </div>
         );
