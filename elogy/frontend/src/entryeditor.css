@@ -7,8 +7,9 @@
 #entryeditor header {
     padding: 5px;
     flex: 0;
-    font-size: 80%;
     background: #ddd;
+    font-size: 90%;
+    font-weight: none;
 }
 
 #entryeditor header input[type=text] {
@@ -17,10 +18,12 @@
     margin-bottom: 5px;
 }
 
+#entryeditor header .logbook {
+    font-size: 100%;
+}
 
 #entryeditor .content {
     flex: 1;
-    background: red;
     height: 100%;
 }
 

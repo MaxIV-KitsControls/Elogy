@@ -93,7 +93,11 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
 
     return (
         <div className="entries">
-            { entryPreviews }
+            { entryPreviews.length > 0?
+              entryPreviews :
+              <div className="no-entries">
+                  No matching entries!
+              </div> }
         </div>
     );
 }

@@ -153,7 +153,12 @@ class Logbook extends React.Component {
                                        </select>
                                    ))
                          : null;
-        
+        const loadMore = this.state.count > this.state.entries.length ?
+                         <div onClick={this.onLoadMore.bind(this)}>
+                             Load more (showing {this.state.entries.length} of {this.state.count})
+                         </div> :
+                         null;
+
         return (
             <div className="container">
                 <header>
@@ -166,14 +171,16 @@ class Logbook extends React.Component {
                       <div>
 
                           <div className="entry">
-                              <Link to={`/logbooks/${logbook.id}/entries/new`}>New entry</Link>
+                              <Link to={`/logbooks/${logbook.id}/entries/new`}>
+                                  New entry
+                              </Link>
                           </div>
                           <Link to={`/logbooks/${logbook.id}?parent=${logbook.id}`}>
-                            Enter
+                              Enter
                           </Link> | <Link to={`/logbooks/${logbook.id}/edit`}>
                               Edit
                           </Link> | <Link to={`/logbooks/${logbook.id}/new`}>
-                              New
+                              New child
                           </Link>
                       </div>
                       : null
@@ -189,13 +196,13 @@ class Logbook extends React.Component {
                                        entries={this.state.entries}
                                        search={this.props.location.search}
                                        selectedEntryId={entryId}/>
-                        {
-                            this.state.loading?
-                            <i className="fa fa-refresh fa-spin"/> :
-                            <div onClick={this.onLoadMore.bind(this)}>
-                                Load more (showing {this.state.entries.length} of {this.state.count})
-                            </div>
-                        }
+                        <div className="load-more">
+                            {
+                                this.state.loading?
+                                <i className="fa fa-refresh fa-spin"/> :
+                                loadMore
+                            }
+                        </div>
                     </div>
                 </div>
             </div>

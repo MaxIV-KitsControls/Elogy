@@ -156,7 +156,7 @@ class Entry extends React.Component {
                     {
                         this.state.logbook?
                         <span className="commands">
-                            
+
                             {
                                 this.state.follows?
                                 <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}>Parent</Link>
@@ -166,10 +166,13 @@ class Entry extends React.Component {
                             <Link to={`/logbooks/${logbook.id}/entries/${this.state.previous}`}>Prev</Link>
                         &nbsp;|&nbsp;
                         <Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}>Next</Link>
-                        </span>                     
+                        &nbsp;&nbsp;
+                        <Link to={`/logbooks/${logbook.id}/entries/new`}>New Entry</Link>
+                        
+                        </span>    
                         : null
                     }
-                
+                    
                     <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}`}>
                         <span className="logbook">
                             <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}
