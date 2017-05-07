@@ -51,7 +51,7 @@ class LogbookAttribute extends React.PureComponent {
                               "inline-block" : "none"}}>
                     Options:
                     <textarea rows="3" ref="options"
-                              value={this.props.options.join("\n")}
+                              value={(this.props.options || []).join("\n")}
                               onChange={this.onChange.bind(this)}/>
                 </label>
             </div>
@@ -193,10 +193,18 @@ class LogbookEditor extends React.Component {
             (attr, i) => (
                 <fieldset key={i}>
                     <legend>{i}
-                        <button onClick={this.removeAttribute.bind(this, i)}>Delete</button>
-                        <button onClick={this.insertAttribute.bind(this, i)}>Insert</button>
-                        <button onClick={this.moveAttribute.bind(this, i, -1)}>Up</button>
-                        <button onClick={this.moveAttribute.bind(this, i, 1)}>Down</button>
+                        <button onClick={this.removeAttribute.bind(this, i)}>
+                            <i className="fa fa-trash"/>
+                        </button>
+                        <button onClick={this.insertAttribute.bind(this, i)}>
+                            <i className="fa fa-plus"/>
+                        </button>
+                        <button onClick={this.moveAttribute.bind(this, i, -1)}>
+                            <i className="fa fa-arrow-up"/>
+                        </button>
+                        <button onClick={this.moveAttribute.bind(this, i, 1)}>
+                            <i className="fa fa-arrow-down"/>
+                        </button>
                     </legend>
                     <LogbookAttribute
                         key={attr.name}

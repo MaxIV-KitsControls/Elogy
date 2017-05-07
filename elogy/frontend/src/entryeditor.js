@@ -94,13 +94,12 @@ class EntryEditor extends React.Component {
     constructor (props) {
         super(props);
         this.state = {
-            id: 0,
+            id: null,
             logbook: {},
             title: "",
             authors: [],
             attributes: {},
             attachments: [],
-            newAttachments: [],
             content: null
         }
     }
@@ -109,7 +108,7 @@ class EntryEditor extends React.Component {
         fetch(`/api/entries/${entryId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState(json));        
+            .then(json => this.setState({entry: json, ...json}));        
     }
 
     fetchLogbook (logbookId) {
@@ -189,11 +188,12 @@ class EntryEditor extends React.Component {
                 .then(response => response.json())
             // TODO: handle errors 
                 .then(response => {
+                    EventSystem.publish("logbook.reload", this.state.logbook.id);
                     history.push({
                         // send the browser to the entry
                         pathname: `/logbooks/${this.state.logbook.id}/entries/${this.state.id}`
                     });
-                    EventSystem.publish("logbook.reload", this.state.logbook.id);
+                    
                 });
         } else {
             // we're creating a new entry
@@ -259,7 +259,8 @@ class EntryEditor extends React.Component {
                         </span>
                         : <span>New entry in <span>{this.state.logbook.name}</span></span>
                     }   
-                    <input type="text" placeholder="title" value={this.state.title}
+                    <input type="text" placeholder="title"
+                           value={this.state.title} required={true}
                            onChange={this.onTitleChange.bind(this)}/>
                     <Async
                         name="authors" placeholder="Authors"

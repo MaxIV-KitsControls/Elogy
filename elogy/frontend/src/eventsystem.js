@@ -4,16 +4,8 @@ const EventSystem = (function() {
 
     return {
         publish: function (event, data) {
-            var queue = store[event];
-
-            if (typeof queue === 'undefined') {
-                return false;
-            }
-
-            while(queue.length > 0) {
-                (queue.shift())(data);
-            }
-
+            const callbacks = store[event] || []; 
+            callbacks.forEach(callback => callback(data));
             return true;
         },
         subscribe: function(event, callback) {

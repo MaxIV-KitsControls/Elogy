@@ -63,8 +63,7 @@ class Logbook extends React.Component {
         if ((newProps.match.params.logbookId !==
             this.props.match.params.logbookId ||
              newProps.location.search !== this.props.location.search) ||
-            (newState.attributeFilters !== this.state.attributeFilters) ||
-            (newProps.location.state && newProps.location.state.reloadLogbook)) {
+            (newState.attributeFilters !== this.state.attributeFilters)) {
             this.fetch(newProps.match.params.logbookId,
                        newProps.location.search,
                        newState.attributeFilters);
@@ -82,16 +81,16 @@ class Logbook extends React.Component {
         EventSystem.subscribe("logbook.reload", this.reload.bind(this));
     }
 
-    componentWillUnmount() {
-        EventSystem.unsubscribe("logbook.reload", this.reload.bind(this));
-    }
+    /* componentWillUnmount() {
+     *     EventSystem.unsubscribe("logbook.reload", this.reload.bind(this));
+     * }*/
 
     reload (logbookId) {
+        console.log("reload", logbookId);
         // only need to refresh if we're actually visiting the given logbook
-        if (logbookId == this.state.logbook.id)
-            this.fetch(this.props.match.params.logbookId,
-                       this.props.location.search,
-                       this.state.attributeFilters);              
+        this.fetch(this.props.match.params.logbookId,
+                   this.props.location.search,
+                   this.state.attributeFilters);              
     }
     
     componentDidUpdate({match}) {

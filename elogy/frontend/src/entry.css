@@ -49,8 +49,9 @@
 #entry .info {
     /* this is the magic that keeps the entry headers floating along */
     position: sticky;  
-    top: -1px;
+    top: 0;
     background: #eee;
+    border-top: 1px solid #bbb;
     border-bottom: 1px solid #bbb;
     padding: 5px 10px;          
 }
