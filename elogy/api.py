@@ -99,7 +99,7 @@ class LogbooksResource(Resource):
 
     "Handle requests for logbooks"
 
-    @marshal_with(logbook_fields)
+    @marshal_with(logbook_fields, envelope="logbook")
     def get(self, logbook_id=None):
 
         if logbook_id:
@@ -143,23 +143,25 @@ attachment_fields = {
 }
 
 
-class Followup(fields.Raw):
-    "Since followups can contain followups, and so on, we need this"
-    def format(self, value):
-        return marshal(value, entry_fields)
-
-
-authors_field = {
+authors_fields = {
     "name": fields.String,
     "login": fields.String
 }
 
 
+class Followup(fields.Raw):
+    "Since followups can contain followups, and so on, we need this"
+    def format(self, value):
+        return marshal(value, followup_fields)
+
+
+# followups don't need to contain e.g. logbook information since we
+# can assume that they belong to the same logbook as their parent
 followup_fields = {
     "id": fields.Integer,
     "title": fields.String,
     "created_at": fields.DateTime,
-    "authors": fields.List(fields.Nested(authors_field)),
+    "authors": fields.List(fields.Nested(authors_fields)),
     "attachments": fields.List(fields.Nested(attachment_fields)),
     "attributes": fields.Raw,
     "content": fields.String,
@@ -184,8 +186,7 @@ entry_fields = {
     "title": fields.String,
     "created_at": fields.DateTime,
     "last_changed_at": fields.DateTime,
-    "authors": fields.List(fields.Nested({"name": fields.String,
-                                          "login": fields.String})),
+    "authors": fields.List(fields.Nested(authors_fields)),
     "attributes": fields.Raw(attribute="converted_attributes"),
     "attachments": fields.List(fields.Nested(attachment_fields)),
     "content": fields.String,
@@ -221,7 +222,7 @@ class EntryResource(Resource):
 
     "Handle requests for a single entry"
 
-    @marshal_with(entry_fields)
+    @marshal_with(entry_fields, envelope="entry")
     def get(self, entry_id, logbook_id=None):
         return Entry.get(Entry.id == entry_id)
 
@@ -287,9 +288,14 @@ class ContentPreview(fields.Raw):
             return raw_text[:200].strip().replace("\n", " ")
 
 
+logbook_very_short_fields = {
+    "id": fields.Integer,
+    "name": fields.String,
+}
+
 short_entry_fields = {
     "id": fields.Integer,
-    "logbook": fields.Nested(logbook_short_fields),
+    "logbook": fields.Nested(logbook_very_short_fields),
     "title": fields.String,
     "content": ContentPreview,
     "created_at": fields.DateTime,

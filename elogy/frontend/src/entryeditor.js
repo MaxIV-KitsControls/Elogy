@@ -109,14 +109,14 @@ class EntryEditor extends React.Component {
         fetch(`/api/entries/${entryId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState({entry: json, ...json}));        
+            .then(json => this.setState({entry: json, ...json.entry}));        
     }
 
     fetchLogbook (logbookId) {
         fetch(`/api/logbooks/${logbookId}`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState({logbook: json}));        
+            .then(json => this.setState(json));        
     }
     
     componentWillMount () {

@@ -78,3 +78,97 @@ Ideas
 * The ORM (peewee) supports other backends like postgres. Something to consider.
 * Text search in sqlite is quite limited. Maybe look into an embedded search engine like whoosh?
 * A basic mobile version would be neat!
+
+
+API
+===
+
+The HTTP API is pretty simple; it basically allows to read and write logbooks and entries using JSON. It's quite rough right now and is subject to change, but the basics are there. E.g. (examples use `httpie`):
+
+```
+$ http localhost:8000/api/logbooks/4/
+```
+Returns an object `{"logbook": {...logbook-short}}` where the inner object is a nested tree of logbook objects with the following structure:
+
+```
+  {
+     "id": 4,
+     "name": "My logbook",
+     "description": "A very nice logbook!",
+     ...
+     "children": [
+         {...logbook-short},
+         {...logbook-short},
+         ...
+     ]
+  }
+```
+However, if the logbook id (4) is omitted in the URL, you will get the whole tree of existing logbooks, and the top level logbook will have all fields set to null except "children". It's the "null" logbook so it does not really exist, but it's still included for consistency.
+
+The information included in the `logbook-short` objects is an abbreviated version for display purposes, that excludes things like attributes.
+
+To have a peek at the entries in a logbook, you can do:
+
+```
+  $ http localhost:8000/api/logbook/4/entries/
+  
+  {
+      "logbook": {...logbook},
+      "count": 46,
+      "entries": [
+          {
+              "id": 45,
+              "title": "This is an entry!",
+              "authors": ["Author Authorsson", ...],
+              "content": "This is the first X00 characters of the entry contents. Blabla..."
+              "created_at": "Thu, 09 Feb 2017 18:47:00 -0000",
+              "logbook": {
+                  "id": 4,
+                  "name": "My logbook",
+              },
+              "n_attachments": 0,
+              "n_followups": 1,
+              ...
+          },
+          {...entry-short},
+          ...
+      ]
+  }
+```
+  
+The URL can be extended with query parameters (such as `?content=beam%20dump&authors=joe`) to filter the results included to those matching the query. The parameters can contain regular expressions. You can also include e.g. `n=100` and `offset=50` to get only a given part of the list. The entries are currently always sorted by creation/modification date, descending order.
+  
+Again, the `entry-short` object is a shorter version of the full information, intended to be used in e.g. displaying
+a list of entries.
+  
+Then to get a full entry, do:
+
+```
+  $ http localhost:8000/api/logbook/4/entries/45/
+  
+  {
+     "entry": {
+         "id": 47,
+         "title": "This is another entry!",
+         "authors": [{"name": "Author Authorsson", "login": "autaut"}, {...author}],
+         "logbook": {...logbook-full},
+         ...
+     }
+  }
+```
+
+To post a new entry, basically just do a POST to e.g. `localhost:8000/api/logbook/4/entries/` with a suitable JSON object like above (but without the wrapping `"entry"`). To update an existing entry, you do PUT to `localhost:8000/api/logbook/4/entries/47/`.
+
+Same principle works for writing logbooks.
+
+There are also some other parts of the API:
+
+`/api/attachments/` can currently only be used for uploading attachments. It accepts form data since it needs to receive binary files. At some point it should be possible to query for information about a given attachment. For downloading an attachment file, the `/attachments/...` route should be used as it serves the files statically. Of course, ideally attachments should be served by a dedicated webserver instead.
+  
+`/api/users/` is just a convenience feature for finding proper author names. It looks in the system's password and group files to find users matching a search string.
+
+
+#### Missing functionality ####
+
+All write operations on the database are also stored, which means that any historical version can be retrieved. This information is currently not accessible via the API.
+

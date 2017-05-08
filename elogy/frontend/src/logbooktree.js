@@ -82,7 +82,7 @@ class LogbookTree extends React.Component {
         fetch(`/api/logbooks/${search}`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState(json));
+            .then(json => this.setState(json.logbook));
     }        
     
     componentDidMount () {
@@ -126,7 +126,7 @@ class LogbookTree extends React.Component {
             <div id="logbooktree">
                 <header>
                     <Link to={{
-                        pathname: `/logbooks/${this.state.id}`,
+                        pathname: `/logbooks/${this.state.id || 0}`,
                         search: this.props.location.search
                     }}>
                         {this.state.name? this.state.name : "All"}
