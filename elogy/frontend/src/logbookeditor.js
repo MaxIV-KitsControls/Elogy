@@ -5,6 +5,7 @@ import TinyMCEInput from './TinyMCEInput.js';
 
 import {Link, Route, Prompt} from 'react-router-dom';
 import EventSystem from './eventsystem.js';
+import TINYMCE_CONFIG from './tinymceconfig.js';
 import './logbookeditor.css';
 
 
@@ -284,37 +285,12 @@ class LogbookEditor extends React.Component {
                                   onChange={this.changeDescription.bind(this)}/>
                     </fieldset>
                     <fieldset className="template">
-                        <legend>Template</legend>                        
+                        <legend>Template</legend>
+                        This will be used as initial content for all new
+                        entries in this logbook.
                         <TinyMCEInput
-                            value={this.state.template || "bralla"}
-                            tinymceConfig={{
-                                plugins: "image textcolor paste table lists advlist code",
-                                toolbar: (
-                                    "undo redo | removeformat | styleselect |"
-                                    + " bold italic forecolor backcolor |"
-                                    + " bullist numlist outdent indent | link image table | code"
-                                ),
-                                menubar: false,
-                                statusbar: false,
-                                content_css: "/static/tinymce-tweaks.css",
-                                height: "100%",
-                                relative_urls : false,  // otherwise images broken in editor
-                                apply_source_formatting: false,
-                                force_br_newlines: false,
-                                paste_data_images: true,
-                                //          automatic_uploads: false,  // don't immediately upload images
-                                //images_upload_handler: customUploadHandler,
-                                image_dimensions: false,
-                                forced_root_block : "",
-                                cleanup: false,
-                                force_p_newlines : true,
-                                remove_linebreaks: false,
-                                convert_newlines_to_brs: false,
-                                entity_encoding: 'raw',
-                                entities: '160,nbsp,38,amp,60,lt,62,gt',
-                                resize: true,
-                                theme: "modern"
-                            }}
+                            value={this.state.template || ""}
+                            tinymceConfig={ TINYMCE_CONFIG }
                             onChange={this.onTemplateChange.bind(this)}/>
                     </fieldset>
                     <fieldset className="attributes">

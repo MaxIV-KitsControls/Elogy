@@ -159,8 +159,8 @@ class EntryEditor extends React.Component {
         this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
     }
     
-    onContentChange (value) {
-        this.setState({content: value});
+    onContentChange (event) {
+        this.setState({content: event.target.getContent()});
     }
 
     onAddAttachment (acceptedFiles, rejectedFiles) {
@@ -315,7 +315,7 @@ class EntryEditor extends React.Component {
                     <TinyMCEInput
                         value={this.state.content || this.state.logbook && this.state.logbook.template || ""}
                         tinymceConfig={ TINYMCE_CONFIG }
-                        onChange={this.onContentChange.bind(this)}/>
+                        onBlur={this.onContentChange.bind(this)}/>
                 </div>
                 <footer>
                     <Dropzone onDrop={this.onAddAttachment.bind(this)}
