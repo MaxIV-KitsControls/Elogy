@@ -293,7 +293,7 @@ class Entry(db.Model):
             # extract the author names as a separate table, so that
             # they can be searched
             # TODO: maybe also take login?
-            authors = ", json_each(entry.authors) AS authors"
+            authors = ", json_each(entry.authors) AS authors2"
         else:
             authors = ""
 
@@ -319,14 +319,16 @@ JOIN logbook1 WHERE entry.logbook_id=logbook1.id
                 # the rest manually we might as well do this one too
                 # since it's trivial.
                 query = (
-                    "select *{attributes} from entry{authors} where entry.logbook_id = {logbook}"
-                    .format(logbook=logbook,
+                    "select {what}{attributes} from entry{authors} where entry.logbook_id = {logbook}"
+                    .format(what="count()" if count else "entry.*",
+                            logbook=logbook,
                             attributes=attributes,
                             authors=authors))
         else:
             # same here
-            query = ("SELECT *{attributes} FROM entry{authors} WHERE 1"  # :)
-                     .format(attributes=attributes, authors=authors))
+            query = ("SELECT {what}{attributes} FROM entry{authors} WHERE 1"  # :)
+                     .format(what="count()" if count else "entry.*",
+                             attributes=attributes, authors=authors))
 
         if not archived:
             query += " AND NOT entry.archived"
@@ -338,7 +340,7 @@ JOIN logbook1 WHERE entry.logbook_id=logbook1.id
         if title_filter:
             query += " AND entry.title IS NOT NULL AND entry.title REGEXP '{}'".format(title_filter)
         if author_filter:
-            query += " AND json_extract(authors.value, '$.name') REGEXP '{}'".format(author_filter)
+            query += " AND json_extract(authors2.value, '$.name') REGEXP '{}'".format(author_filter)
 
         # if attachment_filter:
         #     entries = (
@@ -363,7 +365,7 @@ JOIN logbook1 WHERE entry.logbook_id=logbook1.id
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-
+        print(query)
         return Entry.raw(query)
 
 
