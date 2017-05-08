@@ -1,7 +1,9 @@
 """A quick and dirty script to import data from elog logbooks. Tries
 to adapt logbooks, attributes, attachments etc to the elogy data model.
 
-Not thoroughly tested, does not support all elog features.
+Very hacky, not thoroughly tested, does not support all elog features.
+
+Depends on "requests" and "bbcode" (the latter is optional)
 
 To run it, point it at a running elogy instance, an existing elog
 config file and corresponding logbook directory, like so:
@@ -9,8 +11,7 @@ config file and corresponding logbook directory, like so:
 $ python3 import_elog.py localhost:8000 /etc/elogd.cfg /var/lib/elog/logbooks/
 
 If you have many logbooks or lots of attachments this can take some
-minutes to complete. There is currently no way to filter which logbooks
-to import.
+minutes to complete.
 
 Known issues:
 
@@ -30,8 +31,13 @@ Known issues:
 
 - Thumbnailing some image attachments fails (e.g. GIF, TIFF).
   Example: 1486734443-130903_084110_BF3_self_triggered_2013-09-02.gif
+  Also, exif rotated images get nonrotated thumbnails.
 
-- No error handling.
+- Tries to use the "bbcode" module (pypi) to convert "ELCode" posts to
+  HTML. Mostly they are the same, but e.g. tables seem to be a
+  nonstandard extension.
+
+- Not much error handling; will explode on any surprising stuff.
 
 """
 
@@ -44,9 +50,28 @@ import urllib
 from dateutil.parser import parse as parse_time
 from dateutil.tz import tzlocal
 from lxml import html, etree
+try:
+    import bbcode
+except ImportError:
+    print("No bbcode module installed; won't try to convert ELCode entries!")
+    bbcode = None
 
 
 EXCLUDED_ATTRIBUTES = set(["last edited", "author", "subject"])
+
+
+def process_body(body, encoding):
+    "Do some massaging of the raw body, depending on encoding"
+    if encoding.lower() == "html":
+        return body.decode("utf-8"), "text/html; charset=utf-8"
+    if encoding.lower() == "plain":
+        return body.decode("utf-8"), "text/plain; charset=utf-8"
+    if encoding.lower() == "elcode":
+        if bbcode:
+            return (bbcode.render_html(body.decode("utf-8")),
+                    "text/html; charset=utf-8")
+        else:
+            return body.decode("utf-8"), "text/plain; charset=utf-8"
 
 
 def import_logbook(create_logbook, create_entry, create_attachment,
@@ -141,9 +166,9 @@ def import_logbook(create_logbook, create_entry, create_attachment,
                     "authors": [{"login": a.strip().replace(" ", "_").lower(),
                                  "name": a.strip()}
                                 for a in entry.get("author", "").split(",")],
-                    "content_type": ("text/html"
-                                     if entry.get("encoding").upper() == "HTML"
-                                     else "text/plain"),
+                    # "content_type": ("text/html"
+                    #                  if entry.get("encoding").upper() == "HTML"
+                    #                  else "text/plain"),
                     "metadata": {
                         "original_elog_url": os.path.join(name, str(entry["mid"])).replace(" ", "+")
                     },
@@ -186,19 +211,29 @@ def import_logbook(create_logbook, create_entry, create_attachment,
 
                 if entry.get("body"):
                     # here we upload any image attachments in the post
-                    data["content"], embedded = handle_img_tags(
-                        create_attachment, entry["body"], timestamp,
-                        logbook_path)
+                    content, content_type = process_body(
+                        entry["body"], entry["encoding"])
+                    if content_type == "text/html":
+                        data["content"], embedded = handle_img_tags(
+                            create_attachment, content, timestamp,
+                            logbook_path)
+                    else:
+                        data["content"] = content
+                        embedded = []
+                    data["content_type"] = content_type
                     # body = entry["body"].decode("utf-8")
                     # embedded = []
                 else:
                     data["content"] = None
                     embedded = []
+
                 embedded = [e.replace("/", "_") for e in embedded]
 
                 # and here we push the entry to the API
                 result = create_entry(data)
                 created_entries[entry["mid"]] = result["entry_id"]
+                print("created entry {} from logbook {} mid {}"
+                      .format(result["entry_id"], name, entry["mid"]))
 
                 # upload any attachments that are not embedded images
                 if entry.get("attachment"):
@@ -291,7 +326,7 @@ def handle_img_tags(create_attachment, text, timestamp, directory):
     try:
         doc = html.document_fromstring(text)
     except etree.ParserError:
-        return text.decode("utf-8"), embedded_attachments
+        return text, embedded_attachments
     for element in doc.xpath("//*[@src]"):
         src = element.attrib['src'].split("?", 1)[0]
         if not src.startswith("data:"):
@@ -334,7 +369,6 @@ def create_attachment(session, url, entry_id, filename, embedded=False):
             if embedded:
                 data["embedded"] = True
             response = session.post(url, files={"attachment": f}, data=data)
-            print(response)
             if response.status_code == 200:
                 return response.json()["location"]
             else:
@@ -348,6 +382,8 @@ if __name__ == "__main__":
     # Argument 1 is the host:port of the logbook server to post to
     # Argument 2 is the name of a elogd config file to import
     # Argument 3 is the base path where to look for logbook files
+    # Further arguments should be names of the toplevel logbooks to
+    # import. If none are given, imports all logbooks.
 
     import configparser
     from functools import partial
