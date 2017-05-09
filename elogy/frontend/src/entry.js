@@ -13,18 +13,26 @@ import EntryAttachments from "./entryattachments.js";
 // An "entry" may have "followup" entries attached, and so on, so in
 // practice we may display a whole tree of related entries here.
 class InnerEntry extends React.Component {
+
+    componentDidMount() {
+        if (this.props.currentEntryId == this.props.id) 
+            this.props.scrollToEntry(findDOMNode(this.refs.entry));
+    }
     
     render () {
 
         const logbook = this.props.logbook;
         const followups = this.props.followups ?
                           this.props.followups.map(
-                              (followup, i) => <InnerEntry key={followup.id}
-                                                           className="followupd"
-                                                           followupNumber={i}
-                                                           logbook={this.props.logbook}
-                                                           {...followup}/>)
-                        : null;
+                              (followup, i) => <InnerEntry
+                                                   key={followup.id}
+                                                   className="followupd"
+                                                   followupNumber={i}
+                                                   logbook={this.props.logbook}
+                                                   scrollToEntry={this.props.scrollToEntry}
+                                                   currentEntryId={this.props.currentEntryId}
+                                                   {...followup}/>) :
+                          null;
 
         const nonEmbeddedAttachments = this.props.attachments.filter(a => !a.embedded);
         const attachments = nonEmbeddedAttachments.length > 0?
@@ -37,9 +45,9 @@ class InnerEntry extends React.Component {
                                null;
         const lastChangedAt = this.props.last_changed_at?
                               <span className="last-changed-at">
-                                  &nbsp;
-                                  <i className="fa fa-pencil"/>
-                                  {formatDateTimeString(this.props.last_changed_at)}
+                             &nbsp;
+        <i className="fa fa-pencil"/>
+        {formatDateTimeString(this.props.last_changed_at)}
                               </span>
                              :null;
         const authors = this.props.authors.map((author, i) =>
@@ -53,20 +61,22 @@ class InnerEntry extends React.Component {
 
         const content = (
             this.props.content_type.slice(0, 9) === "text/html"?
-            <div className="content"
+            <div className="content" ref="entry"
                  dangerouslySetInnerHTML={{__html: this.props.content}}/> :
             <div className="content">{this.props.content}</div>
         );
-            
+
         return (
             <div>
                 <article>
-                    <div className="info">
+                    <div className={"info" + (this.props.currentEntryId === this.props.id?
+                                    " current" : "")}>
+
                         <div className="commands">
                             <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}>
                                 Link
                             </Link>
-                            &nbsp;|&nbsp;
+            &nbsp;|&nbsp;
                             <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/new`}>
                                 Followup
                             </Link>
@@ -136,8 +146,8 @@ class Entry extends React.Component {
         }
     }
 
-    componentDidUpdate() {
-        requestAnimationFrame(() => findDOMNode(this.refs.body).scrollIntoView());
+    scrollToEntry (element) {
+        setTimeout(() => element.scrollIntoView(), 100);
     }
     
     render () {
@@ -185,9 +195,12 @@ class Entry extends React.Component {
                 </header>
                 
                 {/* The body is scrollable */}
-                <div className="">
+                <div className="body">
                     <div ref="body">
-                        <InnerEntry {...this.state}/>
+                        <InnerEntry {...this.state}
+                                    scrollToEntry={this.scrollToEntry.bind(this)}
+                                    currentEntryId={parseInt(this.props.match.params.entryId)}/>
+                                   
                     </div>
                 </div>
             </div>

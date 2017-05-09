@@ -23,19 +23,19 @@
     min-width: 25%;
 }
  
- #entry {
-     flex: 4;
-     overflow: auto;
- }
+#entry {
+    flex: 4;
+    overflow: auto;
+}
 
- #search {
-     border-top: 1px solid #aaa;
-     background: #ddd;
-     margin: 0;
-     padding: 10px;
- }
+#search {
+    border-top: 1px solid #aaa;
+    background: #ddd;
+    margin: 0;
+    padding: 10px;
+}
 
- #search input[type=text] {
-     margin-bottom: 3px;
-     box-sizing : border-box;     
- }
+#search input[type=text] {
+    margin-bottom: 3px;
+    box-sizing : border-box;     
+}

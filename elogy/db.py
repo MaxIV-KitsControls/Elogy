@@ -181,6 +181,24 @@ class Entry(db.Model):
         order_by = ("created_at",)
 
     @property
+    def _thread(self):
+        entries = []
+        if self.follows:
+            entry = Entry.get(Entry.id == self.follows_id)
+            while True:
+                entries.append(entry)
+                if entry.follows_id:
+                    try:
+                        entry = Entry.get(Entry.id == entry.follows_id)
+                    except DoesNotExist:
+                        break
+                else:
+                    break
+        if entries:
+            return entries[-1]
+        return self
+
+    @property
     def next(self):
         "Next entry (order by id)"
         try:
@@ -262,21 +280,18 @@ class Entry(db.Model):
             return False
 
     @classmethod
-    def search(cls, logbook=None, followups=True,
+    def search(cls, logbook=None, followups=False,
                child_logbooks=False, archived=False,
                n=None, offset=0, count=False,
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None):
 
-        # recursive query to get an entire "thread" (starting at 9586)
-        # with recursive entry1(id,logbook_id,title,authors,content,content_type,metadata,attributes,tags,created_at,last_changed_at,follows_id,archived) as (select * from entry where id=9586 union all select entry.* from entry,entry1 where entry.follows_id=entry1.id) select * from entry1;
-
-        # Note: this is all a little messy. The reason we're building
+        # Note: this is all pretty messy. The reason we're building
         # the query as a raw string is that peewee does not (currently)
         # support recursive queries, which we need in order to search
-        # through nested logbooks. This code can probably be cleaned
-        # up a bit though.
+        # through nested logbooks. Cleanup needed!
+        # TODO: sanitize the SQL queries to prevent bad injections
 
         if attribute_filter:
             # need to extract the attribute values from JSON here, so that
@@ -308,30 +323,44 @@ WITH recursive logbook1(id,parent_id) AS (
     SELECT logbook.id, logbook.parent_id FROM logbook,logbook1
     WHERE logbook.parent_id=logbook1.id
 )
-SELECT {what}{attributes}
+SELECT {what}{attributes},
+       coalesce(followup.follows_id, entry.id) thread,
+       count(followup.id) n_followups,
+       max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
+                             coalesce(entry.last_changed_at,entry.created_at)))) timestamp
 FROM entry{authors}
-JOIN logbook1 WHERE entry.logbook_id=logbook1.id
+JOIN logbook1
+LEFT JOIN entry AS followup ON entry.id == followup.follows_id
+WHERE entry.logbook_id=logbook1.id
 """.format(attributes=attributes,
-           what="count()" if count else "entry.*",
+           what="COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count" if count else "entry.*",
            authors=authors, logbook=logbook.id)
             else:
-                # this could be done with peewee but since we're doing
-                # the rest manually we might as well do this one too
-                # since it's trivial.
+                # In this case we're not searching recursively
                 query = (
-                    "select {what}{attributes} from entry{authors} where entry.logbook_id = {logbook}"
+                    "select {what}{attributes},coalesce(entry.last_changed_at, entry.created_at) timestamp from entry{authors} where entry.logbook_id = {logbook}"
                     .format(what="count()" if count else "entry.*",
                             logbook=logbook,
                             attributes=attributes,
                             authors=authors))
         else:
-            # same here
-            query = ("SELECT {what}{attributes} FROM entry{authors} WHERE 1"  # :)
-                     .format(what="count()" if count else "entry.*",
-                             attributes=attributes, authors=authors))
+            # In this case we're searching all entries and don't need
+            # the recursive logbook filtering
+            query = """
+SELECT {what}{attributes},count(followup.id) n_followups,
+       max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
+                    coalesce(entry.last_changed_at,entry.created_at)))) timestamp
+FROM entry{authors}
+LEFT JOIN entry AS followup ON entry.id == followup.follows_id
+WHERE 1
+""".format(what="count()" if count else "entry.*",
+           attributes=attributes, authors=authors)
 
         if not archived:
             query += " AND NOT entry.archived"
+
+        # if not followups:
+        #     query += " AND entry.follows_id IS NULL"
 
         # further filters on the results, depending on search criteria
         if content_filter:
@@ -358,9 +387,18 @@ JOIN logbook1 WHERE entry.logbook_id=logbook1.id
                 # attr_value = fn.json_extract(Entry.attributes, "$." + attr)
                 query += " AND {} = '{}'".format("attr{}".format(i), value)
 
+        # Here we're getting into deep water...
+        # If we just want the total count of results, we can't group
+        # because then the count would be per group. So that makes sense.
+        # However, when we're searching, we also don't want the grouping
+        # because it means we
+        if not count:  #,
+            query += " GROUP BY entry.id"
+            if not any([title_filter, content_filter, author_filter]):
+                query += " HAVING entry.follows_id IS NULL"
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
-        query += " ORDER BY coalesce(entry.last_changed_at, entry.created_at) DESC"
+        query += " ORDER BY timestamp DESC"
         if n:
             query += " LIMIT {}".format(n)
             if offset:

@@ -28,8 +28,7 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
         </div> :
         null
     );
-    const timestamp = formatTimeString(entry.last_changed_at ||
-                                       entry.created_at);
+    const timestamp = formatTimeString(entry.timestamp);
     const authors = entry.authors
                          .slice(0, 2)
                          .map((author, i) => <span key={i} className="author">{author}</span>);

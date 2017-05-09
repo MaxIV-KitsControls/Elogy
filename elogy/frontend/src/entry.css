@@ -62,7 +62,6 @@
 
 #entry .followups .info {
     border-top: 1px solid #bbb;
-    background: #FFFF88;
 }
 
 #entry .followups {
@@ -149,4 +148,8 @@
 #entry td {
     padding: 3px;
     border: 1px solid #ccc;
+}
+
+#entry article .info.current {
+    background: #FFFF88;    
 }

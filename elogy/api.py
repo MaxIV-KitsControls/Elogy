@@ -1,6 +1,7 @@
 import pwd, grp
 
 from datetime import datetime
+from dateutil.parser import parse
 from flask import jsonify, url_for
 from flask_restful import Resource, reqparse, fields, marshal, marshal_with
 import lxml
@@ -224,7 +225,7 @@ class EntryResource(Resource):
 
     @marshal_with(entry_fields, envelope="entry")
     def get(self, entry_id, logbook_id=None):
-        return Entry.get(Entry.id == entry_id)
+        return Entry.get(Entry.id == entry_id)._thread
 
     def post(self, logbook_id):
         "new entry"
@@ -288,6 +289,11 @@ class ContentPreview(fields.Raw):
             return raw_text[:200].strip().replace("\n", " ")
 
 
+class DateTimeFromStringField(fields.DateTime):
+    def format(self, value):
+        return super().format(parse(value))
+
+
 logbook_very_short_fields = {
     "id": fields.Integer,
     "name": fields.String,
@@ -300,12 +306,11 @@ short_entry_fields = {
     "content": ContentPreview,
     "created_at": fields.DateTime,
     "last_changed_at": fields.DateTime,
+    "timestamp": DateTimeFromStringField,
     "authors": fields.List(fields.String(attribute="name")),
-    # "attributes": fields.Raw(attribute="converted_attributes"),
-    # "attachments": fields.List(fields.Nested(attachment_fields)),
     "attachment_preview": FirstIfAny(attribute="attachments"),
     "n_attachments": NumberOf(attribute="attachments"),
-    "n_followups": NumberOf(attribute="followups"),
+    "n_followups": fields.Integer
 }
 
 
@@ -344,37 +349,29 @@ class EntriesResource(Resource):
         if logbook_id:
             # restrict search to the given logbook and its descendants
             logbook = Logbook.get(Logbook.id == logbook_id)
-            entries = logbook.get_entries(child_logbooks=True,
-                                          title_filter=args.get("title"),
-                                          content_filter=args.get("content"),
-                                          author_filter=args.get("authors"),
-                                          attribute_filter=attributes,
-                                          n=args["n"], offset=args["offset"])
+            args = dict(child_logbooks=True,
+                        title_filter=args.get("title"),
+                        content_filter=args.get("content"),
+                        author_filter=args.get("authors"),
+                        attribute_filter=attributes,
+                        n=args["n"], offset=args["offset"])
+            entries = logbook.get_entries(**args)
             # TODO: figure out a nicer way to get the total number of hits
-            count = logbook.get_entries(child_logbooks=True, count=True,
-                                        title_filter=args.get("title"),
-                                        content_filter=args.get("content"),
-                                        author_filter=args.get("authors"),
-                                        attribute_filter=attributes,
-                                        n=args["n"], offset=args["offset"]).tuples()
+            count = logbook.get_entries(count=True, **args).tuples()
             count = list(count)[0][0] if list(count) else 0
 
         else:
             # global search (all logbooks)
             logbook = None
-            entries = Entry.search(child_logbooks=True,
-                                   title_filter=args.get("title"),
-                                   content_filter=args.get("content"),
-                                   author_filter=args.get("authors"),
-                                   attribute_filter=attributes,
-                                   n=args["n"], offset=args["offset"])
+            args = dict(child_logbooks=True,
+                        title_filter=args.get("title"),
+                        content_filter=args.get("content"),
+                        author_filter=args.get("authors"),
+                        attribute_filter=attributes,
+                        n=args["n"], offset=args["offset"])
+            entries = Entry.search(**args)
             # TODO: figure out a nicer way to get the total number of hits
-            count = Entry.search(child_logbooks=True, count=True,
-                                 title_filter=args.get("title"),
-                                 content_filter=args.get("content"),
-                                 author_filter=args.get("authors"),
-                                 attribute_filter=attributes,
-                                 n=args["n"], offset=args["offset"]).tuples()
+            count = Entry.search(count=True, **args).tuples()
             count = list(count)[0][0] if list(count) else 0
 
         return dict(logbook=logbook, entries=list(entries), count=count)
