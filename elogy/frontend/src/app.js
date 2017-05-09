@@ -1,5 +1,10 @@
 import React from 'react';
-import './app.css';
+import {
+    BrowserRouter as Router,
+    Route, Switch,
+    Link
+} from 'react-router-dom'
+
 import Entry from './entry.js';
 import EntryEditor from './entryeditor.js';
 import Logbook from './logbook.js';
@@ -7,12 +12,21 @@ import LogbookEditor from './logbookeditor.js';
 import LogbookTree from './logbooktree.js';
 import QuickSearch from './search.js';
 import SearchResults from './searchresults.js';
+import EventBus from './eventsystem.js';
+import './app.css';
 
-import {
-    BrowserRouter as Router,
-    Route, Switch,
-    Link
-} from 'react-router-dom'
+
+// A common eventbus that allows simple communication between
+// components. Should only be used for simple things like
+// asking a component to reload. If we start using it for passing
+// data around we'd better switch to Redux or something.
+const eventbus = new EventBus();
+
+
+// "bind" the given properties statically to a component
+export function withProps (Comp, extraProps) {
+    return (props) => <Comp {...props} {...extraProps}/>;
+}
 
 
 const Elogy = () => (
@@ -23,8 +37,8 @@ const Elogy = () => (
             <div id="logbooks">
                 <Switch>
                     <Route path="/logbooks/:logbookId"
-                           component={LogbookTree}/>
-                    <Route component={LogbookTree}/>
+                           component={withProps(LogbookTree, {eventbus})}/>
+                    <Route component={withProps(LogbookTree, {eventbus})}/>
                 </Switch>
                 <Switch>
                     <Route path="/logbooks/:logbookId"
@@ -36,28 +50,30 @@ const Elogy = () => (
             <div id="logbook">
                 <Switch>                            
                     <Route path="/logbooks/:logbookId/entries/:entryId"
-                           component={Logbook}/>                        
+                           component={withProps(Logbook, {eventbus})}/>
                     <Route path="/logbooks/:logbookId"
-                           component={Logbook}/>
+                           component={withProps(Logbook, {eventbus})}/>
                 </Switch>
             </div>
 
             <div id="entry">
                 <Switch>
                     <Route path="/logbooks/:logbookId/edit"
-                           component={LogbookEditor}/>
+                           component={withProps(LogbookEditor,
+                                                {eventbus})}/>
                     <Route path="/logbooks/:logbookId/new"
-                           component={LogbookEditor}/>
+                           component={withProps(LogbookEditor,
+                                                {eventbus})}/>
                     
                     <Route path="/entries/:entryId"
                            component={Entry}/>
 
                     <Route path="/logbooks/:logbookId/entries/new"
-                           component={EntryEditor}/>
+                           component={withProps(EntryEditor, {eventbus})}/>
                     <Route path="/logbooks/:logbookId/entries/:entryId/edit"
-                           component={EntryEditor}/>
+                           component={withProps(EntryEditor, {eventbus})}/>
                     <Route path="/logbooks/:logbookId/entries/:entryId/new"
-                           component={EntryEditor}/>
+                           component={withProps(EntryEditor, {eventbus})}/>
                     <Route path="/logbooks/:logbookId/entries/:entryId"
                            component={Entry}/>
                     

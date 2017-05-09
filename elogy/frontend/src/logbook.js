@@ -4,7 +4,6 @@ import {Link} from 'react-router-dom';
 import update from 'immutability-helper';
 
 import {parseQuery, formatTimeString} from "./util.js";
-import EventSystem from "./eventsystem.js";
 import EntryPreviews from "./entrypreviews.js";
 import './logbook.css';
 
@@ -19,9 +18,10 @@ class Logbook extends React.Component {
             attributeFilters: {},
             loading: false
         }
+        this._reload = this.reload.bind(this)
     }
 
-    // Fetch all information (but only the first few entries)
+    // Fetch entries
     fetch (logbookId, search, attributeFilters, offset, n) {
         // build a nice query string with the query
         // we'll start with the parameters in the browser URL
@@ -78,15 +78,14 @@ class Logbook extends React.Component {
     componentDidMount () {
         // setup a subscription that makes sure we reload the current
         // logbook whenever e.g. an entry has been added.
-        EventSystem.subscribe("logbook.reload", this.reload.bind(this));
+        this.props.eventbus.subscribe("logbook.reload", this._reload);
     }
 
-    /* componentWillUnmount() {
-     *     EventSystem.unsubscribe("logbook.reload", this.reload.bind(this));
-     * }*/
+    componentWillUnmount() {
+        this.props.eventbus.unsubscribe("logbook.reload", this._reload);
+    }
 
     reload (logbookId) {
-        console.log("reload", logbookId);
         // only need to refresh if we're actually visiting the given logbook
         this.fetch(this.props.match.params.logbookId,
                    this.props.location.search,

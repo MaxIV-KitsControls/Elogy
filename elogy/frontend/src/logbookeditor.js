@@ -4,7 +4,6 @@ import update from 'immutability-helper';
 import TinyMCEInput from './TinyMCEInput.js';
 
 import {Link, Route, Prompt} from 'react-router-dom';
-import EventSystem from './eventsystem.js';
 import TINYMCE_CONFIG from './tinymceconfig.js';
 import './logbookeditor.css';
 
@@ -201,7 +200,7 @@ class LogbookEditor extends React.Component {
                     history.push({
                         pathname: `/logbooks/${this.state.id}`,
                     });
-                    EventSystem.publish("logbook.reload", this.state.id);
+                    this.props.eventbus.publish("logbook.reload", this.state.id);
                 });
         } else {
             // creating a new logbook

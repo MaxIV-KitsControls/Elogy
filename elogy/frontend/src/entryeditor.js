@@ -12,7 +12,6 @@ import 'react-select/dist/react-select.css';
 
 import "./entryeditor.css";
 import { EntryAttachments } from "./entryattachments.js";
-import EventSystem from "./eventsystem.js";
 import TINYMCE_CONFIG from "./tinymceconfig.js";
 
 
@@ -205,7 +204,8 @@ class EntryEditor extends React.Component {
                 .then(response => response.json())
             // TODO: handle errors 
                 .then(response => {
-                    EventSystem.publish("logbook.reload", this.state.logbook.id);
+                    this.props.eventbus.publish("logbook.reload",
+                                                this.state.logbook.id);
                     history.push({
                         // send the browser to the entry
                         pathname: `/logbooks/${this.state.logbook.id}/entries/${this.state.id}`
@@ -241,7 +241,8 @@ class EntryEditor extends React.Component {
                             entrySubmitted: true
                         }
                     });
-                    EventSystem.publish("logbook.reload", this.state.logbook.id);
+                    this.props.eventbus.publish("logbook.reload",
+                                                this.state.logbook.id);
                 });
         }
     }

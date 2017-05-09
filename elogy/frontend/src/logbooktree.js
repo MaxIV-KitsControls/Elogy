@@ -3,7 +3,6 @@ import {Link} from 'react-router-dom';
 
 import './logbooktree.css';
 import {parseQuery} from './util.js';
-import EventSystem from './eventsystem.js';
 
 
 class LogbookTreeNode extends React.Component {
@@ -76,6 +75,7 @@ class LogbookTree extends React.Component {
             parent: null,
             children: []
         };
+        this._reload = this.reload.bind(this);
     }    
 
     fetch (search) {
@@ -87,7 +87,7 @@ class LogbookTree extends React.Component {
     
     componentDidMount () {
         this.fetch(this.props.location.search);
-        EventSystem.subscribe("logbook.reload", this.reload.bind(this));
+        this.props.eventbus.subscribe("logbook.reload", this._reload);
     }
 
     componentWillReceiveProps ({location}) {
@@ -97,7 +97,7 @@ class LogbookTree extends React.Component {
     }
     
     componentWillUnmount() {
-        EventSystem.unsubscribe("logbook.reload", this.reload.bind(this));
+        this.props.eventbus.unsubscribe("logbook.reload", this._reload);
     }
 
     reload () {
