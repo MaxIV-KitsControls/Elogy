@@ -264,7 +264,7 @@ class LogbookEditor extends React.Component {
                 <Prompt message={this.getPromptMessage.bind(this)}/>
                 
                 <header>
-                    {this.props.match.url.substr(-4) == "edit"?
+                    {this.props.match.params.command == "edit"?
                      `Editing logbook ${this.state.parent.name || ""}/${this.state.name}`:
                      `New logbook in "${this.state.parent.name}"`}
                     {this.state.parent.id}

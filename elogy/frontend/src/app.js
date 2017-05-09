@@ -58,24 +58,21 @@ const Elogy = () => (
 
             <div id="entry">
                 <Switch>
-                    <Route path="/logbooks/:logbookId/edit"
-                           component={withProps(LogbookEditor,
-                                                {eventbus})}/>
-                    <Route path="/logbooks/:logbookId/new"
-                           component={withProps(LogbookEditor,
-                                                {eventbus})}/>
-                    
-                    <Route path="/entries/:entryId"
-                           component={Entry}/>
 
                     <Route path="/logbooks/:logbookId/entries/new"
                            component={withProps(EntryEditor, {eventbus})}/>
-                    <Route path="/logbooks/:logbookId/entries/:entryId/edit"
+                    <Route path="/logbooks/:logbookId/entries/:entryId/:command"
                            component={withProps(EntryEditor, {eventbus})}/>
-                    <Route path="/logbooks/:logbookId/entries/:entryId/new"
-                           component={withProps(EntryEditor, {eventbus})}/>
+                    
                     <Route path="/logbooks/:logbookId/entries/:entryId"
                            component={Entry}/>
+                    <Route path="/entries/:entryId"
+                           component={Entry}/>
+
+                    <Route path="/logbooks/new"
+                           component={withProps(LogbookEditor, {eventbus})}/>
+                    <Route path="/logbooks/:logbookId/:command"
+                           component={withProps(LogbookEditor, {eventbus})}/>
                     
                 </Switch>
             </div>

@@ -120,7 +120,7 @@ class EntryEditor extends React.Component {
     
     componentWillMount () {
         if (this.props.match.params.entryId) {
-            if (this.props.match.url.split("/").slice(-1)[0] === "edit") {
+            if (this.props.match.params.command === "edit") {
                 this.fetchEntry(this.props.match.params.logbookId,
                                 this.props.match.params.entryId);
             } else {
