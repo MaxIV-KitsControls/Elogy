@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from functools import wraps
 from html.parser import HTMLParser
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
@@ -180,6 +181,9 @@ class Entry(db.Model):
     class Meta:
         order_by = ("created_at",)
 
+    class Locked(Exception):
+        pass
+
     @property
     def _thread(self):
         entries = []
@@ -271,13 +275,19 @@ class Entry(db.Model):
                 pass
         return converted
 
-    @property
-    def lock(self):
+    def get_lock(self, ip=None, acquire=False):
+        """check if there's a lock on the entry, and if an ip is given
+        try to acquire it."""
         try:
-            return EntryLock.get((EntryLock.entry == self) &
-                                 (EntryLock.expires_at < datetime.utcnow()))
+            lock = EntryLock.get((EntryLock.entry_id == self.id) &
+                                 (EntryLock.expires_at > datetime.utcnow()) &
+                                 (EntryLock.cancelled_at == None))
+            if ip != lock.owner_ip:
+                raise self.Locked(lock)
+            return lock
         except EntryLock.DoesNotExist:
-            return False
+            if acquire:
+                return EntryLock.create(entry=self, owner_ip=ip)
 
     @classmethod
     def search(cls, logbook=None, followups=False,
@@ -487,15 +497,50 @@ class EntryRevision(db.Model):
 
 
 class EntryLock(db.Model):
-    "Contains temporary edit locks, to prevent overwriting changes"
+    """Contains temporary edit locks, to prevent overwriting changes.
+    An entry can not have more than one lock active at any given time.
+
+    The logic of entry locks works like this:
+
+    - user A wants to edit entry 1.
+    - before starting, A acquires a lock on entry 1; lock1A.
+    - soon, user B wants to edit entry 1.
+    - B tries to acquire a lock on 1, but can't since A already has it.
+    - B is prevented from unknowingly conflicting with A!
+    - B can now either:
+       + wait for A to submit his/her edits and then try again,
+       + wait for the lock to expire (which it will, in, say 1h)
+       + "steal" the lock.
+    - If B steals the lock it means that A no longer has the lock, and
+      might be in for a nasty surprise when he/she tries to submit later.
+    - B might know that A is no longer interested in the edit, so it makes
+      sense to make the option of stealing available, as long as it's
+      explicit.
+    - When the owner of a lock submits changes to the locked entry, the
+      lock is cancelled.
+    - The owher of a lock can also choose to cancel it without writing the
+      entry.
+
+    The point of locking is to make it harder for users to overwrite
+    each others changes *by mistake*, not to make it impossible.
+
+    """
     entry = ForeignKeyField(Entry)
     created_at = DateTimeField(default=datetime.utcnow)
-    lifetime = IntegerField(default=3600)
+    expires_at = DateTimeField(default=(lambda: datetime.utcnow() +
+                                        timedelta(hours=1)))
     owner_ip = CharField()
+    cancelled_at = DateTimeField(null=True)
+    cancelled_by = CharField(null=True)
 
     @property
     def locked(self):
-        return self.created_at + timedelta(seconds=self.lifetime) > datetime.utcnow()
+        return not self.cancelled_at and self.expires_at > datetime.utcnow()
+
+    def cancel(self, ip):
+        self.cancelled_at = datetime.utcnow()
+        self.cancelled_by = ip
+        self.save()
 
 
 class Attachment(db.Model):

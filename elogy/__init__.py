@@ -13,10 +13,11 @@ from .db import (db,
                  Logbook, LogbookRevision,
                  Entry, EntryRevision, EntryLock,
                  Attachment)
-from .api import errors as api_errors
-from .api import (LogbooksResource, EntriesResource, EntryResource,
-                  UsersResource, AttachmentsResource)
-
+from .api.errors import errors as api_errors
+from .api.logbooks import LogbooksResource
+from .api.entries import EntryResource, EntriesResource
+from .api.users import UsersResource
+from .api.attachments import AttachmentsResource
 
 # Configure the main application object
 app = Flask(__name__,
