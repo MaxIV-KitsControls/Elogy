@@ -22,7 +22,7 @@ class LogbooksResource(Resource):
 
     "Handle requests for logbooks"
 
-    @marshal_with(fields.logbook, envelope="logbook")
+    @marshal_with(fields.logbook)
     def get(self, logbook_id=None):
 
         if logbook_id:
@@ -40,20 +40,22 @@ class LogbooksResource(Resource):
                     .where(Logbook.parent == None))
         return dict(children=children)
 
+    @marshal_with(fields.logbook)
     def post(self):
         "Create a new logbook"
         args = logbooks_parser.parse_args()
         logbook = dict_to_model(Logbook, args)
         logbook.save()
-        return jsonify(logbook_id=logbook.id)
+        return logbook
 
+    @marshal_with(fields.logbook)
     def put(self, logbook_id):
         "Update an existing logbook"
         logbook = Logbook.get(Logbook.id == logbook_id)
         args = logbooks_parser.parse_args()
         change = logbook.make_change(args)
         logbook.save()
-        return jsonify(revision_id=change.id)
+        return logbook
 
 
 class LogbookVersionsResource(Resource):

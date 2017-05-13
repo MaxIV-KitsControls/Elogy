@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from flask import request, make_response, jsonify
-from flask_restful import Resource, reqparse, marshal, marshal_with
+from flask_restful import Resource, reqparse, marshal, marshal_with, abort
 from peewee import DoesNotExist
 from playhouse.shortcuts import dict_to_model
 
@@ -25,14 +25,13 @@ entry_parser.add_argument("follows", type=int, store_missing=False)
 entry_parser.add_argument("attributes", type=dict, location="json", default={})
 entry_parser.add_argument("archived", type=bool, default=False)
 entry_parser.add_argument("metadata", type=dict, location="json", default={})
-entry_parser.add_argument("lock_id", type=int, store_missing=False)
 
 
 class EntryResource(Resource):
 
     "Handle requests for a single entry"
 
-    @marshal_with(fields.entry_full, envelope="entry")
+    @marshal_with(fields.entry_full)
     def get(self, entry_id, logbook_id=None):
         parser = reqparse.RequestParser()
         parser.add_argument("version", type=int)
@@ -49,6 +48,7 @@ class EntryResource(Resource):
             return entry.get_revision(args["version"])
         return entry._thread
 
+    @marshal_with(fields.entry_full)
     def post(self, logbook_id):
         "new entry"
         logbook = Logbook.get(Logbook.id == logbook_id)
@@ -87,32 +87,29 @@ class EntryResource(Resource):
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
-        return jsonify(entry_id=entry.id)
+        return entry
 
+    @marshal_with(fields.entry_full)
     def put(self, entry_id, logbook_id=None):
         "update entry"
         args = entry_parser.parse_args()
         entry_id = entry_id or args["id"]
         entry = Entry.get(Entry.id == entry_id)
+        if (args.get("last_changed_at") != entry.last_changed_at):
+            abort(409, message=(
+                "Conflict: Entry {} has been edited (by {}, at {}) since you last saw it!"
+                .format(entry_id, entry.lock.owned_by_ip,
+                        entry.lock.last_changed_at)))
+
         # check for a lock on the entry
         if entry.lock:
-            if "lock_id" in args:
-                # allow anyone who has the current lock id to write
-                try:
-                    if entry.lock.id == args["lock_id"]:
-                        entry.lock.cancel(request.remote_addr)
-                except DoesNotExist:
-                    # not locked
-                    pass
-            elif entry.lock.owned_by_ip == request.remote_addr:
+            if entry.lock.owned_by_ip == request.remote_addr:
                 entry.lock.cancel(request.remote_addr)
             else:
-                result = dict(message=(
+                abort(409, message=(
                     "Conflict: Entry {} is locked by IP {} since {}"
                     .format(entry_id, entry.lock.owned_by_ip,
                             entry.lock.created_at)))
-                return make_response(jsonify(result), 409)
-
         if args.get("content"):
             content_type = args.get("content_type", entry.content_type)
             if content_type.startswith("text/html"):
@@ -130,7 +127,7 @@ class EntryResource(Resource):
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
-        return jsonify(revision_id=change.id)
+        return entry
 
 
 # parser for validating query arguments to the entries resource

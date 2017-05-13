@@ -47,7 +47,7 @@ logbook = {
     "parent": fields.Nested({
         "id": fields.Integer(default=None),
         "name": fields.String
-    }),
+    }, allow_null=True),
     "created_at": fields.String,
     "children": fields.List(LogbookField),
     "attributes": fields.List(fields.Nested(attribute)),
@@ -119,7 +119,7 @@ entry_full = {
     "follows": EntryId,
     "n_followups": NumberOf(attribute="followups"),
     "followups": fields.List(Followup),
-    "lock": fields.Nested(entry_lock),
+    "lock": fields.Nested(entry_lock, allow_null=True),
     "next": EntryId,
     "previous": EntryId,
 }
