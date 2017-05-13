@@ -18,6 +18,17 @@ from .htmldiff import htmldiff
 db = FlaskDB()  # wrapper, to make config cleaner
 
 
+def create_tables():
+    "Make sure all the tables exist"
+    Logbook.create_table(fail_silently=True)
+    LogbookRevision.create_table(fail_silently=True)
+    Entry.create_table(fail_silently=True)
+    EntryRevision.create_table(fail_silently=True)
+    EntryLock.create_table(fail_silently=True)
+    Attachment.create_table(fail_silently=True)
+    db.database.close()  # important
+
+
 class Logbook(db.Model):
 
     """

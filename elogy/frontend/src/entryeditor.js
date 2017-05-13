@@ -121,15 +121,16 @@ class EntryEditor extends React.Component {
     componentWillMount () {
         if (this.props.match.params.entryId) {
             if (this.props.match.params.command === "edit") {
+                // editing an entry
                 this.fetchEntry(this.props.match.params.logbookId,
                                 this.props.match.params.entryId);
             } else {
+                // creating a followup to an entry
                 this.setState({follows: parseInt(this.props.match.params.entryId)});
-                //this.fetchLogbook(this.props.match.params.logbookId);
-                this.fetchEntry(this.props.match.params.logbookId,
-                                this.props.match.params.entryId);
+                this.fetchLogbook(this.props.match.params.logbookId);
             }
         } else {
+            // creating a new entry
             this.fetchLogbook(this.props.match.params.logbookId);
         }
     }

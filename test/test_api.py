@@ -11,29 +11,28 @@ def make_logbook(client):
     in_logbook = dict(
         name="Test logbook",
         description="Test description")
-    return in_logbook, decode_response(
-        client.post("/api/logbooks/", data=in_logbook))
+    response = client.post("/api/logbooks/", data=in_logbook)
+    assert response.status_code == 200
+    return in_logbook, decode_response(response)
 
 
 def make_entry(client, logbook):
-
     in_entry = dict(
         title="Test entry",
         content="This is some test content!",
         content_type="text/plain")
-
-    response = decode_response(
-        client.post(
-            "/api/logbooks/{logbook[id]}/entries/".format(logbook=logbook),
-            data=in_entry))
-
-    return in_entry, response
+    response = client.post(
+        "/api/logbooks/{logbook[id]}/entries/".format(logbook=logbook),
+        data=in_entry)
+    assert response.status_code == 200
+    return in_entry, decode_response(response)
 
 
 def test_create_logbook(elogy_client):
 
     in_logbook, logbook = make_logbook(elogy_client)
 
+    print(logbook)
     # read it back
     out_logbook = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/"

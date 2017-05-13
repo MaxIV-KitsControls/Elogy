@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from flask import request, make_response, jsonify
@@ -167,7 +168,7 @@ class EntriesResource(Resource):
                         content_filter=args.get("content"),
                         author_filter=args.get("authors"),
                         attribute_filter=attributes,
-                        n=args["n"], offset=args["offset"])
+                        n=args["n"], offset=args.get("offset"))
             entries = logbook.get_entries(**args)
             # TODO: figure out a nicer way to get the total number of hits
             count = logbook.get_entries(count=True, **args).tuples()

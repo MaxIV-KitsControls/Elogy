@@ -9,7 +9,7 @@ from flask_restful import Api
 import logging
 from peewee import OperationalError
 
-from .db import (db,
+from .db import (db, create_tables,
                  Logbook, LogbookRevision,
                  Entry, EntryRevision, EntryLock,
                  Attachment)
@@ -40,12 +40,7 @@ def teardown_request(exception=None):
 
 # Database setup
 db.init_app(app)
-Logbook.create_table(fail_silently=True)
-LogbookRevision.create_table(fail_silently=True)
-Entry.create_table(fail_silently=True)
-EntryRevision.create_table(fail_silently=True)
-EntryLock.create_table(fail_silently=True)
-Attachment.create_table(fail_silently=True)
+create_tables()
 
 
 # Allow CORS requests. Maybe we should only enable this in debug mode?
