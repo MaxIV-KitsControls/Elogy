@@ -53,5 +53,10 @@ class LogbooksResource(Resource):
         args = logbooks_parser.parse_args()
         change = logbook.make_change(args)
         logbook.save()
-        change.save()
         return jsonify(revision_id=change.id)
+
+
+class LogbookVersionsResource(Resource):
+
+    def get(self, logbook_id):
+        logbook = Logbook.get(Logbook.id == logbook_id)

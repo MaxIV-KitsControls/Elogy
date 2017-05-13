@@ -14,8 +14,8 @@ from .db import (db,
                  Entry, EntryRevision, EntryLock,
                  Attachment)
 from .api.errors import errors as api_errors
-from .api.logbooks import LogbooksResource
-from .api.entries import EntryResource, EntriesResource
+from .api.logbooks import LogbooksResource, LogbookVersionsResource
+from .api.entries import EntryResource, EntriesResource, EntryLockResource
 from .api.users import UsersResource
 from .api.attachments import AttachmentsResource
 
@@ -40,14 +40,12 @@ def teardown_request(exception=None):
 
 # Database setup
 db.init_app(app)
-try:
-    db.database.create_tables([
-        Logbook, LogbookRevision,
-        Entry, EntryRevision, EntryLock,
-        Attachment
-    ])
-except OperationalError:
-    pass
+Logbook.create_table(fail_silently=True)
+LogbookRevision.create_table(fail_silently=True)
+Entry.create_table(fail_silently=True)
+EntryRevision.create_table(fail_silently=True)
+EntryLock.create_table(fail_silently=True)
+Attachment.create_table(fail_silently=True)
 
 
 # Allow CORS requests. Maybe we should only enable this in debug mode?
@@ -65,13 +63,20 @@ api.add_resource(LogbooksResource,
                  "/logbooks/",
                  "/logbooks/<int:logbook_id>/")
 
+api.add_resource(LogbookVersionsResource,
+                 "/logbooks/<int:logbook_id>/revisions/")
+
 api.add_resource(EntriesResource,
-                 "/logbooks/<int:logbook_id>/entries/")
+                 "/logbooks/<int:logbook_id>/entries/")  # GET
 
 api.add_resource(EntryResource,
-                 "/logbooks/<int:logbook_id>/entries",
                  "/entries/<int:entry_id>/",
+                 "/logbooks/<int:logbook_id>/entries/",   # POST, PUT
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/")
+
+api.add_resource(EntryLockResource,
+                 "/logbooks/<int:logbook_id>/entries/<int:entry_id>/lock",
+                 "/entries/<int:entry_id>/lock")
 
 api.add_resource(UsersResource,
                  "/users/")

@@ -5,6 +5,7 @@ from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from playhouse.flask_utils import FlaskDB
 from playhouse.sqlite_ext import JSONField
+from playhouse.signals import Model, post_save, pre_save
 # from playhouse.sqlite_ext import FTS5Model, SearchField
 from peewee import (CharField, TextField, IntegerField, BooleanField,
                     DateTimeField, ForeignKeyField)
@@ -61,12 +62,10 @@ class Logbook(db.Model):
             for attr, value in data.items()
             if getattr(self, attr) != value
         }
-        change = LogbookRevision(logbook=self, **original_values)
+        change = LogbookRevision.create(logbook=self, **original_values)
         for attr, value in data.items():
             setattr(self, attr, value)
         self.last_changed_at = change.timestamp
-        change.save()
-        self.save()
         return change
 
     @property
@@ -242,6 +241,16 @@ class Entry(db.Model):
         self.last_changed_at = change.timestamp
         return change
 
+    def get_revision(self, steps_back):
+        revision = (EntryRevision.select()
+                    .where(EntryRevision.entry == self)
+                    .order_by(-EntryRevision.id)
+                    .offset(steps_back-1 or None)
+                    .limit(1))
+        if revision.count() == 0:
+            raise(EntryRevision.DoesNotExist)
+        return EntryRevisionWrapper(list(revision)[0])
+
     def get_old_version(self, revision_id):
         revisions = (EntryRevision.select()
                      .where(EntryRevision.entry == self
@@ -275,19 +284,26 @@ class Entry(db.Model):
                 pass
         return converted
 
-    def get_lock(self, ip=None, acquire=False):
+    def get_lock(self, ip=None, acquire=False, steal=False):
         """check if there's a lock on the entry, and if an ip is given
         try to acquire it."""
         try:
             lock = EntryLock.get((EntryLock.entry_id == self.id) &
                                  (EntryLock.expires_at > datetime.utcnow()) &
                                  (EntryLock.cancelled_at == None))
-            if ip != lock.owner_ip:
+            if steal:
+                lock.cancel(ip)
+                return EntryLock.create(entry=self, owned_by_ip=ip)
+            if acquire and ip != lock.owned_by_ip:
                 raise self.Locked(lock)
             return lock
         except EntryLock.DoesNotExist:
             if acquire:
-                return EntryLock.create(entry=self, owner_ip=ip)
+                return EntryLock.create(entry=self, owned_by_ip=ip)
+
+    @property
+    def lock(self):
+        return self.get_lock()
 
     @classmethod
     def search(cls, logbook=None, followups=False,
@@ -444,6 +460,8 @@ class EntryRevision(db.Model):
     revision_comment = TextField(null=True)
 
     def get_attribute(self, attr):
+        if getattr(self, attr):
+            return getattr(self, attr)
         try:
             return getattr(
                 EntryRevision.select()
@@ -462,25 +480,31 @@ class EntryRevision(db.Model):
             return htmldiff(self.content, new_content)
         return self.get_attribute("content")
 
-    @property
-    def current_authors(self):
-        if self.authors:
-            return self.authors
-        return self.get_attribute("authors")
+    # @property
+    # def current_authors(self):
+    #     if self.authors:
+    #         return self.authors
+    #     return self.get_attribute("authors")
 
-    @property
-    def current_title(self):
-        if self.title:
-            return self.title
-        return self.get_attribute("title")
+    # @property
+    # def current_title(self):
+    #     if self.title:
+    #         return self.title
+    #     return self.get_attribute("title")
 
-    @property
-    def new_title(self):
-        return self.get_attribute("title")
+    # @property
+    # def current_content(self):
+    #     if self.content:
+    #         return self.content
+    #     return self.get_attribute("content")
 
-    @property
-    def new_authors(self):
-        return self.get_attribute("authors")
+    # @property
+    # def new_title(self):
+    #     return self.get_attribute("title")
+
+    # @property
+    # def new_authors(self):
+    #     return self.get_attribute("authors")
 
     @property
     def prev_version(self):
@@ -494,6 +518,28 @@ class EntryRevision(db.Model):
         index = revisions.index(self)
         if index < (len(revisions) - 1):
             return index + 1
+
+
+class EntryRevisionWrapper:
+
+    """An object that represents a historical version of an entry. It
+    can (basically) be used like an Entry object."""
+
+    def __init__(self, revision):
+        self.revision = revision
+
+    def __getattr__(self, attr):
+        if attr == "id":
+            return self.revision.entry.id
+        if attr == "last_changed_at":
+            return self.revision.timestamp
+        if attr in ("logbook", "title", "authors", "content", "attributes",
+                    "metadata", "follows_id", "tags", "archived"):
+            return self.revision.get_attribute(attr)
+        try:
+            return getattr(self.revision, attr)
+        except AttributeError:
+            return getattr(self.revision.entry, attr)
 
 
 class EntryLock(db.Model):
@@ -513,13 +559,19 @@ class EntryLock(db.Model):
        + "steal" the lock.
     - If B steals the lock it means that A no longer has the lock, and
       might be in for a nasty surprise when he/she tries to submit later.
+    - When submitting an edit, it's necessary to include the
+      "last_changed_at" field of the version that was edited. This
+      way, the server can check if the entry has been changed meanwhile.
+      If this is not the case, and nobody else has locked the entry, it's
+      allowed. Note that it does not matter if the lock has expired. It's
+      not necessary to acquire a lock to do an edit, it's just polite.
     - B might know that A is no longer interested in the edit, so it makes
       sense to make the option of stealing available, as long as it's
       explicit.
     - When the owner of a lock submits changes to the locked entry, the
-      lock is cancelled.
+      lock is automatically cancelled.
     - The owher of a lock can also choose to cancel it without writing the
-      entry.
+      entry. Otherwise it will also expire after a while.
 
     The point of locking is to make it harder for users to overwrite
     each others changes *by mistake*, not to make it impossible.
@@ -529,9 +581,9 @@ class EntryLock(db.Model):
     created_at = DateTimeField(default=datetime.utcnow)
     expires_at = DateTimeField(default=(lambda: datetime.utcnow() +
                                         timedelta(hours=1)))
-    owner_ip = CharField()
+    owned_by_ip = CharField()
     cancelled_at = DateTimeField(null=True)
-    cancelled_by = CharField(null=True)
+    cancelled_by_ip = CharField(null=True)
 
     @property
     def locked(self):
@@ -539,7 +591,7 @@ class EntryLock(db.Model):
 
     def cancel(self, ip):
         self.cancelled_at = datetime.utcnow()
-        self.cancelled_by = ip
+        self.cancelled_by_ip = ip
         self.save()
 
 

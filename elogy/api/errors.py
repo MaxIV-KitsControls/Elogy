@@ -13,5 +13,17 @@ errors = {
     "GroupDoesNotExist": dict(
         message="Group does not exist!",
         status=404
+    ),
+    "Locked": dict(
+        message="Resource locked by someone else!",
+        status=409
+    ),
+    "EntryLockDoesNotExist": dict(
+        message="No lock on the entry!",
+        status=404
+    ),
+    "EntryRevisionDoesNotExist": dict(
+        message="Entry revision does not exist!",
+        status=404
     )
 }

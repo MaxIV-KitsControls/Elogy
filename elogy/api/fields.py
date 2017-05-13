@@ -98,8 +98,11 @@ class EntryId(fields.Raw):
 
 entry_lock = {
     "id": fields.Integer,
+    "created_at": fields.DateTime,
     "expires_at": fields.DateTime,
-    "owner_ip": fields.String
+    "owned_by_ip": fields.String,
+    "cancelled_at": fields.DateTime,
+    "cancelled_by_ip": fields.String
 }
 
 entry_full = {
@@ -118,7 +121,7 @@ entry_full = {
     "followups": fields.List(Followup),
     "lock": fields.Nested(entry_lock),
     "next": EntryId,
-    "previous": EntryId
+    "previous": EntryId,
 }
 
 entry = {

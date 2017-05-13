@@ -1,8 +1,8 @@
-import time
 from datetime import datetime
 
 from flask import request, make_response, jsonify
 from flask_restful import Resource, reqparse, marshal, marshal_with
+from peewee import DoesNotExist
 from playhouse.shortcuts import dict_to_model
 
 from ..db import Entry, Logbook, EntryLock
@@ -13,7 +13,6 @@ from . import fields
 
 entry_parser = reqparse.RequestParser()
 entry_parser.add_argument("id", type=int, store_missing=False)
-# entry_parser.add_argument("logbook_id", type=int)
 entry_parser.add_argument("title", type=str, store_missing=False)
 entry_parser.add_argument("content", type=str, store_missing=False)
 entry_parser.add_argument("content_type", type=str, default="text/html",
@@ -23,44 +22,53 @@ entry_parser.add_argument("authors", type=dict, action="append",
 entry_parser.add_argument("created_at", type=str, store_missing=False)
 entry_parser.add_argument("last_changed_at", type=str, store_missing=False)
 entry_parser.add_argument("follows", type=int, store_missing=False)
-# entry_parser.add_argument("attachments", type=list, location="json")
 entry_parser.add_argument("attributes", type=dict, location="json", default={})
 entry_parser.add_argument("archived", type=bool, default=False)
 entry_parser.add_argument("metadata", type=dict, location="json", default={})
-entry_parser.add_argument("acquire_lock", type=bool, location="args",
-                          store_missing=False)
+entry_parser.add_argument("lock_id", type=int, store_missing=False)
 
 
 class EntryResource(Resource):
 
     "Handle requests for a single entry"
 
-    def get(self, entry_id=None, logbook_id=None):
-        args = entry_parser.parse_args()
+    @marshal_with(fields.entry_full, envelope="entry")
+    def get(self, entry_id, logbook_id=None):
+        parser = reqparse.RequestParser()
+        parser.add_argument("version", type=int)
+        parser.add_argument("acquire_lock", type=bool)
+        args = parser.parse_args()
         entry = Entry.get(Entry.id == entry_id)
         try:
-            ip = request.remote_addr if args.get("acquire_lock") else None
-            lock = entry.get_lock(ip=ip, acquire=True)
+            ip = request.remote_addr
+            lock = entry.get_lock(ip=ip, acquire=args.get("acquire_lock"))
         except Entry.Locked:
             # a lock is held by someone else
-            return dict(entry=marshal(entry._thread, fields.entry_full))
-        if not lock:
-            return dict(entry=marshal(entry._thread, fields.entry_full))
-        return dict(entry=marshal(entry._thread, fields.entry_full),
-                    lock=marshal(lock, fields.entry_lock))
+            return entry._thread
+        if args["version"]:
+            return entry.get_revision(args["version"])
+        return entry._thread
 
     def post(self, logbook_id):
         "new entry"
         logbook = Logbook.get(Logbook.id == logbook_id)
         data = entry_parser.parse_args()
+        # TODO: clean up
         if "created_at" in data:
             data["created_at"] = get_utc_datetime(data["created_at"])
         else:
             data["created_at"] = datetime.utcnow()
         if "last_changed_at" in data:
             data["last_changed_at"] = get_utc_datetime(data["last_changed_at"])
-        data["content"], inline_attachments = handle_img_tags(
-            data.get("content", ""), timestamp=data["created_at"])
+        if data.get("content"):
+            content_type = data.get("content_type", "text/html")
+            if content_type.startswith("text/html"):
+                data["content"], inline_attachments = handle_img_tags(
+                    data["content"], timestamp=data["created_at"])
+            else:
+                inline_attachments = []
+        else:
+            inline_attachments = []
         data["logbook"] = logbook
         # make sure the attributes are of proper types
         if "attributes" in data:
@@ -81,32 +89,40 @@ class EntryResource(Resource):
             attachment.save()
         return jsonify(entry_id=entry.id)
 
-    def put(self, entry_id, logbook_id=None, lock_id=None):
+    def put(self, entry_id, logbook_id=None):
         "update entry"
         args = entry_parser.parse_args()
         entry_id = entry_id or args["id"]
         entry = Entry.get(Entry.id == entry_id)
         # check for a lock on the entry
-        if lock_id:
-            # the user has the lock ID, that's good enough
-            try:
-                lock = Lock.get(Lock.id == lock_id)
-                lock.cancel(request.remote_addr)
-            except DoesNotExist:
-                pass
-        else:
-            try:
-                lock = entry.get_lock(ip=request.remote_addr)
-                # the lock is no longer needed
-                lock.cancel(request.remote_addr)
-            except Entry.Locked:
-                result = dict(
-                    message=(
-                        "Conflict: Entry {} is locked by IP {} since {                        .format(entry_id, lock.owner_ip, lock.created_at)),
-                )
+        if entry.lock:
+            if "lock_id" in args:
+                # allow anyone who has the current lock id to write
+                try:
+                    if entry.lock.id == args["lock_id"]:
+                        entry.lock.cancel(request.remote_addr)
+                except DoesNotExist:
+                    # not locked
+                    pass
+            elif entry.lock.owned_by_ip == request.remote_addr:
+                entry.lock.cancel(request.remote_addr)
+            else:
+                result = dict(message=(
+                    "Conflict: Entry {} is locked by IP {} since {}"
+                    .format(entry_id, entry.lock.owned_by_ip,
+                            entry.lock.created_at)))
                 return make_response(jsonify(result), 409)
 
-        args["content"], inline_attachments = handle_img_tags(args["content"])
+        if args.get("content"):
+            content_type = args.get("content_type", entry.content_type)
+            if content_type.startswith("text/html"):
+                args["content"], inline_attachments = handle_img_tags(
+                    args["content"])
+            else:
+                inline_attachments = []
+        else:
+            inline_attachments = []
+
         entry = Entry.get(Entry.id == entry_id)
         change = entry.make_change(**args)
         entry.save()
@@ -128,7 +144,7 @@ entries_parser.add_argument("attribute", type=str,
                             action="append", default=[])
 entries_parser.add_argument("archived", type=bool)
 entries_parser.add_argument("n", type=int, default=50)
-entries_parser.add_argument("offset", type=int, default=0)
+entries_parser.add_argument("offset", type=int, store_missing=False)
 
 
 class EntriesResource(Resource):
@@ -171,3 +187,40 @@ class EntriesResource(Resource):
             count = list(count)[0][0] if list(count) else 0
 
         return dict(logbook=logbook, entries=list(entries), count=count)
+
+
+class EntryLockResource(Resource):
+
+    @marshal_with(fields.entry_lock)
+    def get(self, entry_id, logbook_id=None):
+        "Check for a lock"
+        entry = Entry.get(Entry.id == entry_id)
+        lock = entry.get_lock(request.remote_addr)
+        if lock:
+            return lock
+        raise EntryLock.DoesNotExist
+
+    @marshal_with(fields.entry_lock)
+    def post(self, entry_id, logbook_id=None):
+        "Acquire (optionally stealing) a lock"
+        parser = reqparse.RequestParser()
+        parser.add_argument("steal", type=bool, default=False)
+        args = parser.parse_args()
+        entry = Entry.get(Entry.id == entry_id)
+        print("remote_addr", request.remote_addr)
+        return entry.get_lock(ip=request.remote_addr, acquire=True,
+                              steal=args["steal"])
+
+    @marshal_with(fields.entry_lock)
+    def delete(self, entry_id=None, logbook_id=None):
+        "Cancel a lock"
+        parser = reqparse.RequestParser()
+        parser.add_argument("lock_id", type=int, store_missing=False)
+        args = parser.parse_args()
+        if "lock_id" in args:
+            lock = EntryLock.get(EntryLock.id == args["lock_id"])
+        else:
+            entry = Entry.get(Entry.id == entry_id)
+            lock = entry.get_lock()
+        lock.cancel(request.remote_addr)
+        return lock
