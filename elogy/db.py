@@ -241,29 +241,35 @@ class Entry(db.Model):
         self.last_changed_at = change.timestamp
         return change
 
-    def get_revision(self, steps_back):
+    @property
+    def revision_n(self):
+        return (EntryRevision.select()
+                .where(EntryRevision.entry == self)
+                .count())
+
+    def get_revision(self, version):
         revision = (EntryRevision.select()
                     .where(EntryRevision.entry == self)
-                    .order_by(-EntryRevision.id)
-                    .offset(steps_back-1 or None)
+                    .order_by(EntryRevision.id)
+                    .offset(version or None)
                     .limit(1))
         if revision.count() == 0:
             raise(EntryRevision.DoesNotExist)
         return EntryRevisionWrapper(list(revision)[0])
 
-    def get_old_version(self, revision_id):
-        revisions = (EntryRevision.select()
-                     .where(EntryRevision.entry == self
-                            and EntryRevision.id >= revision_id)
-                     .order_by(EntryRevision.id.desc()))
-        content = self.content
-        print(content)
-        print("---")
-        for revision in revisions:
-            print(revision.content)
-            if revision.content:
-                content = apply_patch(content, revision.content)
-        return content
+    # def get_old_version(self, revision_id):
+    #     revisions = (EntryRevision.select()
+    #                  .where(EntryRevision.entry == self
+    #                         and EntryRevision.id >= revision_id)
+    #                  .order_by(EntryRevision.id.desc()))
+    #     content = self.content
+    #     print(content)
+    #     print("---")
+    #     for revision in revisions:
+    #         print(revision.content)
+    #         if revision.content:
+    #             content = apply_patch(content, revision.content)
+    #     return content
 
     @property
     def stripped_content(self):
@@ -458,6 +464,7 @@ class EntryRevision(db.Model):
 
     revision_authors = JSONField(null=True)
     revision_comment = TextField(null=True)
+    revision_ip = CharField(null=True)
 
     def get_attribute(self, attr):
         if getattr(self, attr):
@@ -518,6 +525,11 @@ class EntryRevision(db.Model):
         index = revisions.index(self)
         if index < (len(revisions) - 1):
             return index + 1
+
+    @property
+    def revision_n(self):
+        revisions = list(self.entry.revisions)
+        return revisions.index(self)
 
 
 class EntryRevisionWrapper:

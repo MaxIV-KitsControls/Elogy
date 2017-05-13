@@ -119,6 +119,7 @@ entry_full = {
     "follows": EntryId,
     "n_followups": NumberOf(attribute="followups"),
     "followups": fields.List(Followup),
+    "revision_n": fields.Integer,
     "lock": fields.Nested(entry_lock, allow_null=True),
     "next": EntryId,
     "previous": EntryId,

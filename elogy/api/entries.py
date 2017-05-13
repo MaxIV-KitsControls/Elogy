@@ -25,6 +25,7 @@ entry_parser.add_argument("follows", type=int, store_missing=False)
 entry_parser.add_argument("attributes", type=dict, location="json", default={})
 entry_parser.add_argument("archived", type=bool, default=False)
 entry_parser.add_argument("metadata", type=dict, location="json", default={})
+entry_parser.add_argument("revision_n", type=int, store_missing=False)
 
 
 class EntryResource(Resource):
@@ -34,7 +35,7 @@ class EntryResource(Resource):
     @marshal_with(fields.entry_full)
     def get(self, entry_id, logbook_id=None):
         parser = reqparse.RequestParser()
-        parser.add_argument("version", type=int)
+        parser.add_argument("revision", type=int)
         parser.add_argument("acquire_lock", type=bool)
         args = parser.parse_args()
         entry = Entry.get(Entry.id == entry_id)
@@ -44,8 +45,8 @@ class EntryResource(Resource):
         except Entry.Locked:
             # a lock is held by someone else
             return entry._thread
-        if args["version"]:
-            return entry.get_revision(args["version"])
+        if args["revision"] is not None:
+            return entry.get_revision(args["revision"])
         return entry._thread
 
     @marshal_with(fields.entry_full)
@@ -95,12 +96,16 @@ class EntryResource(Resource):
         args = entry_parser.parse_args()
         entry_id = entry_id or args["id"]
         entry = Entry.get(Entry.id == entry_id)
-        if (args.get("last_changed_at") != entry.last_changed_at):
+        # to prevent overwiting someone else's changes we require the
+        # client to supply the "revision_n" field of the entry they
+        # are editing. If this does not match the current entry in the
+        # db, it means someone has changed it inbetween and we abort.
+        if "revision_n" not in args:
+            abort(400, message="Missing 'revision_n' field!")
+        if args["revision_n"] != entry.revision_n:
             abort(409, message=(
-                "Conflict: Entry {} has been edited (by {}, at {}) since you last saw it!"
-                .format(entry_id, entry.lock.owned_by_ip,
-                        entry.lock.last_changed_at)))
-
+                "Conflict: Entry {} has been edited since you last saw it!"
+                .format(entry_id)))
         # check for a lock on the entry
         if entry.lock:
             if entry.lock.owned_by_ip == request.remote_addr:
