@@ -399,7 +399,7 @@ if __name__ == "__main__":
 
     # create a new logbook through the API
     LOGBOOK_URL = "http://%s/api/logbooks/" % host_port
-    ENTRY_URL = "http://%s/api/logbooks/{logbook_id}/entries" % host_port
+    ENTRY_URL = "http://%s/api/logbooks/{logbook_id}/entries/" % host_port
     ATTACHMENT_URL = "http://%s/api/attachments/" % host_port
 
     config = configparser.RawConfigParser(strict=False)

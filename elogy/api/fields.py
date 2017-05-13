@@ -1,5 +1,5 @@
 from dateutil.parser import parse
-from flask_restful import fields, marshal
+from flask_restful import fields, marshal, marshal_with_field
 import lxml
 
 
@@ -130,6 +130,49 @@ entry = {
     "lock": fields.Nested(entry_lock, default=None)
 }
 
+
+entryrevision_metadata = {
+    "id": fields.Integer,
+    "timestamp": fields.DateTime,
+    "revision_authors": fields.List(fields.Nested(authors)),
+    "revision_comment": fields.String,
+    "revision_ip": fields.String,
+}
+
+
+class EntryRevisionField(fields.Raw):
+    def format(self, value):
+        revision_fields = {
+            field: dict(old=getattr(value, field),
+                        new=value.get_attribute(field))
+            for field in ["title", "content", "authors", "attributes"]
+            if getattr(value, field) is not None
+        }
+        meta_fields = marshal(value, entryrevision_metadata)
+        return {
+            "changes": revision_fields,
+            **meta_fields
+        }
+
+
+entry_revision = {
+    "logbook": fields.Nested(logbook),
+    "title": fields.String,
+    "authors": fields.List(fields.Nested(authors)),
+    "content": fields.String,
+    "content_type": fields.String,
+    "attributes": fields.Raw(attribute="converted_attributes"),
+    "attachments": fields.List(fields.Nested(attachment)),
+    "follows": EntryId,
+    "revision_n": fields.Integer
+}
+
+
+entry_revisions = {
+    "revisions": fields.List(EntryRevisionField)
+}
+
+
 class FirstIfAny(fields.Raw):
     def format(self, value):
         if value:
@@ -154,6 +197,7 @@ logbook_very_short = {
     "id": fields.Integer,
     "name": fields.String,
 }
+
 
 short_entry = {
     "id": fields.Integer,

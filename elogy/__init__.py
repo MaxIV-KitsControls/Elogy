@@ -15,7 +15,7 @@ from .db import (db,
                  Attachment)
 from .api.errors import errors as api_errors
 from .api.logbooks import LogbooksResource, LogbookVersionsResource
-from .api.entries import EntryResource, EntriesResource, EntryLockResource
+from .api.entries import EntryResource, EntriesResource, EntryLockResource, EntryRevisionsResource
 from .api.users import UsersResource
 from .api.attachments import AttachmentsResource
 
@@ -72,7 +72,11 @@ api.add_resource(EntriesResource,
 api.add_resource(EntryResource,
                  "/entries/<int:entry_id>/",
                  "/logbooks/<int:logbook_id>/entries/",   # POST, PUT
-                 "/logbooks/<int:logbook_id>/entries/<int:entry_id>/")
+                 "/logbooks/<int:logbook_id>/entries/<int:entry_id>/",
+                 "/logbooks/<int:logbook_id>/entries/<int:entry_id>/revisions/<int:revision_n>")
+
+api.add_resource(EntryRevisionsResource,
+                 "/logbooks/<int:logbook_id>/entries/<int:entry_id>/revisions/")
 
 api.add_resource(EntryLockResource,
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/lock",

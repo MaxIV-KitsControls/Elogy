@@ -95,12 +95,17 @@ def test_update_entry(elogy_client):
 
     # verify that the original revision is available
     old_entry_version = decode_response(
-        elogy_client.get("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
-                         .format(logbook=logbook, entry=entry),
-                         data={"revision": 0}))
+        elogy_client.get(
+            "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/0"
+            .format(logbook=logbook, entry=entry)))
     assert old_entry_version["title"] == in_entry["title"]
     assert old_entry_version["revision_n"] == 0
 
+    revisions = decode_response(
+        elogy_client.get(
+            "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
+            .format(logbook=logbook, entry=entry)))
+    print("revisions", revisions)
 
 def test_update_conflict(elogy_client):
     in_logbook, logbook = make_logbook(elogy_client)

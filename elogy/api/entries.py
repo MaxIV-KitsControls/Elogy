@@ -33,9 +33,8 @@ class EntryResource(Resource):
     "Handle requests for a single entry"
 
     @marshal_with(fields.entry_full)
-    def get(self, entry_id, logbook_id=None):
+    def get(self, entry_id, logbook_id=None, revision_n=None):
         parser = reqparse.RequestParser()
-        parser.add_argument("revision", type=int)
         parser.add_argument("acquire_lock", type=bool)
         args = parser.parse_args()
         entry = Entry.get(Entry.id == entry_id)
@@ -45,8 +44,8 @@ class EntryResource(Resource):
         except Entry.Locked:
             # a lock is held by someone else
             return entry._thread
-        if args["revision"] is not None:
-            return entry.get_revision(args["revision"])
+        if revision_n is not None:
+            return entry.get_revision(revision_n)
         return entry._thread
 
     @marshal_with(fields.entry_full)
@@ -226,3 +225,11 @@ class EntryLockResource(Resource):
             lock = entry.get_lock()
         lock.cancel(request.remote_addr)
         return lock
+
+
+class EntryRevisionsResource(Resource):
+
+    @marshal_with(fields.entry_revisions)
+    def get(self, entry_id, logbook_id=None):
+        entry = Entry.get(Entry.id == entry_id)
+        return {"revisions": entry.revisions}

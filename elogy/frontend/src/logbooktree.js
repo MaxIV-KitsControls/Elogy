@@ -82,7 +82,7 @@ class LogbookTree extends React.Component {
         fetch(`/api/logbooks/${search}`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState(json.logbook));
+            .then(json => this.setState(json));
     }        
     
     componentDidMount () {

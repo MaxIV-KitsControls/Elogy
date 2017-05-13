@@ -221,7 +221,7 @@ class LogbookEditor extends React.Component {
                 })
                 .then(result => result.json())
                 .then(result => history.push({
-                    pathname: `/logbooks/${result.logbook_id}`
+                    pathname: `/logbooks/${result.id}`
                 }));
         }
     }

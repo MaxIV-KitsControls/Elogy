@@ -443,16 +443,17 @@ DeferredEntry.set_model(Entry)
 
 
 class EntryRevision(db.Model):
-    """Represents a change of an entry.
+    """
+    Represents a change of an entry.
 
     Counter-intuitively, what's stored here is the *old* entry
     data. The point is that then we only need to store the fields that
     actually were changed! But it becomes a bit confusing when it's
     time to reconstruct an old entry.
     """
+
     entry = ForeignKeyField(Entry, related_name="revisions")
     logbook = ForeignKeyField(Logbook, null=True)
-    timestamp = DateTimeField(default=datetime.utcnow)
     title = CharField(null=True)
     authors = JSONField(null=True)
     content = TextField(null=True)
@@ -462,21 +463,22 @@ class EntryRevision(db.Model):
     tags = JSONField(null=True)
     archived = BooleanField(default=False)
 
+    timestamp = DateTimeField(default=datetime.utcnow)
     revision_authors = JSONField(null=True)
     revision_comment = TextField(null=True)
     revision_ip = CharField(null=True)
 
     def get_attribute(self, attr):
-        if getattr(self, attr):
-            return getattr(self, attr)
+        """Get the value that we were changing to, or the
+        current value if it was not changed."""
         try:
-            return getattr(
-                EntryRevision.select()
-                .where((EntryRevision.entry == self.entry) &
-                       (getattr(EntryRevision, attr) != None) &
-                       (EntryRevision.id > self.id))
-                .order_by(EntryRevision.id)
-                .get(), attr)
+            revision = (EntryRevision.select()
+                        .where((EntryRevision.entry == self.entry) &
+                               (getattr(EntryRevision, attr) != None) &
+                               (EntryRevision.id > self.id))
+                        .order_by(EntryRevision.id)
+                        .get())
+            return getattr(revision, attr)
         except DoesNotExist:
             return getattr(self.entry, attr)
 
@@ -545,9 +547,13 @@ class EntryRevisionWrapper:
             return self.revision.entry.id
         if attr == "last_changed_at":
             return self.revision.timestamp
+        # OK, for any of the other entry attributes we want the
+        # new value, not the value in the revision which is the old value.
         if attr in ("logbook", "title", "authors", "content", "attributes",
                     "metadata", "follows_id", "tags", "archived"):
-            return self.revision.get_attribute(attr)
+            value = self.revision.get_attribute(attr)
+            if value is not None:
+                return getattr(self.revision, attr)
         try:
             return getattr(self.revision, attr)
         except AttributeError:

@@ -108,14 +108,14 @@ class EntryEditor extends React.Component {
         fetch(`/api/entries/${entryId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState({entry: json, ...json.entry}));        
+            .then(json => this.setState({entry: json, ...json}));        
     }
 
     fetchLogbook (logbookId) {
-        fetch(`/api/logbooks/${logbookId}`,
+        fetch(`/api/logbooks/${logbookId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState(json));        
+            .then(json => this.setState({logbook: json}));        
     }
     
     componentWillMount () {
@@ -125,7 +125,9 @@ class EntryEditor extends React.Component {
                                 this.props.match.params.entryId);
             } else {
                 this.setState({follows: parseInt(this.props.match.params.entryId)});
-                this.fetchLogbook(this.props.match.params.logbookId);
+                //this.fetchLogbook(this.props.match.params.logbookId);
+                this.fetchEntry(this.props.match.params.logbookId,
+                                this.props.match.params.entryId);
             }
         } else {
             this.fetchLogbook(this.props.match.params.logbookId);
@@ -137,7 +139,7 @@ class EntryEditor extends React.Component {
     }
 
     fetchUserSuggestions (input) {
-        return fetch(`/api/users`, 
+        return fetch(`/api/users/`, 
               {
                   headers: {"Accept": "application/json"}
               })
@@ -198,7 +200,8 @@ class EntryEditor extends React.Component {
                           title: this.state.title,
                           authors: this.state.authors,
                           content: this.state.content || this.state.logbook.template,
-                          attributes: this.state.attributes
+                          attributes: this.state.attributes,
+                          revision_n: this.state.revision_n
                       })
                   })
                 .then(response => response.json())
@@ -218,7 +221,7 @@ class EntryEditor extends React.Component {
             const followupTo = (this.props.match.params.entryId?
                                 parseInt(this.props.match.params.entryId)
                               : null)
-            fetch(`/api/logbooks/${this.state.logbook.id}/entries`, 
+            fetch(`/api/logbooks/${this.state.logbook.id}/entries/`, 
                   {
                       method: "POST",
                       headers: {
@@ -236,7 +239,7 @@ class EntryEditor extends React.Component {
             // TODO: handle errors 
                 .then(response => {
                     history.push({
-                        pathname: `/logbooks/${this.state.logbook.id}/entries/${response.entry_id}`,
+                        pathname: `/logbooks/${this.state.logbook.id}/entries/${response.id}`,
                         state: {
                             entrySubmitted: true
                         }
@@ -253,14 +256,18 @@ class EntryEditor extends React.Component {
         // we can automatically send the browser to the entry after submitting.
 
         let title;
-        if (this.state.entry) {
+        if (this.state.entry && this.props.match.params.command == "edit") {
             title = <span className="title">
                 Editing entry <span className="entry">{this.state.entry.title}</span> in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name}</span>
             </span>
         } else {
-            title = <span className="title">
+            if (this.state.entry) {
+                title = <span className="title">Followup to {this.state.entry && this.state.entry.title || "..."}</span>
+            } else {
+                title = <span className="title">
                 New entry in <span className="logbook"> <i className="fa fa-book"/>{this.state.logbook.name}</span>
-            </span>
+                </span>
+            }
         }
         
         const attributes = this.state.logbook.attributes?
