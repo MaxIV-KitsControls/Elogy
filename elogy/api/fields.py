@@ -55,18 +55,47 @@ logbook = {
 }
 
 
+authors = {
+    "name": fields.String,
+    "login": fields.String
+}
+
+
+logbookrevision_metadata = {
+    "id": fields.Integer,
+    "timestamp": fields.DateTime,
+    "revision_authors": fields.List(fields.Nested(authors)),
+    "revision_comment": fields.String,
+    "revision_ip": fields.String,
+}
+
+
+class LogbookRevisionField(fields.Raw):
+    def format(self, value):
+        revision_fields = {
+            field: dict(old=value.changed.get(field),
+                        new=value.get_attribute(field))
+            for field in ["name", "description", "template", "attributes"]
+            if value.changed.get(field) is not None
+        }
+        meta_fields = marshal(value, logbookrevision_metadata)
+        return {
+            "changed": revision_fields,
+            **meta_fields
+        }
+
+
+logbook_revisions = {
+    "revisions": fields.List(LogbookRevisionField)
+}
+
+
 attachment = {
     "path": fields.String,
     "filename": fields.String,
     "embedded": fields.Boolean,
     "content_type": fields.String,
     "metadata": fields.Raw
-}
-
-
-authors = {
-    "name": fields.String,
-    "login": fields.String
 }
 
 
@@ -150,22 +179,22 @@ class EntryRevisionField(fields.Raw):
         }
         meta_fields = marshal(value, entryrevision_metadata)
         return {
-            "changes": revision_fields,
+            "changed": revision_fields,
             **meta_fields
         }
 
 
-entry_revision = {
-    "logbook": fields.Nested(logbook),
-    "title": fields.String,
-    "authors": fields.List(fields.Nested(authors)),
-    "content": fields.String,
-    "content_type": fields.String,
-    "attributes": fields.Raw(attribute="converted_attributes"),
-    "attachments": fields.List(fields.Nested(attachment)),
-    "follows": EntryId,
-    "revision_n": fields.Integer
-}
+# entry_revision = {
+#     "logbook": fields.Nested(logbook),
+#     "title": fields.String,
+#     "authors": fields.List(fields.Nested(authors)),
+#     "content": fields.String,
+#     "content_type": fields.String,
+#     "attributes": fields.Raw(attribute="converted_attributes"),
+#     "attachments": fields.List(fields.Nested(attachment)),
+#     "follows": EntryId,
+#     "revision_n": fields.Integer
+# }
 
 
 entry_revisions = {

@@ -19,7 +19,7 @@ def elogy(request):
     os.environ["ELOGY_CONFIG_FILE"] = "../test/config.py"
 
     def run_elogy():
-        from elogy import app
+        from elogy.app import app
         app.run()
 
     proc = Process(target=run_elogy)
@@ -31,6 +31,14 @@ def elogy(request):
 
 
 @pytest.fixture(scope="module")
+def db(request):
+
+    from elogy.db import db, setup_database
+    setup_database("/tmp/hejsan.db")
+    return db
+
+
+@pytest.fixture(scope="module")
 def elogy_client(request):
     try:
         os.remove("/tmp/test.db")
@@ -38,6 +46,6 @@ def elogy_client(request):
         print("isjdisj", e)
         pass
     os.environ["ELOGY_CONFIG_FILE"] = "../test/config.py"
-    from elogy import app
+    from elogy.app import app
     with app.test_client() as c:
         yield c

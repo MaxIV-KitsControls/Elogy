@@ -23,10 +23,13 @@ class LogbooksResource(Resource):
     "Handle requests for logbooks"
 
     @marshal_with(fields.logbook)
-    def get(self, logbook_id=None):
+    def get(self, logbook_id=None, revision_n=None):
 
         if logbook_id:
-            return Logbook.get(Logbook.id == logbook_id)
+            logbook = Logbook.get(Logbook.id == logbook_id)
+            if revision_n is not None:
+                return logbook.get_revision(revision_n)
+            return logbook
 
         # Get either the direct children of a given parent, or else the
         # global list of top-level (no parent) logbooks
@@ -41,10 +44,13 @@ class LogbooksResource(Resource):
         return dict(children=children)
 
     @marshal_with(fields.logbook)
-    def post(self):
+    def post(self, logbook_id=None):
         "Create a new logbook"
         args = logbooks_parser.parse_args()
         logbook = dict_to_model(Logbook, args)
+        if logbook_id is not None:
+            parent = Logbook.get(Logbook.id == logbook_id)
+            logbook.parent = parent
         logbook.save()
         return logbook
 
@@ -53,12 +59,14 @@ class LogbooksResource(Resource):
         "Update an existing logbook"
         logbook = Logbook.get(Logbook.id == logbook_id)
         args = logbooks_parser.parse_args()
-        change = logbook.make_change(args)
+        logbook.make_change(args)
         logbook.save()
         return logbook
 
 
-class LogbookVersionsResource(Resource):
+class LogbookRevisionsResource(Resource):
 
+    @marshal_with(fields.logbook_revisions)
     def get(self, logbook_id):
         logbook = Logbook.get(Logbook.id == logbook_id)
+        return {"revisions": logbook.revisions}

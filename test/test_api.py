@@ -32,7 +32,6 @@ def test_create_logbook(elogy_client):
 
     in_logbook, logbook = make_logbook(elogy_client)
 
-    print(logbook)
     # read it back
     out_logbook = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/"
@@ -40,6 +39,24 @@ def test_create_logbook(elogy_client):
 
     assert in_logbook["name"] == out_logbook["name"]
     assert in_logbook["description"] == out_logbook["description"]
+
+
+def test_create_child_logbook(elogy_client):
+
+    in_logbook, logbook = make_logbook(elogy_client)
+
+    # make a child logbook
+    child = decode_response(
+        elogy_client.post("/api/logbooks/{logbook[id]}/"
+                          .format(logbook=logbook),
+                          data={"name": "Some name"}))
+    assert child["parent"]["id"] == logbook["id"]
+
+    # check that it also comes up as child
+    parent = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[id]}/"
+                         .format(logbook=logbook)))
+    assert parent["children"][0]["id"] == child["id"]
 
 
 def test_update_logbook(elogy_client):
@@ -105,6 +122,7 @@ def test_update_entry(elogy_client):
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
             .format(logbook=logbook, entry=entry)))
     print("revisions", revisions)
+
 
 def test_update_conflict(elogy_client):
     in_logbook, logbook = make_logbook(elogy_client)

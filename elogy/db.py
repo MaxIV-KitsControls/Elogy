@@ -1,39 +1,37 @@
 from datetime import datetime, timedelta
-from functools import wraps
 from html.parser import HTMLParser
-from playhouse.shortcuts import model_to_dict, dict_to_model
 
-from playhouse.flask_utils import FlaskDB
-from playhouse.sqlite_ext import JSONField
-from playhouse.signals import Model, post_save, pre_save
-# from playhouse.sqlite_ext import FTS5Model, SearchField
-from peewee import (CharField, TextField, IntegerField, BooleanField,
+from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
+from peewee import (CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField)
-from peewee import DoesNotExist, DeferredRelation, fn, JOIN
-
-from .patch import make_patch, apply_patch
-from .htmldiff import htmldiff
+from peewee import Model, DoesNotExist, DeferredRelation, fn
 
 
-db = FlaskDB()  # wrapper, to make config cleaner
+# defer the actual db setup to later, when we have read the config
+db = SqliteExtDatabase(None)
 
 
-def create_tables():
-    "Make sure all the tables exist"
+def setup_database(db_name):
+    "Configure the database and make sure all the tables exist"
+    # TODO: support further configuration options, see FlaskDB
+    db.init(db_name)
     Logbook.create_table(fail_silently=True)
     LogbookRevision.create_table(fail_silently=True)
     Entry.create_table(fail_silently=True)
     EntryRevision.create_table(fail_silently=True)
     EntryLock.create_table(fail_silently=True)
     Attachment.create_table(fail_silently=True)
-    db.database.close()  # important
+    db.close()  # important
 
 
-class Logbook(db.Model):
+class Logbook(Model):
 
     """
     A logbook is a collection of entries, and (possibly) other logbooks.
     """
+
+    class Meta:
+        database = db
 
     created_at = DateTimeField(default=datetime.utcnow)
     last_changed_at = DateTimeField(null=True)
@@ -66,18 +64,34 @@ class Logbook(db.Model):
                     break
         return list(reversed(parents))
 
-    def make_change(self, data):
+    def make_change(self, **values):
         "Change the logbook, storing the old values as a revision"
         original_values = {
             attr: getattr(self, attr)
-            for attr, value in data.items()
+            for attr, value in values.items()
             if getattr(self, attr) != value
         }
-        change = LogbookRevision.create(logbook=self, **original_values)
-        for attr, value in data.items():
+        revision = LogbookRevision.create(logbook=self, changed=original_values)
+        for attr, value in values.items():
             setattr(self, attr, value)
-        self.last_changed_at = change.timestamp
-        return change
+        self.last_changed_at = revision.timestamp
+        return revision
+
+    @property
+    def revision_n(self):
+        return len(self.revisions)
+
+    def get_revision(self, version):
+        if version == self.revision_n:
+            return self
+        revision = (LogbookRevision.select()
+                    .where(LogbookRevision.logbook == self)
+                    .order_by(LogbookRevision.id)
+                    .offset(version or None)
+                    .limit(1))
+        if revision.count() == 0:
+            raise(LogbookRevision.DoesNotExist)
+        return LogbookRevisionWrapper(list(revision)[0])
 
     @property
     def entry_histogram(self):
@@ -135,14 +149,64 @@ class Logbook(db.Model):
         return result
 
 
-class LogbookRevision(db.Model):
-    logbook = ForeignKeyField(Logbook)
+class LogbookRevision(Model):
+
+    class Meta:
+        database = db
+
+    logbook = ForeignKeyField(Logbook, related_name="revisions")
+
+    changed = JSONField()
+
     timestamp = DateTimeField(default=datetime.utcnow)
-    name = CharField(null=True)
-    description = TextField(null=True)
-    attributes = JSONField(null=True)
-    archived = BooleanField(null=True)
-    parent_id = IntegerField(null=True)
+    revision_authors = JSONField(null=True)
+    revision_comment = TextField(null=True)
+    revision_ip = CharField(null=True)
+
+    def __getattr__(self, attr):
+
+        """Get the value of the attribute at the time of this revision.
+        That is, *before* the change happened."""
+
+        # First check if the attribute was changed in this revision,
+        # in that case we return that.
+        if attr in self.changed:
+            return self.changed[attr]
+        # Otherwise, check for the next revision where this attribute
+        # changed; the value from there must be the current value
+        # at this revision.
+        try:
+            revision = (LogbookRevision.select()
+                        .where((LogbookRevision.logbook == self.logbook) &
+                               (LogbookRevision.changed.extract(attr) != None) &
+                               (LogbookRevision.id > self.id))
+                        .order_by(LogbookRevision.id)
+                        .get())
+            return revision.changed[attr]
+        except DoesNotExist:
+            # No later revisions changed the attribute either, so we can just
+            # take the value from the current logbook
+            return getattr(self.logbook, attr)
+
+
+class LogbookRevisionWrapper:
+
+    """Represents a historical version of a Logbook."""
+
+    def __init__(self, revision):
+        self.revision = revision
+
+    def __getattr__(self, attr):
+        if attr == "id":
+            return self.revision.logbook.id
+        if attr == "revision_n":
+            return list(self.revision.logbook.revisions).index(self.revision)
+
+        if attr in ("name", "description", "template", "attributes",
+                    "archived", "parent_id"):
+            return getattr(self.revision, attr)
+
+        return getattr(self.revision.logbook, attr)
 
 
 DeferredEntry = DeferredRelation()
@@ -174,7 +238,11 @@ def strip_tags(html):
     return s.get_data()
 
 
-class Entry(db.Model):
+class Entry(Model):
+
+    class Meta:
+        database = db
+        order_by = ("created_at",)
 
     logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField(null=True)
@@ -187,9 +255,6 @@ class Entry(db.Model):
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
     archived = BooleanField(default=False)
-
-    class Meta:
-        order_by = ("created_at",)
 
     class Locked(Exception):
         pass
@@ -245,28 +310,23 @@ class Entry(db.Model):
             for attr, value in data.items()
             if hasattr(self, attr) and getattr(self, attr) != value
         }
-        change = EntryRevision(entry=self, **original_values)
+        revision = EntryRevision(entry=self, changed=original_values)
         for attr in original_values:
             value = data[attr]
             setattr(self, attr, value)
-        self.last_changed_at = change.timestamp
-        return change
+        self.last_changed_at = revision.timestamp
+        return revision
 
     @property
     def revision_n(self):
-        return (EntryRevision.select()
-                .where(EntryRevision.entry == self)
-                .count())
+        return len(self.revisions)
 
     def get_revision(self, version):
-        revision = (EntryRevision.select()
-                    .where(EntryRevision.entry == self)
-                    .order_by(EntryRevision.id)
-                    .offset(version or None)
-                    .limit(1))
-        if revision.count() == 0:
-            raise(EntryRevision.DoesNotExist)
-        return EntryRevisionWrapper(list(revision)[0])
+        if version == self.revision_n:
+            return self
+        if 0 <= version < self.revision_n:
+            return EntryRevisionWrapper(self.revisions[version])
+        raise(EntryRevision.DoesNotExist)
 
     # def get_old_version(self, revision_id):
     #     revisions = (EntryRevision.select()
@@ -453,7 +513,8 @@ WHERE 1
 DeferredEntry.set_model(Entry)
 
 
-class EntryRevision(db.Model):
+class EntryRevision(Model):
+
     """
     Represents a change of an entry.
 
@@ -463,86 +524,42 @@ class EntryRevision(db.Model):
     time to reconstruct an old entry.
     """
 
+    class Meta:
+        database = db
+
     entry = ForeignKeyField(Entry, related_name="revisions")
-    logbook = ForeignKeyField(Logbook, null=True)
-    title = CharField(null=True)
-    authors = JSONField(null=True)
-    content = TextField(null=True)
-    metadata = JSONField(null=True)
-    attributes = JSONField(null=True)
-    follows_id = IntegerField(null=True)
-    tags = JSONField(null=True)
-    archived = BooleanField(default=False)
+
+    changed = JSONField()
 
     timestamp = DateTimeField(default=datetime.utcnow)
     revision_authors = JSONField(null=True)
     revision_comment = TextField(null=True)
     revision_ip = CharField(null=True)
 
-    def get_attribute(self, attr):
-        """Get the value that we were changing to, or the
-        current value if it was not changed."""
+    def __getattr__(self, attr):
+
+        """Get the value of the attribute at the time of this revision.
+        That is, *before* the change happened."""
+
+        # First check if the attribute was changed in this revision,
+        # in that case we return that.
+        if attr in self.changed:
+            return self.changed[attr]
+        # Otherwise, check for the next revision where this attribute
+        # changed; the value from there must be the current value
+        # at this revision.
         try:
             revision = (EntryRevision.select()
                         .where((EntryRevision.entry == self.entry) &
-                               (getattr(EntryRevision, attr) != None) &
+                               (EntryRevision.changed.extract(attr) != None) &
                                (EntryRevision.id > self.id))
                         .order_by(EntryRevision.id)
                         .get())
-            return getattr(revision, attr)
+            return revision.changed[attr]
         except DoesNotExist:
+            # No later revisions changed the attribute either, so we can just
+            # take the value from the current logbook
             return getattr(self.entry, attr)
-
-    @property
-    def content_htmldiff(self):
-        if self.content:
-            new_content = self.get_attribute("content")
-            return htmldiff(self.content, new_content)
-        return self.get_attribute("content")
-
-    # @property
-    # def current_authors(self):
-    #     if self.authors:
-    #         return self.authors
-    #     return self.get_attribute("authors")
-
-    # @property
-    # def current_title(self):
-    #     if self.title:
-    #         return self.title
-    #     return self.get_attribute("title")
-
-    # @property
-    # def current_content(self):
-    #     if self.content:
-    #         return self.content
-    #     return self.get_attribute("content")
-
-    # @property
-    # def new_title(self):
-    #     return self.get_attribute("title")
-
-    # @property
-    # def new_authors(self):
-    #     return self.get_attribute("authors")
-
-    @property
-    def prev_version(self):
-        index = list(self.entry.revisions).index(self)
-        if index > 0:
-            return index - 1
-
-    @property
-    def next_version(self):
-        revisions = list(self.entry.revisions)
-        index = revisions.index(self)
-        if index < (len(revisions) - 1):
-            return index + 1
-
-    @property
-    def revision_n(self):
-        revisions = list(self.entry.revisions)
-        return revisions.index(self)
 
 
 class EntryRevisionWrapper:
@@ -556,22 +573,15 @@ class EntryRevisionWrapper:
     def __getattr__(self, attr):
         if attr == "id":
             return self.revision.entry.id
-        if attr == "last_changed_at":
-            return self.revision.timestamp
-        # OK, for any of the other entry attributes we want the
-        # new value, not the value in the revision which is the old value.
+        if attr == "revision_n":
+            return list(self.revision.entry.revisions).index(self.revision)
         if attr in ("logbook", "title", "authors", "content", "attributes",
                     "metadata", "follows_id", "tags", "archived"):
-            value = self.revision.get_attribute(attr)
-            if value is not None:
-                return getattr(self.revision, attr)
-        try:
             return getattr(self.revision, attr)
-        except AttributeError:
-            return getattr(self.revision.entry, attr)
+        return getattr(self.revision.entry, attr)
 
 
-class EntryLock(db.Model):
+class EntryLock(Model):
     """Contains temporary edit locks, to prevent overwriting changes.
     An entry can not have more than one lock active at any given time.
 
@@ -606,6 +616,10 @@ class EntryLock(db.Model):
     each others changes *by mistake*, not to make it impossible.
 
     """
+
+    class Meta:
+        database = db
+
     entry = ForeignKeyField(Entry)
     created_at = DateTimeField(default=datetime.utcnow)
     expires_at = DateTimeField(default=(lambda: datetime.utcnow() +
@@ -624,11 +638,16 @@ class EntryLock(db.Model):
         self.save()
 
 
-class Attachment(db.Model):
+class Attachment(Model):
     """Store information about an attachment, e.g. an arbitrary file
     associated with an entry. The file itself is not stored in the
     database though, only a path to where it's expected to be.
     """
+
+    class Meta:
+        database = db
+        order_by = ("id",)
+
     entry = ForeignKeyField(Entry, null=True, related_name="attachments")
     filename = CharField(null=True)
     timestamp = DateTimeField(default=datetime.utcnow)
@@ -637,6 +656,3 @@ class Attachment(db.Model):
     embedded = BooleanField(default=False)  # i.e. an image in the content
     metadata = JSONField(null=True)  # may contain image size, etc
     archived = BooleanField(default=False)
-
-    class Meta:
-        order_by = ("id",)
