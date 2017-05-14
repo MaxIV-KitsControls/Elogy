@@ -101,6 +101,7 @@ class LogbookTree extends React.Component {
     }
 
     reload () {
+        console.log("reload logbook tree");
         this.fetch(this.props.location.search);
     }
     
@@ -141,7 +142,7 @@ class LogbookTree extends React.Component {
                             : null
                         }
 
-                        <Link to={`/logbooks/${parentId}/new`}>
+                        <Link to={`${parentUrl}new`}>
                             New
                         </Link>
                     </div>

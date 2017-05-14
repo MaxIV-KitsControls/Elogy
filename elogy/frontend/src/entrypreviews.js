@@ -36,7 +36,8 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                             `, (+${entry.authors.length-2})` :
                             null;
     const followups = entry.n_followups > 0?
-                      <div className="followups">{ entry.n_followups }</div> :
+                      <div className="followups"><span className="fa fa-reply"/>
+                          { entry.n_followups }</div> :
                       null;
 
     return (

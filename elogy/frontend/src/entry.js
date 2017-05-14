@@ -40,14 +40,17 @@ class InnerEntry extends React.Component {
                           : null;
         const followupNumber = this.props.followupNumber !== undefined ?
                                <span className="followup-number">
+                                   <span className="fa fa-reply"/>
+                                   &nbsp;                                   
                                    {this.props.followupNumber + 1}
+                                   &nbsp;&nbsp;
                                </span> :
                                null;
         const lastChangedAt = this.props.last_changed_at?
                               <span className="last-changed-at">
-                             &nbsp;
-        <i className="fa fa-pencil"/>
-        {formatDateTimeString(this.props.last_changed_at)}
+                                  &nbsp;&nbsp;
+                                  <i className="fa fa-pencil"/>&nbsp;
+                                  {formatDateTimeString(this.props.last_changed_at)}
                               </span>
                              :null;
         const authors = this.props.authors.map((author, i) =>
@@ -75,10 +78,6 @@ class InnerEntry extends React.Component {
                         <div className="commands">
                             <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}>
                                 Link
-                            </Link>
-            &nbsp;|&nbsp;
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/new`}>
-                                Followup
                             </Link>
                             &nbsp;|&nbsp;
                             <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}>
@@ -177,6 +176,11 @@ class Entry extends React.Component {
                         &nbsp;|&nbsp;
                         <Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}>Next</Link>
                         &nbsp;&nbsp;
+
+                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}>
+                            Followup
+                        </Link>                        
+                        &nbsp;|&nbsp;
                         <Link to={`/logbooks/${logbook.id}/entries/new`}>New Entry</Link>
                         
                         </span>    
@@ -200,7 +204,7 @@ class Entry extends React.Component {
                         <InnerEntry {...this.state}
                                     scrollToEntry={this.scrollToEntry.bind(this)}
                                     currentEntryId={parseInt(this.props.match.params.entryId)}/>
-                                   
+                        
                     </div>
                 </div>
             </div>

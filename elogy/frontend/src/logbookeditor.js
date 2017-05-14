@@ -177,7 +177,8 @@ class LogbookEditor extends React.Component {
     
     onSubmit (history) {
         this.submitted = true;
-        if (this.state.id) {
+        if (this.props.match.params.logbookId &&
+            this.props.match.params.command === "edit") {
             // editing an existing logbook
             fetch(
                 `/api/logbooks/${this.state.id}/`, {
@@ -187,7 +188,7 @@ class LogbookEditor extends React.Component {
                     },                                            
                     body: JSON.stringify({
                         id: this.state.id,
-                        parent: this.state.parent.id,
+                        parent: this.state.parent? this.state.parent.id : null, 
                         name: this.state.newName || this.state.name,
                         description: this.state.description,
                         attributes: this.state.attributes,
@@ -204,14 +205,18 @@ class LogbookEditor extends React.Component {
                 });
         } else {
             // creating a new logbook
+            // either as a new toplevel, or as a child of the given logbook
+            const url = this.props.match.params.logbookId?
+                        `/api/logbooks/${this.props.match.params.logbookId}/` :
+                        "/api/logbooks/";
             fetch(
-                `/api/logbooks/`, {
+                url, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
                     },                    
                     body: JSON.stringify({
-                        parent: this.state.parent.id,
+                        parent: this.state.parent? this.state.parent.id : null,
                         name: this.state.newName || this.state.name,
                         description: this.state.newDescription || this.state.description,
                         attributes: this.state.attributes,
@@ -220,9 +225,10 @@ class LogbookEditor extends React.Component {
                     })
                 })
                 .then(result => result.json())
-                .then(result => history.push({
-                    pathname: `/logbooks/${result.id}`
-                }));
+                .then(result => {
+                    history.push({pathname: `/logbooks/${result.id}`});
+                    this.props.eventbus.publish("logbook.reload", this.state.id);
+                });
         }
     }
     
@@ -265,9 +271,9 @@ class LogbookEditor extends React.Component {
                 
                 <header>
                     {this.props.match.params.command == "edit"?
-                     `Editing logbook ${this.state.parent.name || ""}/${this.state.name}`:
-                     `New logbook in "${this.state.parent.name}"`}
-                    {this.state.parent.id}
+                     `Editing logbook ${this.state.parent && this.state.parent.name || ""}/${this.state.name}`:
+                     `New logbook in "${this.state.logbook? this.state.logbook.name : ''}"`}
+
                 </header>
                 
                 <form>
