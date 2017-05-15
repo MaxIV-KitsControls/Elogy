@@ -39,7 +39,8 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                       <div className="followups"><span className="fa fa-reply"/>
                           { entry.n_followups }</div> :
                       null;
-
+    const edited = entry.last_changed_at? <i className="fa fa-pencil"/> : null;
+    
     return (
         <div key={entry.id} className="entry">
             <Link to={url}>
@@ -47,7 +48,7 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                 { logbookName }
                 <div className="info">
                     <span className="timestamp">
-                        <i className="fa fa-clock-o"/> { timestamp }
+                        <i className="fa fa-clock-o"/> { edited } { timestamp }
                     </span>
                     <span className="authors">
                         <i className="fa fa-user"/> { authors }{ authorsEllipsis }

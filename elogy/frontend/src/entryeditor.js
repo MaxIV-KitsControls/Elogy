@@ -89,283 +89,6 @@ class EntryAttributeEditor extends React.Component {
 }
 
 
-class _EntryEditor extends React.Component {
-
-    constructor (props) {
-        super(props);
-        this.state = {
-            submitted: false,
-            id: null,
-            logbook: {},
-            title: "",
-            authors: [],
-            attributes: {},
-            attachments: [],
-            content: null
-        }
-    }
-
-    fetchEntry (logbookId, entryId, fill) {
-        fetch(`/api/logbooks/${logbookId}/entries/${entryId}/`,
-              {headers: {"Accept": "application/json"}})
-            .then(response => response.json())
-            .then(json => {
-                this.setState({entry: json});
-                console.log("json", json);
-                if (fill) this.setState(json);
-            });
-    }
-
-    fetchLogbook (logbookId) {
-        fetch(`/api/logbooks/${logbookId}/`,
-              {headers: {"Accept": "application/json"}})
-            .then(response => response.json())
-            .then(json => this.setState({logbook: json}));        
-    }
-    
-    componentWillMount () {
-        if (this.props.match.params.entryId) {
-            if (this.props.match.params.command === "edit") {
-                // editing an entry
-                this.fetchEntry(this.props.match.params.logbookId,
-                                this.props.match.params.entryId, true);
-            } else {
-                // creating a followup to an entry
-                this.fetchEntry(this.props.match.params.logbookId,
-                                this.props.match.params.entryId, false);                
-                this.setState({follows: parseInt(this.props.match.params.entryId)});
-                this.fetchLogbook(this.props.match.params.logbookId);
-            }
-        } else {
-            // creating a new entry
-            this.fetchLogbook(this.props.match.params.logbookId);
-        }
-    }
-
-    onTitleChange (event) {
-        this.setState({title: event.target.value});
-    }
-
-    fetchUserSuggestions (input) {
-        return fetch(`/api/users/`, 
-                     {
-                         headers: {"Accept": "application/json"}
-                     })
-            .then(response => response.json())
-            .then(response => {return {
-                options: (this.state.authors
-                              .concat(response.users)),
-                complete: false
-            }});
-    }
-    
-    onAuthorsChange (newAuthors) {
-        this.setState({authors: newAuthors});
-    }
-
-    onAttributeChange (name, value) {
-        console.log("onAttributeChange", name, value);
-        this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
-    }
-    
-    onContentChange (event) {
-        this.setState({content: event.target.getContent()});
-    }
-
-    onAddAttachment (acceptedFiles, rejectedFiles) {
-        console.log("drop", acceptedFiles, rejectedFiles);
-        this.setState(update({newAttachments: {$push: acceptedFiles}}))
-    }
-
-    hasEdits () {
-        const original = this.state.entry || {};
-        return (!this.submitted &&
-                (this.state.title != original.title ||
-                 this.state.content != original.content ||
-                 this.state.authors != original.authors));
-    }
-
-    getPromptMessage () {
-        /* This is a little confusing, but the <Prompt> component will
-           only show a prompt if this function returns a message. */        
-        if (this.hasEdits())
-            return "Looks like you have made some edits. If you leave, you will lose those...";
-    }
-    
-    onSubmit(history) {
-        this.submitted = true;
-        if (this.state.id > 0) {
-            // we're editing an existing entry
-            fetch(`/api/logbooks/${this.state.logbook.id}/entries/${this.state.id}/`, 
-                  {
-                      method: "PUT",
-                      headers: {
-                          'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({
-                          id: this.state.id,
-                          follows: this.state.follows,
-                          title: this.state.title,
-                          authors: this.state.authors,
-                          content: this.state.content || this.state.logbook.template,
-                          attributes: this.state.attributes,
-                          revision_n: this.state.revision_n
-                      })
-                  })
-                .then(response => response.json())
-            // TODO: handle errors 
-                .then(response => {
-                    this.props.eventbus.publish("logbook.reload",
-                                                this.state.logbook.id);
-                    history.push({
-                        // send the browser to the entry
-                        pathname: `/logbooks/${this.state.logbook.id}/entries/${this.state.id}`
-
-                    });
-                    
-                });
-        } else {
-            // we're creating a new entry
-            const followupTo = (this.props.match.params.entryId?
-                                parseInt(this.props.match.params.entryId)
-                              : null);
-            const url = followupTo?
-                        `/api/logbooks/${this.state.logbook.id}/entries/${followupTo}/` :
-                        `/api/logbooks/${this.state.logbook.id}/entries/`;
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    title: this.state.title,
-                    authors: this.state.authors,
-                    content: this.state.content || this.state.logbook.template,
-                    attributes: this.state.attributes
-                })
-            })
-                .then(response => response.json())
-            // TODO: handle errors 
-                .then(response => {
-                    history.push({
-                        pathname: `/logbooks/${this.state.logbook.id}/entries/${response.id}`,
-                        state: {
-                            entrySubmitted: true
-                        }
-                    });
-                    this.props.eventbus.publish("logbook.reload",
-                                                this.state.logbook.id);
-                });
-        }
-    }
-
-    renderInner ({history}) {
-
-        // we need the router 'history' object injected here so that
-        // we can automatically send the browser to the entry after submitting.
-
-        let title, titleInput;
-        if (this.props.match.params.command == "edit") {
-            title = <span className="title">
-                Editing "<span className="entry">{this.state.entry && this.state.entry.title}</span>" in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}</span>
-            </span>
-            titleInput = <input type="text" placeholder="title"
-                                value={this.state.title} required={true}
-                                onChange={this.onTitleChange.bind(this)}/>
-        } else {
-            if (this.state.entry) {
-                title = <span className="title">
-                    Followup to "{this.state.entry && this.state.entry.title || "..."}" in  <span className="logbook"> <i className="fa fa-book"/>{this.state.logbook.name}</span>
-                </span>;
-                titleInput = null;
-            } else {
-                title = <span className="title">
-                    New entry in <span className="logbook"> <i className="fa fa-book"/>{this.state.logbook.name}</span>
-                </span>
-                titleInput = <input type="text" placeholder="title"
-                                    value={this.state.title} required={true}
-                                    onChange={this.onTitleChange.bind(this)}/>
-            }
-        }
-        
-        const attributes = this.state.logbook.attributes?
-                           this.state.logbook.attributes
-                               .map((attr, i) => (
-                                   <span key={i}>
-                                       <label>
-                                           {attr.name}
-                                           <EntryAttributeEditor
-                                               config={attr} 
-                                               onChange={this.onAttributeChange.bind(this)}
-                                               value={this.state.attributes[attr.name]}/>
-                                       </label>
-                                   </span>
-                               ))
-                         : null;
-
-        const cancel = this.state.entry?
-                       <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}`}>
-                           Cancel
-                       </Link> :
-                       <Link to={`/logbooks/${this.state.logbook.id}/`}>
-                           Cancel
-                       </Link>;
-        
-        return (
-            <div id="entryeditor">
-
-                <Prompt message={this.getPromptMessage.bind(this)}/>
-                
-                <header>
-                    { title }
-                    { titleInput }
-                    <Async
-                        name="authors" placeholder="Authors"
-                        valueRenderer={o => o.name}
-                        multi={true} value={this.state.authors}
-                        optionRenderer={o => `${o.login} [${o.name}]`}
-                        valueKey="login" labelKey="name"
-                        options={this.state.authors}
-                        loadOptions={this.fetchUserSuggestions.bind(this)}
-                        onChange={this.onAuthorsChange.bind(this)}
-                    />
-                    
-                    <div className="attributes">
-                        {attributes}
-                    </div>
-                    
-                </header>
-                <div className="content">
-                    <TinyMCEInput
-                        value={this.state.content || this.state.logbook && this.state.logbook.template || ""}
-                        tinymceConfig={ TINYMCE_CONFIG }
-                        onBlur={this.onContentChange.bind(this)}/>
-                </div>
-                <footer>
-                    <Dropzone onDrop={this.onAddAttachment.bind(this)}
-                              className="attachments-drop">
-                        Attachments
-                        <EntryAttachments attachments={this.state.attachments}/>
-                    </Dropzone>
-                    
-                    <button onClick={this.onSubmit.bind(this, history)}>
-                        Submit
-                    </button>
-                    <div className="commands">
-                        { cancel }
-                    </div>
-                </footer>
-            </div>
-        );
-    }
-
-    render () {
-        return <Route render={this.renderInner.bind(this)}/>;
-    }
-    
-}
-
-
 class EntryEditorBase extends React.Component {
 
     constructor (props) {
@@ -433,7 +156,7 @@ class EntryEditorBase extends React.Component {
         console.log("set content", event.target.getContent());
         this.setState({content: event.target.getContent()});
     }
-
+    
     onAddAttachment (acceptedFiles, rejectedFiles) {
         console.log("drop", acceptedFiles, rejectedFiles);
         this.setState(update({newAttachments: {$push: acceptedFiles}}))
@@ -559,10 +282,11 @@ class EntryEditorNew extends EntryEditorBase {
             .then(response => response.json())
         // TODO: handle errors 
             .then(response => {
+                // signal other parts of the app that the logbook needs refreshing
+                this.props.eventbus.publish("logbook.reload",
+                                            this.state.logbook.id);
                 // send the browser to view the new entry
                 history.push(`/logbooks/${this.state.logbook.id}/entries/${response.id}`);
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload", this.state.logbook.id);
             });
     }
     
@@ -634,10 +358,11 @@ class EntryEditorFollowup extends EntryEditorBase {
             .then(response => response.json())
         // TODO: handle errors 
             .then(response => {
+                // signal other parts of the app that the logbook needs refreshing
+                this.props.eventbus.publish("logbook.reload",
+                                            this.state.logbook.id);
                 // send the browser to view the new entry
                 history.push(`/logbooks/${this.state.logbook.id}/entries/${response.id}`);
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload", this.state.logbook.id);
             });
     }
     
@@ -714,10 +439,11 @@ class EntryEditorEdit extends EntryEditorBase {
             .then(response => response.json())
         // TODO: handle errors 
             .then(response => {
+                // signal other parts of the app that the logbook needs refreshing
+                this.props.eventbus.publish("logbook.reload",
+                                            this.state.logbook.id);
                 // send the browser to view the new entry
                 history.push(`/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`);
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload", this.state.logbook.id);
             });
     }
     
@@ -725,7 +451,7 @@ class EntryEditorEdit extends EntryEditorBase {
         
         if (!(this.state.logbook && this.state.entry))
             return <div>Loading...</div>;
-        
+
         return (
             <div id="entryeditor">
 
