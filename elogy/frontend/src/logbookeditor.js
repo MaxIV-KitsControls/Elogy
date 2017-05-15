@@ -291,8 +291,6 @@ class LogbookEditor extends React.Component {
                     </fieldset>
                     <fieldset className="template">
                         <legend>Template</legend>
-                        This will be used as initial content for all new
-                        entries in this logbook.
                         <TinyMCEInput
                             value={this.state.template || ""}
                             tinymceConfig={ TINYMCE_CONFIG }
