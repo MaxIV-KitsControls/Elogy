@@ -1,13 +1,42 @@
 import pwd
 import grp
 
-from flask import jsonify
+from flask import current_app
 from flask_restful import Resource, marshal_with, reqparse
+try:
+    import ldap
+except ImportError:
+    ldap = None
+
+from . import fields
 
 
 users_parser = reqparse.RequestParser()
 users_parser.add_argument("search", type=str, default="")
 users_parser.add_argument("groups", type=str, default="")
+
+
+def search_ldap(server, basedn, search):
+    l = ldap.open(server)
+
+    # approximate match against login OR full name
+    search_user = "(|(uid~={search}*)(cn~={search}))".format(search=search)
+
+    ldap_attributes = ["uid", "cn", "mail"]
+    attributes = ["login", "name", "email"]
+    resid = l.search(basedn, ldap.SCOPE_SUBTREE, search_user,
+                     ldap_attributes)
+
+    results = []
+    while True:
+        result_type, result_data = l.result(resid, 0)
+        if (result_data == []):
+            break
+        else:
+            if result_type == ldap.RES_SEARCH_ENTRY:
+                results.append(dict(zip(attributes, result_data)))
+    l.unbind_s()  # disconnect
+    return results
 
 
 class GroupDoesNotExist(Exception):
@@ -27,9 +56,19 @@ class UsersResource(Resource):
     groups: a list of group names to restrict the search to.
     """
 
+    @marshal_with(fields.user, envelope="users")
     def get(self):
+
         args = users_parser.parse_args()
         search = args.get("search", "")
+
+        # if LDAP is configured, let's check that
+        LDAP_SERVER = current_app.config.get("LDAP_SERVER")
+        LDAP_BASEDN = current_app.config.get("LDAP_BASEDN")
+        if LDAP_SERVER and LDAP_BASEDN:
+            return search_ldap(LDAP_SERVER, LDAP_BASEDN, search)
+
+        # otherwise check for local users
         groups = args.get("groups", [])
         if groups:
             groups = groups.split(",")
@@ -52,4 +91,4 @@ class UsersResource(Resource):
                 candidates.append({
                     "login": u.pw_name, "name": full_name
                 })
-        return jsonify(users=candidates)
+        return candidates

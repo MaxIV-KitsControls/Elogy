@@ -248,3 +248,10 @@ entries = {
     "entries": fields.List(fields.Nested(short_entry)),
     "count": fields.Integer
 }
+
+
+user = {
+    "login": fields.String,
+    "name": fields.String,
+    "email": fields.String
+}
