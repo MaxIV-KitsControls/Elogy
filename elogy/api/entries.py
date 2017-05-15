@@ -36,25 +36,24 @@ class EntryResource(Resource):
     @marshal_with(fields.entry_full)
     def get(self, entry_id, logbook_id=None, revision_n=None):
         parser = reqparse.RequestParser()
-        parser.add_argument("acquire_lock", type=bool)
+        parser.add_argument("thread", type=bool)
         args = parser.parse_args()
         entry = Entry.get(Entry.id == entry_id)
-        try:
-            ip = request.remote_addr
-            lock = entry.get_lock(ip=ip, acquire=args.get("acquire_lock"))
-        except Entry.Locked:
-            # a lock is held by someone else
-            return entry._thread
         if revision_n is not None:
             return entry.get_revision(revision_n)
-        return entry._thread
+        if args.thread:
+            return entry._thread
+        return entry
 
     @marshal_with(fields.entry_full)
-    def post(self, logbook_id):
+    def post(self, logbook_id, entry_id=None):
         "new entry"
         logbook = Logbook.get(Logbook.id == logbook_id)
         data = entry_parser.parse_args()
         # TODO: clean up
+        if entry_id is not None:
+            # In this case, we're creating a followup to an existing entry
+            data["follows"] = entry_id
         if "created_at" in data:
             data["created_at"] = get_utc_datetime(data["created_at"])
         else:
