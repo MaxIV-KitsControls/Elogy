@@ -80,10 +80,15 @@
     margin: 0 2px;
 }
 
+#entry .info .attributes .attribute .name:after {
+    content: ": ";
+}
+
 #entry .info .attributes .attribute .value {
     background: #666;
     color: white;
-    padding: 0 4px;
+    padding: 2px 6px;
+    border-radius: 10px;
 }
 
 #entry .info .attributes .attribute .value span.option:not(:last-child):after {

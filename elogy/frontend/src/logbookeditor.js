@@ -226,8 +226,8 @@ class LogbookEditor extends React.Component {
                 })
                 .then(result => result.json())
                 .then(result => {
-                    history.push({pathname: `/logbooks/${result.id}`});
                     this.props.eventbus.publish("logbook.reload", this.state.id);
+                    history.push({pathname: `/logbooks/${result.id}`});
                 });
         }
     }

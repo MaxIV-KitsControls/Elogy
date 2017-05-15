@@ -3,7 +3,7 @@ import React from "react";
 
 const EntryAttribute = ({config, value}) => (
     <span className="attribute">
-        <span className="name">{config.name}:</span>
+        <span className="name">{config.name}</span>
         <span className="value">
             {
                 // TODO: Let's say an attribute is reconfigured in the logbook
