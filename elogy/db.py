@@ -284,8 +284,9 @@ class Entry(Model):
             return (Entry.select()
                     .where((Entry.logbook == self.logbook) &
                            (Entry.follows == None) &
-                           (Entry.created_at > self.created_at))
-                    .order_by(Entry.created_at)
+                           (fn.coalesce(Entry.last_changed_at, Entry.created_at)
+                            > fn.coalesce(self.last_changed_at, self.created_at)))
+                    .order_by(fn.coalesce(Entry.last_changed_at, Entry.created_at))
                     .get())
         except DoesNotExist:
             pass
@@ -297,8 +298,10 @@ class Entry(Model):
             return (Entry.select()
                     .where((Entry.logbook == self.logbook) &
                            (Entry.follows == None) &
-                       (Entry.created_at < self.created_at))
-                    .order_by(Entry.created_at.desc())
+                           (fn.coalesce(Entry.last_changed_at, Entry.created_at)
+                            < fn.coalesce(self.last_changed_at, self.created_at)))
+                    .order_by(fn.coalesce(Entry.last_changed_at,
+                                          Entry.created_at).desc())
                     .get())
         except DoesNotExist:
             pass
@@ -506,7 +509,6 @@ WHERE 1
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        print(query)
         return Entry.raw(query)
 
 

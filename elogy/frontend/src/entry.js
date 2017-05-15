@@ -10,6 +10,7 @@ import EntryAttributes from "./entryattributes.js";
 import EntryAttachments from "./entryattachments.js";
 
 
+
 // An "entry" may have "followup" entries attached, and so on, so in
 // practice we may display a whole tree of related entries here.
 export class InnerEntry extends React.Component {
@@ -24,19 +25,22 @@ export class InnerEntry extends React.Component {
         const logbook = this.props.logbook;
         const followups = this.props.followups ?
                           this.props.followups.map(
-                              (followup, i) => <InnerEntry
-                                                   key={followup.id}
-                                                   className="followupd"
-                                                   followupNumber={i}
-                                                   logbook={this.props.logbook}
-                                                   scrollToEntry={this.props.scrollToEntry}
-                                                   currentEntryId={this.props.currentEntryId}
-                                                   {...followup}/>) :
+                              (followup, i) => (
+                                  <InnerEntry
+                                      key={followup.id}
+                                      className="followupd"
+                                      followupNumber={i}
+                                      logbook={this.props.logbook}
+                                      scrollToEntry={this.props.scrollToEntry}
+                                      currentEntryId={this.props.currentEntryId}
+                                      {...followup}/>)) :
                           null;
 
-        const nonEmbeddedAttachments = this.props.attachments.filter(a => !a.embedded);
+        const nonEmbeddedAttachments = this.props.attachments
+                                           .filter(a => !a.embedded);
         const attachments = nonEmbeddedAttachments.length > 0?
-                            <EntryAttachments attachments={nonEmbeddedAttachments}/>
+                            <EntryAttachments
+                                attachments={nonEmbeddedAttachments}/>
                           : null;
         const followupNumber = this.props.followupNumber !== undefined ?
                                <span className="followup-number">
@@ -156,6 +160,16 @@ class Entry extends React.Component {
         }
 
         const logbook = this.state.logbook;
+        const nextLink = this.state.next?
+                         (<Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}>
+                             Next
+                         </Link>) :
+                         "Next";
+        const prevLink = this.state.previous?
+                         (<Link to={`/logbooks/${logbook.id}/entries/${this.state.previous}`}>
+                             Prev
+                         </Link>) :
+                         "Prev";
         
         return (
             <div className="container">
@@ -163,24 +177,22 @@ class Entry extends React.Component {
                 {/* The header will always stay at the top */}
                 <header>
                     {
-                        this.state.logbook?
-                        <span className="commands">
+                    this.state.logbook?
+                    <span className="commands">
 
-                            {
-                                this.state.follows?
-                                <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}>Parent</Link>
-                                : null
-                            }
-                            
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.state.previous}`}>Prev</Link>
-                        &nbsp;|&nbsp;
-                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}>Next</Link>
-                        &nbsp;&nbsp;
+                        {
+                        this.state.follows?
+                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}>Parent</Link>
+                        : null
+                        }
+                        
+                        { prevLink } | { nextLink } &nbsp;
 
+                        
                         <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}>
-                            Followup
+                            <i className="fa fa-reply"/> Followup
                         </Link>                        
-                        &nbsp;|&nbsp;
+            &nbsp;|&nbsp;
                         <Link to={`/logbooks/${logbook.id}/entries/new`}>New Entry</Link>
                         
                         </span>    
