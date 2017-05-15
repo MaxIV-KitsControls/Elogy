@@ -7,7 +7,7 @@ from . import fields
 
 
 logbooks_parser = reqparse.RequestParser()
-logbooks_parser.add_argument("parent", type=int)
+logbooks_parser.add_argument("parent_id", type=int)
 logbooks_parser.add_argument("name", type=str, required=True)
 logbooks_parser.add_argument("description", type=str)
 logbooks_parser.add_argument("template", type=str)
@@ -59,7 +59,7 @@ class LogbooksResource(Resource):
         "Update an existing logbook"
         logbook = Logbook.get(Logbook.id == logbook_id)
         args = logbooks_parser.parse_args()
-        logbook.make_change(args)
+        logbook.make_change(**args).save()
         logbook.save()
         return logbook
 

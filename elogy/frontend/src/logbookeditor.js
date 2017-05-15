@@ -188,7 +188,7 @@ class LogbookEditor extends React.Component {
                     },                                            
                     body: JSON.stringify({
                         id: this.state.id,
-                        parent: this.state.parent? this.state.parent.id : null, 
+                        parent_id: this.state.parent? this.state.parent.id : null,                        
                         name: this.state.newName || this.state.name,
                         description: this.state.description,
                         attributes: this.state.attributes,
@@ -216,7 +216,7 @@ class LogbookEditor extends React.Component {
                         'Content-Type': 'application/json'
                     },                    
                     body: JSON.stringify({
-                        parent: this.state.parent? this.state.parent.id : null,
+                        parent_id: this.state.parent? this.state.parent.id : null,
                         name: this.state.newName || this.state.name,
                         description: this.state.newDescription || this.state.description,
                         attributes: this.state.attributes,

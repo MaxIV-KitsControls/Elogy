@@ -275,8 +275,11 @@ class EntryEditorNew extends EntryEditorBase {
             body: JSON.stringify({
                 title: this.state.title,
                 authors: this.state.authors,
-                content: this.state.content || this.state.logbook.template,
-                attributes: this.state.attributes
+                content: this.state.content,
+                content_type: this.state.content_type,
+                attributes: this.state.attributes,
+                follows_id: this.state.follows,
+                archived: this.state.archived
             })
         })
             .then(response => response.json())
@@ -349,10 +352,12 @@ class EntryEditorFollowup extends EntryEditorBase {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                title: this.state.entry.title,
-                authors: this.state.authors || this.state.entry.authors,
-                content: this.state.content || this.state.logbook.template,
-                attributes: this.state.attributes
+                title: this.state.title,
+                authors: this.state.authors,
+                content: this.state.content,
+                content_type: this.state.content_type,
+                attributes: this.state.attributes,
+                archived: this.state.archived
             })
         })
             .then(response => response.json())
@@ -431,8 +436,11 @@ class EntryEditorEdit extends EntryEditorBase {
             body: JSON.stringify({
                 title: this.state.title,
                 authors: this.state.authors,
-                content: this.state.content, 
+                content: this.state.content,
+                content_type: this.state.content_type,
                 attributes: this.state.attributes,
+                follows_id: this.state.follows,
+                archived: this.state.archived,
                 revision_n: this.state.entry.revision_n  // must be included for edits!
             })
         })

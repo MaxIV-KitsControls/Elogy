@@ -22,7 +22,7 @@ entry_parser.add_argument("authors", type=dict, action="append",
                           store_missing=False)
 entry_parser.add_argument("created_at", type=str, store_missing=False)
 entry_parser.add_argument("last_changed_at", type=str, store_missing=False)
-entry_parser.add_argument("follows", type=int, store_missing=False)
+entry_parser.add_argument("follows_id", type=int, store_missing=False)
 entry_parser.add_argument("attributes", type=dict, location="json", default={})
 entry_parser.add_argument("archived", type=bool, default=False)
 entry_parser.add_argument("metadata", type=dict, location="json", default={})
