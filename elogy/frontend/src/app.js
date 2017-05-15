@@ -13,6 +13,7 @@ import LogbookTree from './logbooktree.js';
 import QuickSearch from './search.js';
 import SearchResults from './searchresults.js';
 import EventBus from './eventsystem.js';
+import {withProps} from './util.js';
 import './app.css';
 
 
@@ -21,12 +22,6 @@ import './app.css';
 // asking a component to reload. If we start using it for passing
 // data around we'd better switch to Redux or something.
 const eventbus = new EventBus();
-
-
-// "bind" the given properties statically to a component
-export function withProps (Comp, extraProps) {
-    return (props) => <Comp {...props} {...extraProps}/>;
-}
 
 
 const Elogy = () => (

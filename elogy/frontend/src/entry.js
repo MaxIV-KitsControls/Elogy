@@ -12,7 +12,7 @@ import EntryAttachments from "./entryattachments.js";
 
 // An "entry" may have "followup" entries attached, and so on, so in
 // practice we may display a whole tree of related entries here.
-class InnerEntry extends React.Component {
+export class InnerEntry extends React.Component {
 
     componentDidMount() {
         if (this.props.currentEntryId == this.props.id) 

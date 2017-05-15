@@ -4,6 +4,12 @@
     flex-direction: column;
 }
 
+#entryeditor .entry {
+    max-height: 30%;
+    overflow-y: auto;
+    border-bottom: 1px solid black;
+}
+
 #entryeditor header {
     padding: 5px;
     flex: 0;

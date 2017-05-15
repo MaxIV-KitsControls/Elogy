@@ -1,3 +1,4 @@
+import React from 'react';
 import {format} from 'date-fns';
 
 
@@ -32,4 +33,10 @@ export function formatTimeString(timestamp) {
 
 export function formatDateString(timestamp) {
     return format(new Date(Date.parse(timestamp)), "ddd MMM D YYYY");
+}
+
+
+// "bind" the given properties statically to a component
+export function withProps (Comp, extraProps) {
+    return (props) => <Comp {...props} {...extraProps}/>;
 }
