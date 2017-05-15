@@ -25,6 +25,7 @@ $ npm start
 ```
 It assumes that you've started the server on port 8000 (see below).
 
+
 Installation
 ============
 
@@ -35,24 +36,33 @@ To run with flask's built-in development server:
 $ python -m venv env
 $ env/bin/pip install -r requirements.txt
 $ env/bin/pip install -e .
-$ FLASK_APP=elogy ELOGY_CONFIG_FILE=$(pwd)/config.py env/bin/flask run -p 8000
+$ FLASK_APP=elogy.app ELOGY_CONFIG_FILE=$(pwd)/config.py env/bin/flask run -p 8000
 ```
 
 For actual deployment you probably want to run it with something else, such as:
 ```
-$ gunicorn -k gevent --threads 3 elogy:app
+$ gunicorn -k gevent --threads 3 elogy.app:app
 ```
 
 Also have a look in ```config.py``` for further settings.
 
 
+Testing
+=======
+
+There is a rudimentary test suite. Using `pytest`:
+
+```
+$ pytest test/
+```
+
 Features (present and planned)
 ==============================
 
 * Simple, useful GUI
-* JSON HTTP API
+* JSON HTTP API for all functionality
 * Stand-alone service (no external databases and stuff)
-* All changes are logged
+* Changes are logged (and reversible)
 * No user authentication
 * Search/filter on everything
 
@@ -74,7 +84,7 @@ Try to postpone performance optimizations until it's clear they are really neede
 Ideas
 =====
 
-* Push updates via SSE/websockets? This might replace the need for configurable actions, email etc.
+* Push updates via SSE/websockets? This might replace the need for configurable actions, email etc. How about RSS?
 * The ORM (peewee) supports other backends like postgres. Something to consider.
 * Text search in sqlite is quite limited. Maybe look into an embedded search engine like whoosh?
 * A basic mobile version would be neat!
