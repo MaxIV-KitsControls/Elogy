@@ -124,7 +124,46 @@ def test_update_entry(elogy_client):
     print("revisions", revisions)
 
 
-def test_update_conflict(elogy_client):
+def test_create_entry_followup(elogy_client):
+    in_logbook, logbook = make_logbook(elogy_client)
+    in_entry, entry = make_entry(elogy_client, logbook)
+
+    # make a followup to the entry. This is like a "reply", but the idea is
+    # that only immediate replies to a toplevel entry count as followups.
+    # It's possible to reply to a reply, but these will not show up e.g.
+    # in the list of entries (unless they specifically match a search).
+    in_followup = dict(
+        title="Test followup",
+        content="This is some followup test content!",
+        content_type="text/plain")
+    followup = decode_response(
+        elogy_client.post(
+            "/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
+            .format(logbook=logbook, entry=entry),
+            data=in_followup))
+
+    # get the followup directly
+    out_followup = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[id]}/entries/{followup[id]}/"
+                         .format(logbook=logbook, followup=followup)))
+    assert out_followup["id"] == followup["id"]
+
+    # read the parent entry back
+    out_entry = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
+                         .format(logbook=logbook, entry=entry)))
+
+    assert out_entry["followups"][0]["id"] == followup["id"]
+
+    # check that we get the parent when asking for the whole "thread"
+    out_thread = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[id]}/entries/{followup[id]}/"
+                         .format(logbook=logbook, followup=followup),
+                         data={"thread": True}))
+    assert out_thread["id"] == entry["id"]
+
+
+def test_update_entry_conflict(elogy_client):
     in_logbook, logbook = make_logbook(elogy_client)
     in_entry, entry = make_entry(elogy_client, logbook)
 
