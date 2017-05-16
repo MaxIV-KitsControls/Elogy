@@ -33,7 +33,7 @@ class EntryResource(Resource):
 
     "Handle requests for a single entry"
 
-    @marshal_with(fields.entry_full)
+    @marshal_with(fields.entry_full, envelope="entry")
     def get(self, entry_id, logbook_id=None, revision_n=None):
         parser = reqparse.RequestParser()
         parser.add_argument("thread", type=bool)
@@ -45,7 +45,7 @@ class EntryResource(Resource):
             return entry._thread
         return entry
 
-    @marshal_with(fields.entry_full)
+    @marshal_with(fields.entry_full, envelope="entry")
     def post(self, logbook_id, entry_id=None):
         "new entry"
         logbook = Logbook.get(Logbook.id == logbook_id)
@@ -89,7 +89,7 @@ class EntryResource(Resource):
             attachment.save()
         return entry
 
-    @marshal_with(fields.entry_full)
+    @marshal_with(fields.entry_full, envelope="entry")
     def put(self, entry_id, logbook_id=None):
         "update entry"
         args = entry_parser.parse_args()
@@ -192,7 +192,7 @@ class EntriesResource(Resource):
 
 class EntryLockResource(Resource):
 
-    @marshal_with(fields.entry_lock)
+    @marshal_with(fields.entry_lock, envelope="lock")
     def get(self, entry_id, logbook_id=None):
         "Check for a lock"
         entry = Entry.get(Entry.id == entry_id)
@@ -201,7 +201,7 @@ class EntryLockResource(Resource):
             return lock
         raise EntryLock.DoesNotExist
 
-    @marshal_with(fields.entry_lock)
+    @marshal_with(fields.entry_lock, envelope="lock")
     def post(self, entry_id, logbook_id=None):
         "Acquire (optionally stealing) a lock"
         parser = reqparse.RequestParser()
@@ -212,7 +212,7 @@ class EntryLockResource(Resource):
         return entry.get_lock(ip=request.remote_addr, acquire=True,
                               steal=args["steal"])
 
-    @marshal_with(fields.entry_lock)
+    @marshal_with(fields.entry_lock, envelope="lock")
     def delete(self, entry_id=None, logbook_id=None):
         "Cancel a lock"
         parser = reqparse.RequestParser()

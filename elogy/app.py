@@ -80,6 +80,7 @@ api.add_resource(UsersResource,
                  "/users/")
 
 api.add_resource(AttachmentsResource,
+                 "/logbooks/<int:logbook_id>/entries/<int:entry_id>/attachments/",
                  "/attachments/")
 
 

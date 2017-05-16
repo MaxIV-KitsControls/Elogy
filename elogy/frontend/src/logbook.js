@@ -53,6 +53,7 @@ class Logbook extends React.Component {
     }
     
     componentWillMount () {
+        console.log("dksoakodk")
         this.fetch(this.props.match.params.logbookId,
                    this.props.location.search,
                    this.state.attributeFilters);
@@ -64,6 +65,7 @@ class Logbook extends React.Component {
             this.props.match.params.logbookId ||
              newProps.location.search !== this.props.location.search) ||
             (newState.attributeFilters !== this.state.attributeFilters)) {
+            console.log("dsadksaokds")
             this.fetch(newProps.match.params.logbookId,
                        newProps.location.search,
                        newState.attributeFilters);

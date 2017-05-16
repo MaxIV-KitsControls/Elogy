@@ -22,7 +22,7 @@ class LogbooksResource(Resource):
 
     "Handle requests for logbooks"
 
-    @marshal_with(fields.logbook)
+    @marshal_with(fields.logbook, envelope="logbook")
     def get(self, logbook_id=None, revision_n=None):
 
         if logbook_id:
@@ -43,18 +43,24 @@ class LogbooksResource(Resource):
                     .where(Logbook.parent == None))
         return dict(children=children)
 
-    @marshal_with(fields.logbook)
+    @marshal_with(fields.logbook, envelope="logbook")
     def post(self, logbook_id=None):
         "Create a new logbook"
         args = logbooks_parser.parse_args()
-        logbook = dict_to_model(Logbook, args)
+        print(args, logbook_id)
+        logbook = Logbook(name=args["name"], parent=args["parent_id"],
+                          description=args["description"],
+                          template=args["template"],
+                          attributes=args["attributes"],
+                          metadata=args["metadata"],
+                          archived=args["archived"])
         if logbook_id is not None:
             parent = Logbook.get(Logbook.id == logbook_id)
             logbook.parent = parent
         logbook.save()
         return logbook
 
-    @marshal_with(fields.logbook)
+    @marshal_with(fields.logbook, envelope="logbook")
     def put(self, logbook_id):
         "Update an existing logbook"
         logbook = Logbook.get(Logbook.id == logbook_id)
@@ -69,4 +75,4 @@ class LogbookRevisionsResource(Resource):
     @marshal_with(fields.logbook_revisions)
     def get(self, logbook_id):
         logbook = Logbook.get(Logbook.id == logbook_id)
-        return {"revisions": logbook.revisions}
+        return {"logbook_revisions": logbook.revisions}

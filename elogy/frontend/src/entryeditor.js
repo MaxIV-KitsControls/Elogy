@@ -113,9 +113,9 @@ class EntryEditorBase extends React.Component {
             .then(response => response.json())
             .then(json => {
                 if (fill)
-                    this.setState({entry: json, ...json});
+                    this.setState({entry: json.entry, ...json.entry});
                 else
-                    this.setState({entry: json});
+                    this.setState(json);
             });
     }
 
@@ -123,7 +123,7 @@ class EntryEditorBase extends React.Component {
         fetch(`/api/logbooks/${logbookId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => this.setState({logbook: json}));        
+            .then(json => this.setState(json));        
     }
 
     onTitleChange (event) {
@@ -289,7 +289,7 @@ class EntryEditorNew extends EntryEditorBase {
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${response.id}`);
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${response.entry.id}`);
             });
     }
     
@@ -367,7 +367,7 @@ class EntryEditorFollowup extends EntryEditorBase {
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${response.id}`);
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${response.entry.id}`);
             });
     }
     

@@ -1,3 +1,5 @@
+import datetime
+
 from flask import jsonify, url_for
 from flask_restful import Resource, reqparse
 from werkzeug import FileStorage
@@ -7,7 +9,6 @@ from ..utils import get_utc_datetime
 
 
 attachments_parser = reqparse.RequestParser()
-attachments_parser.add_argument("entry_id", type=int, required=True)
 attachments_parser.add_argument(
     "attachment", type=FileStorage, action="append",
     location='files', required=True)
@@ -17,7 +18,7 @@ attachments_parser.add_argument("embedded", type=bool, default=False)
 
 class AttachmentsResource(Resource):
 
-    def post(self):
+    def post(self, logbook_id, entry_id):
         "Upload attachments to an entry"
         args = attachments_parser.parse_args()
         if args["timestamp"]:
@@ -26,7 +27,7 @@ class AttachmentsResource(Resource):
             timestamp = datetime.utcnow()
         for attachment in args["attachment"]:
             attachment = save_attachment(attachment, timestamp,
-                                         args["entry_id"],
+                                         entry_id,
                                          embedded=args["embedded"])
             attachment.save()
         return jsonify(location=url_for("get_attachment",

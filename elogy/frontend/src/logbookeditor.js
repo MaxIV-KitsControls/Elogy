@@ -103,7 +103,8 @@ class LogbookEditor extends React.Component {
         fetch(`/api/logbooks/${this.props.match.params.logbookId || 0}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
-            .then(json => {this.setState({logbook: json, ...json})});
+            .then(json => {this.setState({logbook: json.logbook,
+                                          ...json.logbook})});
     }
 
     componentWillMount() {

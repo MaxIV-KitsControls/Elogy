@@ -13,7 +13,7 @@ def make_logbook(client):
         description="Test description")
     response = client.post("/api/logbooks/", data=in_logbook)
     assert response.status_code == 200
-    return in_logbook, decode_response(response)
+    return in_logbook, decode_response(response)["logbook"]
 
 
 def make_entry(client, logbook):
@@ -25,7 +25,7 @@ def make_entry(client, logbook):
         "/api/logbooks/{logbook[id]}/entries/".format(logbook=logbook),
         data=in_entry)
     assert response.status_code == 200
-    return in_entry, decode_response(response)
+    return in_entry, decode_response(response)["entry"]
 
 
 def test_create_logbook(elogy_client):
@@ -35,7 +35,7 @@ def test_create_logbook(elogy_client):
     # read it back
     out_logbook = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/"
-                         .format(logbook=logbook)))
+                         .format(logbook=logbook)))["logbook"]
 
     assert in_logbook["name"] == out_logbook["name"]
     assert in_logbook["description"] == out_logbook["description"]
@@ -49,13 +49,13 @@ def test_create_child_logbook(elogy_client):
     child = decode_response(
         elogy_client.post("/api/logbooks/{logbook[id]}/"
                           .format(logbook=logbook),
-                          data={"name": "Some name"}))
+                          data={"name": "Some name"}))["logbook"]
     assert child["parent"]["id"] == logbook["id"]
 
     # check that it also comes up as child
     parent = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/"
-                         .format(logbook=logbook)))
+                         .format(logbook=logbook)))["logbook"]
     assert parent["children"][0]["id"] == child["id"]
 
 
@@ -65,12 +65,14 @@ def test_update_logbook(elogy_client):
     # read it back
     out_logbook = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/"
-                         .format(logbook=logbook)))
+                         .format(logbook=logbook)))["logbook"]
 
     response = decode_response(
-        elogy_client.put("/api/logbooks/{}/".format(out_logbook["id"]),
-                         data=dict(name="New name",
-                                   description=out_logbook["description"])))
+        elogy_client.put(
+            "/api/logbooks/{}/".format(out_logbook["id"]),
+            data=dict(name="New name",
+                      description=out_logbook["description"])))["logbook"]
+    assert response["name"] == "New name"
 
 
 def test_create_entry(elogy_client):
@@ -80,7 +82,7 @@ def test_create_entry(elogy_client):
     # read the entry back
     out_entry = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
-                         .format(logbook=logbook, entry=entry)))
+                         .format(logbook=logbook, entry=entry)))["entry"]
 
     assert out_entry["title"] == in_entry["title"]
     assert out_entry["content"] == in_entry["content"]
@@ -96,7 +98,7 @@ def test_update_entry(elogy_client):
     out_entry = decode_response(
         elogy_client.put("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
                          .format(logbook=logbook, entry=entry),
-                         data=new_in_entry))
+                         data=new_in_entry))["entry"]
     print(out_entry)
     assert out_entry["title"] == new_in_entry["title"]
     assert out_entry["content"] == new_in_entry["content"]
@@ -105,7 +107,7 @@ def test_update_entry(elogy_client):
     # verify that the new revision can be retrieved
     new_entry_version = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
-                         .format(logbook=logbook, entry=entry)))
+                         .format(logbook=logbook, entry=entry)))["entry"]
     assert new_entry_version == out_entry
     assert new_entry_version["revision_n"] == 1
 
@@ -113,15 +115,14 @@ def test_update_entry(elogy_client):
     old_entry_version = decode_response(
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/0"
-            .format(logbook=logbook, entry=entry)))
+            .format(logbook=logbook, entry=entry)))["entry"]
     assert old_entry_version["title"] == in_entry["title"]
     assert old_entry_version["revision_n"] == 0
 
     revisions = decode_response(
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
-            .format(logbook=logbook, entry=entry)))
-    print("revisions", revisions)
+            .format(logbook=logbook, entry=entry)))["entry_revisions"]
 
 
 def test_create_entry_followup(elogy_client):
@@ -140,18 +141,18 @@ def test_create_entry_followup(elogy_client):
         elogy_client.post(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
             .format(logbook=logbook, entry=entry),
-            data=in_followup))
+            data=in_followup))["entry"]
 
     # get the followup directly
     out_followup = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/entries/{followup[id]}/"
-                         .format(logbook=logbook, followup=followup)))
+                         .format(logbook=logbook, followup=followup)))["entry"]
     assert out_followup["id"] == followup["id"]
 
     # read the parent entry back
     out_entry = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
-                         .format(logbook=logbook, entry=entry)))
+                         .format(logbook=logbook, entry=entry)))["entry"]
 
     assert out_entry["followups"][0]["id"] == followup["id"]
 
@@ -159,7 +160,7 @@ def test_create_entry_followup(elogy_client):
     out_thread = decode_response(
         elogy_client.get("/api/logbooks/{logbook[id]}/entries/{followup[id]}/"
                          .format(logbook=logbook, followup=followup),
-                         data={"thread": True}))
+                         data={"thread": True}))["entry"]
     assert out_thread["id"] == entry["id"]
 
 
@@ -173,7 +174,7 @@ def test_update_entry_conflict(elogy_client):
     out_entry = decode_response(
         elogy_client.put("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
                          .format(logbook=logbook, entry=entry),
-                         data=new_in_entry))
+                         data=new_in_entry))["entry"]
 
     # try to change the entry again, without last_changed_at
     new_in_entry2 = {**in_entry, "title": "Other title"}
@@ -212,7 +213,7 @@ def test_entry_lock(elogy_client):
         elogy_client.post(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
-            environ_base={'REMOTE_ADDR': IP}))
+            environ_base={'REMOTE_ADDR': IP}))["lock"]
 
     assert lock["owned_by_ip"] == IP
 
@@ -220,7 +221,7 @@ def test_entry_lock(elogy_client):
     get_lock = decode_response(
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
-            .format(logbook=logbook, entry=entry)))
+            .format(logbook=logbook, entry=entry)))["lock"]
     assert get_lock["id"] == lock["id"]
 
     # acquire the lock again from the same host
@@ -228,7 +229,7 @@ def test_entry_lock(elogy_client):
         elogy_client.post(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
-            environ_base={'REMOTE_ADDR': IP}))
+            environ_base={'REMOTE_ADDR': IP}))["lock"]
 
     # should be the same lock
     assert lock_again["id"] == lock["id"]
@@ -260,7 +261,7 @@ def test_entry_lock_conflict(elogy_client):
         elogy_client.post(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
-            environ_base={'REMOTE_ADDR': IP}))
+            environ_base={'REMOTE_ADDR': IP}))["lock"]
 
     # attempt to acquire a lock from another host
     OTHER_IP = '5.6.7.8'
@@ -286,7 +287,7 @@ def test_entry_lock_conflict(elogy_client):
         elogy_client.delete(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
-            data={"lock_id": lock["id"]}))
+            data={"lock_id": lock["id"]}))["lock"]
     assert cancelled_lock["cancelled_at"] is not None
 
     # acquire the lock from the other host
@@ -294,7 +295,7 @@ def test_entry_lock_conflict(elogy_client):
         elogy_client.post(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
-            environ_base={'REMOTE_ADDR': OTHER_IP}))
+            environ_base={'REMOTE_ADDR': OTHER_IP}))["lock"]
     assert other_lock2["owned_by_ip"] == OTHER_IP
 
 
@@ -310,7 +311,7 @@ def test_entry_lock_steal(elogy_client):
         elogy_client.post(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
-            environ_base={'REMOTE_ADDR': IP}))
+            environ_base={'REMOTE_ADDR': IP}))["lock"]
 
     # attempt to acquire a lock from another host
     OTHER_IP = '5.6.7.8'
@@ -328,13 +329,13 @@ def test_entry_lock_steal(elogy_client):
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
             .format(logbook=logbook, entry=entry),
             data=dict(steal=True),
-            environ_base={'REMOTE_ADDR': OTHER_IP}))
+            environ_base={'REMOTE_ADDR': OTHER_IP}))["lock"]
     assert stolen_lock["id"] != lock["id"]
 
     # verify that the entry lock has changed
     lock2 = decode_response(
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
-            .format(logbook=logbook, entry=entry)))
+            .format(logbook=logbook, entry=entry)))["lock"]
     assert lock2["id"] == stolen_lock["id"]
     assert lock2["owned_by_ip"] == OTHER_IP

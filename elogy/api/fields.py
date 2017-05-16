@@ -86,7 +86,7 @@ class LogbookRevisionField(fields.Raw):
 
 
 logbook_revisions = {
-    "revisions": fields.List(LogbookRevisionField)
+    "logbook_revisions": fields.List(LogbookRevisionField)
 }
 
 
@@ -166,6 +166,7 @@ entryrevision_metadata = {
     "revision_authors": fields.List(fields.Nested(authors)),
     "revision_comment": fields.String,
     "revision_ip": fields.String,
+    "revision_n": fields.Integer
 }
 
 
@@ -198,7 +199,7 @@ class EntryRevisionField(fields.Raw):
 
 
 entry_revisions = {
-    "revisions": fields.List(EntryRevisionField)
+    "entry_revisions": fields.List(EntryRevisionField)
 }
 
 
