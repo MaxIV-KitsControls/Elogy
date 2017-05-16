@@ -129,7 +129,7 @@ class Entry extends React.Component {
 
     fetchEntry (logbookId, entryId) {
         /*         this.setState({loading: true});*/
-        fetch(`/api/logbooks/${logbookId}/entries/${entryId}/`,
+        fetch(`/api/logbooks/${logbookId}/entries/${entryId}/?thread=true`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
             .then(json => this.setState({loading: false, ...json.entry}));        
