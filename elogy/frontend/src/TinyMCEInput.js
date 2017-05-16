@@ -94,7 +94,11 @@ var TinyMCEInput = React.createClass({
         const editor = tinymce.get(this.state.id);
 
         // set the content properly, after init is done
-        editor.on('init', e => e.target.setContent(this.props.value));
+        editor.on('init', e => {
+            console.log("tinymce init done, setting content to:",
+                        this.props.value);
+            e.target.setContent(this.props.value);
+        });
     },
     componentDidUpdate: function componentDidUpdate() {
         if (this.props.focus) {
@@ -116,9 +120,10 @@ var TinyMCEInput = React.createClass({
             var editor = tinymce.get(this.state.id);
             if (editor) {
                 if (!this.props.ignoreUpdatesWhenFocused || tinymce.focusedEditor !== editor || this.isDropOverrideFlagged()) {
-                    var bookmark = editor.selection.getBookmark(2, true);
+                    var bookmark = editor.selection && editor.selection.getBookmark(2, true);
                     editor.setContent(nextProps.value);
-                    editor.selection.moveToBookmark(bookmark);
+                    if (bookmark)
+                        editor.selection.moveToBookmark(bookmark);
                 }
             }
             this.setState({ value: nextProps.value });
