@@ -71,14 +71,14 @@ logbookrevision_metadata = {
 
 
 class LogbookRevisionField(fields.Raw):
-    def format(self, value):
+    def format(self, revision):
         revision_fields = {
-            field: dict(old=value.changed.get(field),
-                        new=value.get_attribute(field))
+            field: dict(old=revision.get_old_value(field),
+                        new=revision.get_new_value(field))
             for field in ["name", "description", "template", "attributes"]
-            if value.changed.get(field) is not None
+            if revision.changed.get(field) is not None
         }
-        meta_fields = marshal(value, logbookrevision_metadata)
+        meta_fields = marshal(revision, logbookrevision_metadata)
         return {
             "changed": revision_fields,
             **meta_fields
@@ -166,19 +166,18 @@ entryrevision_metadata = {
     "revision_authors": fields.List(fields.Nested(authors)),
     "revision_comment": fields.String,
     "revision_ip": fields.String,
-    "revision_n": fields.Integer
 }
 
 
 class EntryRevisionField(fields.Raw):
-    def format(self, value):
+    def format(self, revision):
         revision_fields = {
-            field: dict(old=getattr(value, field),
-                        new=value.get_attribute(field))
+            field: dict(old=revision.get_old_value(field),
+                        new=revision.get_new_value(field))
             for field in ["title", "content", "authors", "attributes"]
-            if getattr(value, field) is not None
+            if field in revision.changed
         }
-        meta_fields = marshal(value, entryrevision_metadata)
+        meta_fields = marshal(revision, entryrevision_metadata)
         return {
             "changed": revision_fields,
             **meta_fields

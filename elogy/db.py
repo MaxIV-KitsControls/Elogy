@@ -163,7 +163,7 @@ class LogbookRevision(Model):
     revision_comment = TextField(null=True)
     revision_ip = CharField(null=True)
 
-    def __getattr__(self, attr):
+    def get_old_value(self, attr):
 
         """Get the value of the attribute at the time of this revision.
         That is, *before* the change happened."""
@@ -188,6 +188,27 @@ class LogbookRevision(Model):
             # take the value from the current logbook
             return getattr(self.logbook, attr)
 
+    def get_new_value(self, attr):
+
+        """Get the value of the attribute at the time of this revision.
+        That is, *before* the change happened."""
+
+        # check for the next revision where this attribute
+        # changed; the value from there must be the current value
+        # at this revision.
+        try:
+            revision = (LogbookRevision.select()
+                        .where((LogbookRevision.logbook == self.logbook) &
+                               (LogbookRevision.changed.extract(attr) != None) &
+                               (LogbookRevision.id > self.id))
+                        .order_by(LogbookRevision.id)
+                        .get())
+            return revision.changed[attr]
+        except DoesNotExist:
+            # No later revisions changed the attribute, so we can just
+            # take the value from the current logbook
+            return getattr(self.logbook, attr)
+
 
 class LogbookRevisionWrapper:
 
@@ -204,7 +225,7 @@ class LogbookRevisionWrapper:
 
         if attr in ("name", "description", "template", "attributes",
                     "archived", "parent_id"):
-            return getattr(self.revision, attr)
+            return self.revision.get_old_value(attr)
 
         return getattr(self.revision.logbook, attr)
 
@@ -236,6 +257,16 @@ def strip_tags(html):
     s = MLStripper()
     s.feed(html)
     return s.get_data()
+
+
+def convert_attributes(logbook, attributes):
+    converted = {}
+    for name, value in attributes.items():
+        try:
+            converted[name] = logbook.convert_attribute(name, value)
+        except ValueError:
+            pass
+    return converted
 
 
 class Entry(Model):
@@ -356,13 +387,7 @@ class Entry(Model):
     @property
     def converted_attributes(self):
         "Ensure that the attributes conform to the logbook configuration"
-        converted = {}
-        for name, value in self.attributes.items():
-            try:
-                converted[name] = self.logbook.convert_attribute(name, value)
-            except ValueError:
-                pass
-        return converted
+        return convert_attributes(self.logbook, self.attributes)
 
     def get_lock(self, ip=None, acquire=False, steal=False):
         """check if there's a lock on the entry, and if an ip is given
@@ -538,13 +563,13 @@ class EntryRevision(Model):
     revision_comment = TextField(null=True)
     revision_ip = CharField(null=True)
 
-    def __getattr__(self, attr):
+    def get_old_value(self, attr):
 
         """Get the value of the attribute at the time of this revision.
         That is, *before* the change happened."""
 
         # First check if the attribute was changed in this revision,
-        # in that case we return that.
+        # in that case we return the stored value.
         if attr in self.changed:
             return self.changed[attr]
         # Otherwise, check for the next revision where this attribute
@@ -560,7 +585,28 @@ class EntryRevision(Model):
             return revision.changed[attr]
         except DoesNotExist:
             # No later revisions changed the attribute either, so we can just
-            # take the value from the current logbook
+            # take the value from the entry
+            return getattr(self.entry, attr)
+
+    def get_new_value(self, attr):
+
+        """Get the value of the attribute after this revision happened.
+        If it was not changed, it'll just be the same as before."""
+
+        # Check for the next revision where this attribute changed;
+        # the value from there must also be the value after this
+        # revision.
+        try:
+            revision = (EntryRevision.select()
+                        .where((EntryRevision.entry == self.entry) &
+                               (EntryRevision.changed.extract(attr) != None) &
+                               (EntryRevision.id > self.id))
+                        .order_by(EntryRevision.id)
+                        .get())
+            return revision.changed[attr]
+        except DoesNotExist:
+            # No later revisions changed the attribute, so we can just
+            # take the value from the entry
             return getattr(self.entry, attr)
 
 
@@ -579,7 +625,10 @@ class EntryRevisionWrapper:
             return list(self.revision.entry.revisions).index(self.revision)
         if attr in ("logbook", "title", "authors", "content", "attributes",
                     "metadata", "follows_id", "tags", "archived"):
-            return getattr(self.revision, attr)
+            return self.revision.get_old_value(attr)
+        if attr == "converted_attributes":
+            return convert_attributes(self.revision.entry.logbook,
+                                      self.revision.get_old_value("attributes"))
         return getattr(self.revision.entry, attr)
 
 
