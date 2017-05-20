@@ -68,9 +68,9 @@ export class InnerEntry extends React.Component {
 
         const content = (
             this.props.content_type.slice(0, 9) === "text/html"?
-            <div className="content" ref="entry"
+            <div className="content html" ref="entry"
                  dangerouslySetInnerHTML={{__html: this.props.content}}/> :
-            <div className="content">{this.props.content}</div>
+            <div className="content plain">{this.props.content}</div>
         );
 
         return (
