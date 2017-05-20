@@ -34,7 +34,7 @@ class EntryAttributeEditor extends React.Component {
     }
     
     onChangeSelect (value) {
-        this.setState({value: value.value})
+        this.setState({value: value? value.value : null})
     }    
 
     onChangeMultiSelect (value) {
@@ -149,7 +149,10 @@ class EntryEditorBase extends React.Component {
 
     onAttributeChange (name, value) {
         console.log("onAttributeChange", name, value);
-        this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
+        if (value)
+            this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
+        else
+            this.setState(update(this.state, {attributes: {$unset: name}}));
     }
     
     onContentChange (event) {
