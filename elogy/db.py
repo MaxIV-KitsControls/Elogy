@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
 
+from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
 from peewee import (CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField)
@@ -707,3 +708,11 @@ class Attachment(Model):
     embedded = BooleanField(default=False)  # i.e. an image in the content
     metadata = JSONField(null=True)  # may contain image size, etc
     archived = BooleanField(default=False)
+
+    @property
+    def link(self):
+        return url_for("get_attachment", path=self.path)
+
+    @property
+    def thumbnail_link(self):
+        return url_for("get_attachment", path=self.path) + ".thumbnail"

@@ -39,7 +39,7 @@ def get_content_type(file_):
     return type_
 
 
-def save_attachment(file_, timestamp, entry_id, embedded=False):
+def save_attachment(file_, timestamp, entry_id, metadata=None, embedded=False):
     "Store an attachment in the proper place"
     # make up a path and unique filename using the timestamp
     # TODO: make this smarter, somehow
@@ -56,7 +56,9 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
         # If it's an image file we create a thumbnail version for preview
         image = Image.open(file_)
         width, height = image.size
-        metadata = dict(size={"width": width, "height": height})
+        new_metadata = dict(size={"width": width, "height": height})
+        if metadata:
+            new_metadata.update(**metadata)
         if width > 100 or height > 100:
             # create a tiny preview version of the image
             image.convert("RGB")
@@ -64,14 +66,15 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
             try:
                 image.save(path + ".thumbnail", "JPEG")
                 width, height = image.size
-                metadata["thumbnail_size"] = {"width": width, "height": height}
+                new_metadata["thumbnail_size"] = {"width": width, "height": height}
             except IOError as e:
                 print("Error making thumbnail", e)
         else:
             os.link(path, path + ".thumbnail")
-    except IOError:
+    except IOError as e:
         # Not a recognized image
-        metadata = None
+        print("******************* Broken image attacment", e)
+        new_metadata = metadata
 
     print("entry_id", entry_id)
     if entry_id:
@@ -86,7 +89,7 @@ def save_attachment(file_, timestamp, entry_id, embedded=False):
                             timestamp=timestamp,
                             content_type=content_type,
                             entry=entry, embedded=embedded,
-                            metadata=metadata)
+                            metadata=new_metadata)
     return attachment
 
 

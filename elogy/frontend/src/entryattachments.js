@@ -22,9 +22,9 @@ export const AttachmentPreview = ({attachment}) => {
         return <i className={ICON_CLASS_MAP[attachment.content_type] + " fa-2x"}/>;
     }
     if (attachment.metadata && attachment.metadata.thumbnail_size) {
-        return <img src={`/attachments/${attachment.path}.thumbnail`}
-                    width={attachment.metadata.thumbnail_size.width}
-                    height={attachment.metadata.thumbnail_size.height}/>
+        return <img src={ attachment.thumbnail_link }
+                    width={ attachment.metadata.thumbnail_size.width }
+                    height={ attachment.metadata.thumbnail_size.height }/>
     }
     return <i className="fa fa-file-o fa-2x"/>;
 };
@@ -36,7 +36,7 @@ export const EntryAttachments = ({attachments}) => (
         attachments
             .map((att, i) => (
                 <span className="attachment" key={i} title={att.filename}>
-                    <a href={`/attachments/${att.path}`}>
+                    <a href={att.link}>
                         <AttachmentPreview attachment={att}/>
                     </a>
                 </span>

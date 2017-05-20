@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+import json
 
 from flask import jsonify, url_for
 from flask_restful import Resource, reqparse
@@ -13,7 +14,9 @@ attachments_parser.add_argument(
     "attachment", type=FileStorage, action="append",
     location='files', required=True)
 attachments_parser.add_argument("timestamp", type=str)
-attachments_parser.add_argument("embedded", type=bool, default=False)
+attachments_parser.add_argument("metadata", type=str)
+attachments_parser.add_argument("embedded", type=bool,
+                                default=False)
 
 
 class AttachmentsResource(Resource):
@@ -25,9 +28,14 @@ class AttachmentsResource(Resource):
             timestamp = get_utc_datetime(args["timestamp"])
         else:
             timestamp = datetime.utcnow()
+        if "metadata" in args:
+            metadata = json.loads(args["metadata"])
+        else:
+            metadata = None
         for attachment in args["attachment"]:
+            print(attachment)
             attachment = save_attachment(attachment, timestamp,
-                                         entry_id,
+                                         entry_id, metadata,
                                          embedded=args["embedded"])
             attachment.save()
         return jsonify(location=url_for("get_attachment",

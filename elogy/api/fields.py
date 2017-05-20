@@ -91,11 +91,12 @@ logbook_revisions = {
 
 
 attachment = {
-    "path": fields.String,
     "filename": fields.String,
     "embedded": fields.Boolean,
     "content_type": fields.String,
-    "metadata": fields.Raw
+    "metadata": fields.Raw,
+    "link": fields.String,
+    "thumbnail_link": fields.String
 }
 
 
@@ -182,19 +183,6 @@ class EntryRevisionField(fields.Raw):
             "changed": revision_fields,
             **meta_fields
         }
-
-
-# entry_revision = {
-#     "logbook": fields.Nested(logbook),
-#     "title": fields.String,
-#     "authors": fields.List(fields.Nested(authors)),
-#     "content": fields.String,
-#     "content_type": fields.String,
-#     "attributes": fields.Raw(attribute="converted_attributes"),
-#     "attachments": fields.List(fields.Nested(attachment)),
-#     "follows": EntryId,
-#     "revision_n": fields.Integer
-# }
 
 
 entry_revisions = {
