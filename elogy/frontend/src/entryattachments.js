@@ -1,4 +1,5 @@
 import React from "react";
+import {findDOMNode} from "react-dom"
 
 
 const ICON_CLASS_MAP = {
@@ -12,7 +13,7 @@ const ICON_CLASS_MAP = {
 }
 
 
-export const AttachmentPreview = ({attachment}) => {
+export const RemoteAttachmentPreview = ({attachment}) => {
     // display an appropriate icon for the given attachment
     if (!attachment.content_type) {
         return <i className="fa fa-file-o fa-2x"/>
@@ -22,26 +23,54 @@ export const AttachmentPreview = ({attachment}) => {
         return <i className={ICON_CLASS_MAP[attachment.content_type] + " fa-2x"}/>;
     }
     if (attachment.metadata && attachment.metadata.thumbnail_size) {
-        return <img src={ attachment.thumbnail_link }
-                    width={ attachment.metadata.thumbnail_size.width }
-                    height={ attachment.metadata.thumbnail_size.height }/>
+        return (
+                <img src={ attachment.thumbnail_link }
+                     width={ attachment.metadata.thumbnail_size.width }
+                     height={ attachment.metadata.thumbnail_size.height }/>
+        );
     }
     return <i className="fa fa-file-o fa-2x"/>;
 };
 
 
+export class LocalAttachmentPreview extends React.Component {
+
+    componentDidMount () {
+        const image = findDOMNode(this.refs.image);
+        if (image) {
+            image.src = this.props.attachment.preview;
+        }
+    }
+
+    render () {
+        if (this.props.attachment.type.split("/")[0] == "image") {
+            return <img ref="image" width="100"/>
+        }
+        const iconClass = ICON_CLASS_MAP[this.props.attachment.type] || "fa fa-file-o fa-2x";
+        return <i className={iconClass}/>
+    }
+
+}
+
+export const AttachmentPreview = ({attachment}) => (
+    attachment.link?
+    <RemoteAttachmentPreview attachment={attachment}/> :
+    <LocalAttachmentPreview attachment={attachment}/>
+)
+
+
 export const EntryAttachments = ({attachments}) => (
     <div className="attachments">
-    {
-        attachments
-            .map((att, i) => (
-                <span className="attachment" key={i} title={att.filename}>
-                    <a href={att.link}>
-                        <AttachmentPreview attachment={att}/>
-                    </a>
-                </span>
-            ))
-    }
+        {
+            attachments
+                .map((att, i) => (
+                    <span className="attachment" key={i} title={att.filename}>
+                        <a href={att.link}>
+                            <AttachmentPreview attachment={att}/>
+                        </a>
+                    </span>
+                ))
+        }
     </div>
 )
 

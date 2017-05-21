@@ -1,6 +1,6 @@
-/*
-   This component shows a form for editing a single entry
- */
+/* This component shows a form for editing a single entry. It may be
+   creating a new entry, making a followup to another entry or
+   modifying an existing entry.  */
 
 import React from 'react';
 import {Link, Route, Prompt, Switch} from 'react-router-dom';
@@ -15,6 +15,7 @@ import TINYMCE_CONFIG from "./tinymceconfig.js";
 import {withProps} from './util.js';
 import { InnerEntry } from "./entry.js";
 import "./entryeditor.css";
+
 
 class EntryAttributeEditor extends React.Component {
 
@@ -152,7 +153,7 @@ class EntryEditorBase extends React.Component {
         if (value)
             this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
         else
-            this.setState(update(this.state, {attributes: {$unset: name}}));
+            this.setState(update(this.state, {attributes: {$unset: [name]}}));
     }
     
     onContentChange (event) {
@@ -162,7 +163,7 @@ class EntryEditorBase extends React.Component {
     
     onAddAttachment (acceptedFiles, rejectedFiles) {
         console.log("drop", acceptedFiles, rejectedFiles);
-        this.setState(update({newAttachments: {$push: acceptedFiles}}))
+        this.setState(update(this.state, {attachments: {$push: acceptedFiles}}))
     }
     
     hasEdits () {
@@ -230,9 +231,13 @@ class EntryEditorBase extends React.Component {
     getAttachments (attachments) {
         return (
             <Dropzone onDrop={this.onAddAttachment.bind(this)}
+                      title="Click (or drag-and-drop) to add attachments."
                       className="attachments-drop">
-                Attachments
-                <EntryAttachments attachments={ attachments }/>
+                {
+                    attachments.length > 0 ?
+                    <EntryAttachments attachments={ attachments }/> :
+                    "Drop attachments here!"
+                }
             </Dropzone>
         );
     }
@@ -255,6 +260,21 @@ class EntryEditorBase extends React.Component {
                </Link>;
     }
 
+    submitAttachments (entryId) {
+        return this.state.attachments.map(attachment => {
+            // TODO: also allow removing attachments            
+            if (!(attachment instanceof File)) {
+                // this attachment is already uploaded
+                // TODO: do this in a nicer way
+                return
+            }
+            let data = new FormData()
+            data.append("attachment", attachment);
+            fetch(`/api/logbooks/${this.state.logbook.id}/entries/${entryId}/attachments/`,
+                  {method: "POST", body: data});
+        });
+    }
+    
     render () {
         return <Route render={this.renderInner.bind(this)}/>;
     }
@@ -291,11 +311,16 @@ class EntryEditorNew extends EntryEditorBase {
                 // signal other parts of the app that the logbook needs refreshing
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
+                const promise = Promise.all(this.submitAttachments(response.entry.id));
+                this.entryId = response.entry.id;  // hack!
+                return promise
+            })
+            .then(response => {
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${response.entry.id}`);
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.entryId}`);
             });
     }
-    
+
     renderInner (history) {
         
         if (!this.state.logbook)
@@ -370,8 +395,15 @@ class EntryEditorFollowup extends EntryEditorBase {
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${response.entry.id}`);
+                const promise = Promise.all(this.submitAttachments(response.entry.id));
+                this.entryId = response.entry.id;  // hack!
+                return promise
+            })
+            .then(response => {
+                // send the browser to view the new entry
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.entryId}`);
             });
+        
     }
     
     renderInner (history) {
@@ -454,8 +486,15 @@ class EntryEditorEdit extends EntryEditorBase {
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`);
+                const promise = Promise.all(this.submitAttachments(response.entry.id));
+                this.entryId = response.entry.id;  // hack!
+                return promise
+            })
+            .then(response => {
+                // send the browser to view the new entry
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.entryId}`);
             });
+
     }
     
     renderInner (history) {

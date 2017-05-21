@@ -1,5 +1,6 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
+import LazyLoad from 'react-lazy-load';
 
 import {AttachmentPreview} from "./entryattachments.js";
 import {groupBy, formatTimeString, formatDateString} from "./util.js";
@@ -13,8 +14,9 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
         <div className="attachments">
             {
                 entry.attachment_preview?
-                <AttachmentPreview
-                    attachment={entry.attachment_preview}/> :
+                (<LazyLoad offsetVertical={500}>
+                    <AttachmentPreview attachment={entry.attachment_preview}/> 
+                </LazyLoad>) :
                 null
             }
             <span>{ entry.n_attachments }</span>
@@ -32,6 +34,8 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
     const authors = entry.authors
                          .slice(0, 2)
                          .map((author, i) => <span key={i} className="author">{author}</span>);
+    // for space reasons, we only show up to the two frst authors
+    // and then add a summary of the rest, e.g. "(+3)".
     const authorsEllipsis = entry.authors.length > 2?
                             `, (+${entry.authors.length-2})` :
                             null;

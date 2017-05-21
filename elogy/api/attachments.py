@@ -28,7 +28,7 @@ class AttachmentsResource(Resource):
             timestamp = get_utc_datetime(args["timestamp"])
         else:
             timestamp = datetime.utcnow()
-        if "metadata" in args:
+        if args.get("metadata"):
             metadata = json.loads(args["metadata"])
         else:
             metadata = None
