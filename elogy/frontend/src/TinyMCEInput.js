@@ -94,11 +94,12 @@ var TinyMCEInput = React.createClass({
         const editor = tinymce.get(this.state.id);
 
         // set the content properly, after init is done
-        editor.on('init', e => {
-            console.log("tinymce init done, setting content to:",
-                        this.props.value);
-            e.target.setContent(this.props.value);
-        });
+        if (editor)
+            editor.on('init', e => {
+                console.log("tinymce init done, setting content to:",
+                            this.props.value);
+                e.target.setContent(this.props.value);
+            });
     },
     componentDidUpdate: function componentDidUpdate() {
         if (this.props.focus) {
