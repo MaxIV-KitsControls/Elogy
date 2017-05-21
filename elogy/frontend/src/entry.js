@@ -58,8 +58,8 @@ export class InnerEntry extends React.Component {
                               </span>
                              :null;
         const authors = this.props.authors.map((author, i) =>
-            <span key={i} className="author">
-                { author.name }
+            <span key={i} className="author" title={`${author.email || "No email"} (${author.login || "No login"})`}>
+            { author.name }
             </span>);
 
         const attributes = this.props.logbook?
