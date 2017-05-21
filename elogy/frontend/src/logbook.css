@@ -116,7 +116,7 @@
 }
 
 #logbook .entry .followups {
-    position: absolute;
+    float: right;
     right: 0;
     top: 0;
 }
@@ -124,13 +124,15 @@
 #logbook .entry .attachments {
     position: relative;
     float: right;
-    height: 70px;
 }
 
 #logbook .entry .attachments span {
     position: absolute;
     right: 0;
     bottom: 0;
+    background:white;
+    border: 1px solid black;
+    padding: 0 3px;
 }
 
 #logbook dd.entry:not(:last-child) {

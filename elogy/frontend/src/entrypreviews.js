@@ -9,17 +9,30 @@ import {groupBy, formatTimeString, formatDateString} from "./util.js";
 const EntryPreview = ({logbook, entry, selected, search=""}) => {
     
     const url = `/logbooks/${logbook.id}/entries/${entry.id}/${search}`
+    const attachmentPreviewWidth = (entry.attachment_preview &&
+                                    entry.attachment_preview.metadata.thumbnail_size &&
+                                    entry.attachment_preview.metadata.thumbnail_size.width);
+    const attachmentPreviewHeight = (entry.attachment_preview &&
+                                     entry.attachment_preview.metadata.thumbnail_size &&
+                                     entry.attachment_preview.metadata.thumbnail_size.height);
+
     const attachments = (
         entry.n_attachments ?
         <div className="attachments">
-            {
-                entry.attachment_preview?
-                (<LazyLoad offsetVertical={500}>
-                    <AttachmentPreview attachment={entry.attachment_preview}/> 
-                </LazyLoad>) :
-                null
-            }
-            <span>{ entry.n_attachments }</span>
+        {
+            entry.attachment_preview?
+            (<LazyLoad offsetVertical={500}
+                       width={ attachmentPreviewWidth }
+                       height={ attachmentPreviewHeight }>
+                <AttachmentPreview attachment={entry.attachment_preview}/>
+            </LazyLoad>) :
+            null
+        }
+        {
+            entry.n_attachments > 1?
+            <span>{ entry.n_attachments }</span> :
+            null
+        }
         </div> :
         null
     );
@@ -49,6 +62,7 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
         <div key={entry.id} className="entry">
             <Link to={url}>
                 { attachments }
+                { followups }                                
                 { logbookName }
                 <div className="info">
                     <span className="timestamp">
@@ -60,11 +74,11 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                 </div>
                 <div className="title"><span>{ entry.title }</span></div>
                 <div className="content"> {entry.content}</div>
-                { followups }
             </Link>
         </div>
     );
 }
+
 
 const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
     
