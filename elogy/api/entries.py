@@ -227,9 +227,9 @@ class EntryLockResource(Resource):
         return lock
 
 
-class EntryRevisionsResource(Resource):
+class EntryChangesResource(Resource):
 
-    @marshal_with(fields.entry_revisions)
+    @marshal_with(fields.entry_changes)
     def get(self, entry_id, logbook_id=None):
         entry = Entry.get(Entry.id == entry_id)
-        return {"revisions": entry.revisions}
+        return {"entry_changes": entry.changes}

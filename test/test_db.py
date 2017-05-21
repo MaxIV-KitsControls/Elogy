@@ -1,6 +1,6 @@
 from .fixtures import db
-from elogy.db import Entry, EntryRevision, EntryRevisionWrapper
-from elogy.db import Logbook, LogbookRevision, LogbookRevisionWrapper
+from elogy.db import Entry, EntryChange, EntryRevision
+from elogy.db import Logbook, LogbookChange, LogbookRevision
 
 
 # Logbook
@@ -27,8 +27,8 @@ def test_logbookrevision(db):
     lb.save()
     revision.save()
 
-    assert len(lb.revisions) == 1
-    rev = lb.revisions[0]
+    assert len(lb.changes) == 1
+    rev = lb.changes[0]
     assert rev == revision
     # old value is stored in the revision
     assert rev.changed["name"] == "Logbook1"
@@ -53,13 +53,13 @@ def test_logbookrevisionwrapper2(db):
     lb.save()
 
     wrapper = lb.get_revision(version=0)
-    assert isinstance(wrapper, LogbookRevisionWrapper)
+    assert isinstance(wrapper, LogbookRevision)
     assert wrapper.revision_n == 0
     assert wrapper.name == "Logbook1"
     assert wrapper.description == DESCRIPTION
 
     wrapper = lb.get_revision(version=1)
-    assert isinstance(wrapper, LogbookRevisionWrapper)
+    assert isinstance(wrapper, LogbookRevision)
     assert wrapper.revision_n == 1
     assert wrapper.name == "Logbook2"
     assert wrapper.description == DESCRIPTION
@@ -112,8 +112,8 @@ def test_enryrevision(db):
     entry.save()
     revision.save()
 
-    assert len(entry.revisions) == 1
-    rev = entry.revisions[0]
+    assert len(entry.changes) == 1
+    rev = entry.changes[0]
     assert rev == revision
     assert rev.changed["title"] == "Entry1"
 
@@ -126,3 +126,49 @@ def test_entryrevisionwrapper1(db):
     wrapper = entry.get_revision(version=0)
     assert wrapper.revision_n == 0
     assert wrapper.title == "Entry1"
+
+
+def test_entryrevisionwrapper2(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entry_v0 = {
+        "logbook": lb,
+        "title": "Some nice title",
+        "content": "Some very neat content."
+    }
+
+    entry_v1 = {
+        "logbook": lb,
+        "title": "Some really nice title",
+        "content": "Some very neat content."
+    }
+
+    entry_v2 = {
+        "logbook": lb,
+        "title": "Some really nice title",
+        "content": "Some very neat content but changed."
+    }
+
+    # create entry and modify it twice
+    entry = Entry.create(**entry_v0)
+    entry.make_change(**entry_v1).save()
+    entry.save()
+    entry.make_change(**entry_v2).save()
+    entry.save()
+
+    # check that the wrapper reports the correct historical
+    # values for each revision
+    wrapper0 = entry.get_revision(version=0)
+    assert wrapper0.revision_n == 0
+    assert wrapper0.title == entry_v0["title"]
+    assert wrapper0.content == entry_v0["content"]
+
+    wrapper1 = entry.get_revision(version=1)
+    assert wrapper1.revision_n == 1
+    assert wrapper1.title == entry_v1["title"]
+    assert wrapper1.content == entry_v1["content"]
+
+    wrapper2 = entry.get_revision(version=2)
+    assert wrapper2.revision_n == 2
+    assert wrapper2.title == entry_v2["title"]
+    assert wrapper2.content == entry_v2["content"]

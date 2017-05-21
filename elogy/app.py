@@ -12,8 +12,9 @@ from peewee import OperationalError
 from .db import setup_database
 
 from .api.errors import errors as api_errors
-from .api.logbooks import LogbooksResource, LogbookRevisionsResource
-from .api.entries import EntryResource, EntriesResource, EntryLockResource, EntryRevisionsResource
+from .api.logbooks import LogbooksResource, LogbookChangesResource
+from .api.entries import (EntryResource, EntriesResource,
+                          EntryLockResource, EntryChangesResource)
 from .api.users import UsersResource
 from .api.attachments import AttachmentsResource
 
@@ -57,7 +58,7 @@ api.add_resource(LogbooksResource,
                  "/logbooks/<int:logbook_id>/",
                  "/logbooks/<int:logbook_id>/revisions/<int:revision_n>/")
 
-api.add_resource(LogbookRevisionsResource,
+api.add_resource(LogbookChangesResource,
                  "/logbooks/<int:logbook_id>/revisions/")
 
 api.add_resource(EntriesResource,
@@ -69,7 +70,7 @@ api.add_resource(EntryResource,
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/",
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/revisions/<int:revision_n>")
 
-api.add_resource(EntryRevisionsResource,
+api.add_resource(EntryChangesResource,
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/revisions/")
 
 api.add_resource(EntryLockResource,

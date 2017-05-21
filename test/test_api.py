@@ -122,7 +122,7 @@ def test_update_entry(elogy_client):
     revisions = decode_response(
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
-            .format(logbook=logbook, entry=entry)))["entry_revisions"]
+            .format(logbook=logbook, entry=entry)))["entry_changes"]
 
 
 def test_create_entry_followup(elogy_client):

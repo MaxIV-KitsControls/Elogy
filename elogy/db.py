@@ -17,9 +17,9 @@ def setup_database(db_name):
     # TODO: support further configuration options, see FlaskDB
     db.init(db_name)
     Logbook.create_table(fail_silently=True)
-    LogbookRevision.create_table(fail_silently=True)
+    LogbookChange.create_table(fail_silently=True)
     Entry.create_table(fail_silently=True)
-    EntryRevision.create_table(fail_silently=True)
+    EntryChange.create_table(fail_silently=True)
     EntryLock.create_table(fail_silently=True)
     Attachment.create_table(fail_silently=True)
     db.close()  # important
@@ -72,27 +72,30 @@ class Logbook(Model):
             for attr, value in values.items()
             if getattr(self, attr) != value
         }
-        revision = LogbookRevision.create(logbook=self, changed=original_values)
+        change = LogbookChange.create(logbook=self, changed=original_values)
         for attr, value in values.items():
             setattr(self, attr, value)
-        self.last_changed_at = revision.timestamp
-        return revision
+        self.last_changed_at = change.timestamp
+        return change
 
     @property
     def revision_n(self):
-        return len(self.revisions)
+        return len(self.changes)
 
     def get_revision(self, version):
         if version == self.revision_n:
             return self
-        revision = (LogbookRevision.select()
-                    .where(LogbookRevision.logbook == self)
-                    .order_by(LogbookRevision.id)
-                    .offset(version or None)
-                    .limit(1))
-        if revision.count() == 0:
-            raise(LogbookRevision.DoesNotExist)
-        return LogbookRevisionWrapper(list(revision)[0])
+        if 0 <= version < self.revision_n:
+            return LogbookRevision(self.changes[version])
+        raise(LogbookChange.DoesNotExist)
+
+        # changes = (LogbookChange.select()
+        #            .where(LogbookChange.logbook == self)
+        #            .order_by(LogbookChange.id)
+        #            .offset(version or None))
+        # if changes.count() == 0:
+        #     raise(LogbookChange.DoesNotExist)
+        # return LogbookRevision(list(changes)[0])
 
     @property
     def entry_histogram(self):
@@ -150,19 +153,19 @@ class Logbook(Model):
         return result
 
 
-class LogbookRevision(Model):
+class LogbookChange(Model):
 
     class Meta:
         database = db
 
-    logbook = ForeignKeyField(Logbook, related_name="revisions")
+    logbook = ForeignKeyField(Logbook, related_name="changes")
 
     changed = JSONField()
 
     timestamp = DateTimeField(default=datetime.utcnow)
-    revision_authors = JSONField(null=True)
-    revision_comment = TextField(null=True)
-    revision_ip = CharField(null=True)
+    change_authors = JSONField(null=True)
+    change_comment = TextField(null=True)
+    change_ip = CharField(null=True)
 
     def get_old_value(self, attr):
 
@@ -177,13 +180,13 @@ class LogbookRevision(Model):
         # changed; the value from there must be the current value
         # at this revision.
         try:
-            revision = (LogbookRevision.select()
-                        .where((LogbookRevision.logbook == self.logbook) &
-                               (LogbookRevision.changed.extract(attr) != None) &
-                               (LogbookRevision.id > self.id))
-                        .order_by(LogbookRevision.id)
-                        .get())
-            return revision.changed[attr]
+            change = (LogbookChange.select()
+                      .where((LogbookChange.logbook == self.logbook) &
+                             (LogbookChange.changed.extract(attr) != None) &
+                             (LogbookChange.id > self.id))
+                      .order_by(LogbookChange.id)
+                      .get())
+            return change.changed[attr]
         except DoesNotExist:
             # No later revisions changed the attribute either, so we can just
             # take the value from the current logbook
@@ -198,37 +201,37 @@ class LogbookRevision(Model):
         # changed; the value from there must be the current value
         # at this revision.
         try:
-            revision = (LogbookRevision.select()
-                        .where((LogbookRevision.logbook == self.logbook) &
-                               (LogbookRevision.changed.extract(attr) != None) &
-                               (LogbookRevision.id > self.id))
-                        .order_by(LogbookRevision.id)
-                        .get())
-            return revision.changed[attr]
+            change = (LogbookChange.select()
+                      .where((LogbookChange.logbook == self.logbook) &
+                             (LogbookChange.changed.extract(attr) != None) &
+                             (LogbookChange.id > self.id))
+                      .order_by(LogbookChange.id)
+                      .get())
+            return change.changed[attr]
         except DoesNotExist:
             # No later revisions changed the attribute, so we can just
             # take the value from the current logbook
             return getattr(self.logbook, attr)
 
 
-class LogbookRevisionWrapper:
+class LogbookRevision:
 
     """Represents a historical version of a Logbook."""
 
-    def __init__(self, revision):
-        self.revision = revision
+    def __init__(self, change):
+        self.change = change
 
     def __getattr__(self, attr):
         if attr == "id":
-            return self.revision.logbook.id
+            return self.change.logbook.id
         if attr == "revision_n":
-            return list(self.revision.logbook.revisions).index(self.revision)
+            return list(self.change.logbook.changes).index(self.change)
 
         if attr in ("name", "description", "template", "attributes",
                     "archived", "parent_id"):
-            return self.revision.get_old_value(attr)
+            return self.change.get_old_value(attr)
 
-        return getattr(self.revision.logbook, attr)
+        return getattr(self.change.logbook, attr)
 
 
 DeferredEntry = DeferredRelation()
@@ -345,29 +348,30 @@ class Entry(Model):
             for attr, value in data.items()
             if hasattr(self, attr) and getattr(self, attr) != value
         }
-        revision = EntryRevision(entry=self, changed=original_values)
+        # TODO: what should we do if the new data is the same as the old?
+        change = EntryChange(entry=self, changed=original_values)
         for attr in original_values:
             value = data[attr]
             setattr(self, attr, value)
-        self.last_changed_at = revision.timestamp
-        return revision
+        self.last_changed_at = change.timestamp
+        return change
 
     @property
     def revision_n(self):
-        return len(self.revisions)
+        return len(self.changes)
 
     def get_revision(self, version):
         if version == self.revision_n:
             return self
         if 0 <= version < self.revision_n:
-            return EntryRevisionWrapper(self.revisions[version])
-        raise(EntryRevision.DoesNotExist)
+            return EntryRevision(self.changes[version])
+        raise(EntryChange.DoesNotExist)
 
     # def get_old_version(self, revision_id):
-    #     revisions = (EntryRevision.select()
-    #                  .where(EntryRevision.entry == self
-    #                         and EntryRevision.id >= revision_id)
-    #                  .order_by(EntryRevision.id.desc()))
+    #     revisions = (EntryChange.select()
+    #                  .where(EntryChange.entry == self
+    #                         and EntryChange.id >= revision_id)
+    #                  .order_by(EntryChange.id.desc()))
     #     content = self.content
     #     print(content)
     #     print("---")
@@ -541,10 +545,14 @@ WHERE 1
 DeferredEntry.set_model(Entry)
 
 
-class EntryRevision(Model):
+class EntryChange(Model):
 
     """
     Represents a change of an entry.
+
+    The nomenclature here is that a *revision* is what an entry looked
+    like at at a given point in time, while a change happens at a
+    specific time and takes us from one revision to the next.
 
     Counter-intuitively, what's stored here is the *old* entry
     data. The point is that then we only need to store the fields that
@@ -555,14 +563,14 @@ class EntryRevision(Model):
     class Meta:
         database = db
 
-    entry = ForeignKeyField(Entry, related_name="revisions")
+    entry = ForeignKeyField(Entry, related_name="changes")
 
     changed = JSONField()
 
     timestamp = DateTimeField(default=datetime.utcnow)
-    revision_authors = JSONField(null=True)
-    revision_comment = TextField(null=True)
-    revision_ip = CharField(null=True)
+    change_authors = JSONField(null=True)
+    change_comment = TextField(null=True)
+    change_ip = CharField(null=True)
 
     def get_old_value(self, attr):
 
@@ -577,13 +585,13 @@ class EntryRevision(Model):
         # changed; the value from there must be the current value
         # at this revision.
         try:
-            revision = (EntryRevision.select()
-                        .where((EntryRevision.entry == self.entry) &
-                               (EntryRevision.changed.extract(attr) != None) &
-                               (EntryRevision.id > self.id))
-                        .order_by(EntryRevision.id)
-                        .get())
-            return revision.changed[attr]
+            change = (EntryChange.select()
+                      .where((EntryChange.entry == self.entry) &
+                             (EntryChange.changed.extract(attr) != None) &
+                             (EntryChange.id > self.id))
+                      .order_by(EntryChange.id)
+                      .get())
+            return change.changed[attr]
         except DoesNotExist:
             # No later revisions changed the attribute either, so we can just
             # take the value from the entry
@@ -598,39 +606,39 @@ class EntryRevision(Model):
         # the value from there must also be the value after this
         # revision.
         try:
-            revision = (EntryRevision.select()
-                        .where((EntryRevision.entry == self.entry) &
-                               (EntryRevision.changed.extract(attr) != None) &
-                               (EntryRevision.id > self.id))
-                        .order_by(EntryRevision.id)
+            change = (EntryChange.select()
+                        .where((EntryChange.entry == self.entry) &
+                               (EntryChange.changed.extract(attr) != None) &
+                               (EntryChange.id > self.id))
+                        .order_by(EntryChange.id)
                         .get())
-            return revision.changed[attr]
+            return change.changed[attr]
         except DoesNotExist:
             # No later revisions changed the attribute, so we can just
             # take the value from the entry
             return getattr(self.entry, attr)
 
 
-class EntryRevisionWrapper:
+class EntryRevision:
 
     """An object that represents a historical version of an entry. It
     can (basically) be used like an Entry object."""
 
-    def __init__(self, revision):
-        self.revision = revision
+    def __init__(self, change):
+        self.change = change
 
     def __getattr__(self, attr):
         if attr == "id":
-            return self.revision.entry.id
+            return self.change.entry.id
         if attr == "revision_n":
-            return list(self.revision.entry.revisions).index(self.revision)
+            return list(self.change.entry.changes).index(self.change)
         if attr in ("logbook", "title", "authors", "content", "attributes",
                     "metadata", "follows_id", "tags", "archived"):
-            return self.revision.get_old_value(attr)
+            return self.change.get_old_value(attr)
         if attr == "converted_attributes":
-            return convert_attributes(self.revision.entry.logbook,
-                                      self.revision.get_old_value("attributes"))
-        return getattr(self.revision.entry, attr)
+            return convert_attributes(self.change.entry.logbook,
+                                      self.change.get_old_value("attributes"))
+        return getattr(self.change.entry, attr)
 
 
 class EntryLock(Model):

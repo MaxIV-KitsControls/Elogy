@@ -70,9 +70,9 @@ class LogbooksResource(Resource):
         return logbook
 
 
-class LogbookRevisionsResource(Resource):
+class LogbookChangesResource(Resource):
 
-    @marshal_with(fields.logbook_revisions)
+    @marshal_with(fields.logbook_changes)
     def get(self, logbook_id):
         logbook = Logbook.get(Logbook.id == logbook_id)
-        return {"logbook_revisions": logbook.revisions}
+        return {"logbook_changes": logbook.changes}

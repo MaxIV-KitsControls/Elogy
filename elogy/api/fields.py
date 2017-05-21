@@ -61,32 +61,32 @@ authors = {
 }
 
 
-logbookrevision_metadata = {
+logbookchange_metadata = {
     "id": fields.Integer,
     "timestamp": fields.DateTime,
-    "revision_authors": fields.List(fields.Nested(authors)),
-    "revision_comment": fields.String,
-    "revision_ip": fields.String,
+    "change_authors": fields.List(fields.Nested(authors)),
+    "change_comment": fields.String,
+    "chante_ip": fields.String,
 }
 
 
-class LogbookRevisionField(fields.Raw):
-    def format(self, revision):
-        revision_fields = {
-            field: dict(old=revision.get_old_value(field),
-                        new=revision.get_new_value(field))
+class LogbookChangeField(fields.Raw):
+    def format(self, change):
+        change_fields = {
+            field: dict(old=change.get_old_value(field),
+                        new=change.get_new_value(field))
             for field in ["name", "description", "template", "attributes"]
-            if revision.changed.get(field) is not None
+            if field in change.changed
         }
-        meta_fields = marshal(revision, logbookrevision_metadata)
+        meta_fields = marshal(change, logbookchange_metadata)
         return {
-            "changed": revision_fields,
+            "changed": change_fields,
             **meta_fields
         }
 
 
-logbook_revisions = {
-    "logbook_revisions": fields.List(LogbookRevisionField)
+logbook_changes = {
+    "logbook_changes": fields.List(LogbookChangeField)
 }
 
 
@@ -161,32 +161,32 @@ entry = {
 }
 
 
-entryrevision_metadata = {
+entrychange_metadata = {
     "id": fields.Integer,
     "timestamp": fields.DateTime,
-    "revision_authors": fields.List(fields.Nested(authors)),
-    "revision_comment": fields.String,
-    "revision_ip": fields.String,
+    "change_authors": fields.List(fields.Nested(authors)),
+    "change_comment": fields.String,
+    "change_ip": fields.String,
 }
 
 
-class EntryRevisionField(fields.Raw):
-    def format(self, revision):
-        revision_fields = {
-            field: dict(old=revision.get_old_value(field),
-                        new=revision.get_new_value(field))
+class EntryChangeField(fields.Raw):
+    def format(self, change):
+        change_fields = {
+            field: dict(old=change.get_old_value(field),
+                        new=change.get_new_value(field))
             for field in ["title", "content", "authors", "attributes"]
-            if field in revision.changed
+            if field in change.changed
         }
-        meta_fields = marshal(revision, entryrevision_metadata)
+        meta_fields = marshal(change, entrychange_metadata)
         return {
-            "changed": revision_fields,
+            "changed": change_fields,
             **meta_fields
         }
 
 
-entry_revisions = {
-    "entry_revisions": fields.List(EntryRevisionField)
+entry_changes = {
+    "entry_changes": fields.List(EntryChangeField)
 }
 
 
