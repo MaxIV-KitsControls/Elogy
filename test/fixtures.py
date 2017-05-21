@@ -34,7 +34,12 @@ def elogy(request):
 def db(request):
 
     from elogy.db import db, setup_database
-    setup_database("/tmp/hejsan.db")
+    try:
+        os.remove("/tmp/test2.db")
+    except OSError as e:
+        pass
+
+    setup_database("/tmp/test2.db")
     return db
 
 
