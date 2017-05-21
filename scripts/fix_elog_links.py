@@ -35,12 +35,13 @@ def update_bad_links(db, url):
             if results:
                 elog_url, = results.groups()
                 print("elog_url", elog_url)
-                rows = db.execute_sql("SELECT id FROM entry WHERE json_extract(entry.metadata, '$.original_elog_url') = ?", [elog_url])
+                rows = db.execute_sql("SELECT id, logbook_id FROM entry WHERE json_extract(entry.metadata, '$.original_elog_url') = ?", [elog_url])
                 result = rows.fetchone()
                 if result:
-                    linked_entry_id, = result
+                    linked_entry_id, logbook_id = result
                     old_url = str(element.attrib["href"])
-                    new_url = "/entries/{}".format(linked_entry_id)
+                    new_url = "/logbooks/{}/entries/{}/".format(logbook_id,
+                                                                linked_entry_id)
                     print("\t", old_url, new_url)
                     db.execute_sql(
                         "UPDATE entry SET content = replace(content, ?, ?) WHERE id = ?",
