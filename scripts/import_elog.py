@@ -4,9 +4,8 @@ This script attempts to import an ELOG installation to Elogy.
 The process is
 1. parse all logbooks from the config file
 2. parse all posts via the logbook data
-3. import the elogs to elogy
+3. import the logbooks to elogy
 4. import entries (with attachments)
-5. repair links
 6. done!
 
 There are several weird cases where we either do an educated guess,
@@ -16,11 +15,14 @@ Usage:
 
 $ python import_elog.py http://elogy-host /path/to/elogd.conf /path/to/elog/logbooks Logbook2 Parent/Logbook2
 
+After this is done, you may also want to run "fix_elog_links.py"
+
 """
 
 from collections import OrderedDict
 import configparser
 from glob import glob
+import json
 import logging
 import os
 import time
@@ -33,7 +35,6 @@ except ImportError:
     bbcode = None
 from dateutil.parser import parse as parse_time
 from dateutil.tz import tzlocal
-from lxml import html, etree
 
 
 # elog treats some special values as attributes, elogy has
@@ -263,32 +264,6 @@ def process_body(body, encoding):
             return body.decode("utf-8"), "text/plain; charset=utf-8"
 
 
-# def handle_img_tags(text, timestamp, directory):
-#     "Find all linked images in an entry, and upload them"
-#     embedded_attachments = []
-#     try:
-#         doc = html.document_fromstring(text)
-#     except etree.ParserError:
-#         return text, embedded_attachments
-#     for element in doc.xpath("//*[@src]"):
-#         src = element.attrib['src'].split("?", 1)[0]
-#         if not src.startswith("data:"):
-#             embedded_attachments.append(src)
-#             filename = urllib.parse.unquote(src.replace("/", "_"))
-#             candidates = glob(os.path.join(directory, filename))
-#             if not candidates:
-#                 print("no candidates found for", directory, src)
-#                 continue
-#             if len(candidates) > 1:
-#                 print("Multiple candidates for", src)
-#             src = element.attrib['src'] = create_attachment(0, candidates[0],
-#                                                             embedded=True)
-#             if element.getparent().tag == "a":
-#                 element.getparent().attrib["href"] = src
-
-#     return (html.tostring(doc).decode("utf-8"), embedded_attachments)
-
-
 def create_logbook(session, url, logbook):
     "helper to upload a new logbook"
     return session.post(url,
@@ -331,6 +306,9 @@ def create_attachment(session, url, filename, embedded=False):
             data = dict(timestamp=timestamp)
             if embedded:
                 data["embedded"] = True
+            data["metadata"] = json.dumps({
+                "original_elog_filename": filename.rsplit("/", 1)[-1]
+            })
             response = session.post(url, files={"attachment": f}, data=data)
             if response.status_code == 200:
                 return response.json()["location"]
@@ -449,9 +427,6 @@ if __name__ == "__main__":
                                              entry=result),
                     filename)
             imported_entries[(logbook_uuid, mid)] = result
-
-    # TODO:
-    # - Repair links (to other entries, and to attachments)
 
     # TO CONSIDER
     # + How do we make this script idempotent?
