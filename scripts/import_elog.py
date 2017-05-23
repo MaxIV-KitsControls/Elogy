@@ -83,11 +83,14 @@ def get_logbook(config, name, parent=None,
                 "options": options,
                 "required": attribute in required
             }
-    # override attributes that are now (re)configured
-    attributes = [attribute_config[attr["name"].lower().strip()]
-                  for attr in attributes]
 
-    # Pick up attributes
+    # this is an (ordered) dict of attributes
+    attributes = OrderedDict(
+        (attr["name"].lower().strip(),
+         attribute_config[attr["name"].lower().strip()])
+         for attr in attributes.values())
+
+    # Pick up new attributes, overriding inherited ones
     if "attributes" in props:
         for attr_name in props["attributes"].split(","):
             logging.debug("parsing attribute %s", attr_name)
@@ -102,7 +105,7 @@ def get_logbook(config, name, parent=None,
                     "type": "text",
                     "required": generic_name in required
                 }
-            attributes.append(attr)
+            attributes[generic_name] = attr
 
     entries_dir = props.get("subdir", name)
 
@@ -131,7 +134,7 @@ def get_logbook(config, name, parent=None,
         "uuid": logbook_uuid,
         "name": name,
         "description": None,
-        "attributes": attributes,
+        "attributes": list(attributes.values()),
         "path": os.path.join(root_path, entries_dir),
         "parent": parent,
         "children": child_logbooks
