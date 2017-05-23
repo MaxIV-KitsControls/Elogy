@@ -63,6 +63,12 @@ def save_attachment(file_, timestamp, entry_id, metadata=None, embedded=False):
             # create a tiny preview version of the image
             image.convert("RGB")
             image.thumbnail((100, 100))
+            if ((image.mode in ("RGBA", "LA")) or
+                (image.mode == 'P' and "transparency" in image.info)):
+                alpha = image.convert("RGBA").split()[-1]
+                bg = Image.new("RGB", image.size, (255, 255, 255, 255))  # white
+                bg.paste(image, mask=alpha)
+                image = bg
             try:
                 image.save(path + ".thumbnail", "JPEG")
                 width, height = image.size
