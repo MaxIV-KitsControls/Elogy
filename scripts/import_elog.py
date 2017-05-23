@@ -16,7 +16,6 @@ Usage:
 $ python import_elog.py http://elogy-host /path/to/elogd.conf /path/to/elog/logbooks Logbook2 Parent/Logbook2
 
 After this is done, you may also want to run "fix_elog_links.py"
-
 """
 
 from collections import OrderedDict
@@ -61,10 +60,10 @@ def get_logbook(config, name, parent=None,
         props = {}
 
     # check for required attributes
-    if "required attributes" in props:
+    if "Required Attributes" in props:
         required = set([
             a.strip()
-            for a in props.get("required attributes").split(",")
+            for a in props.get("Required Attributes").split(",")
         ])
     else:
         required = set()
@@ -74,10 +73,10 @@ def get_logbook(config, name, parent=None,
     logging.debug("inheriting %d attributes", len(attribute_config))
     # read attribute options
     for key in props:
-        if key.startswith("options "):
+        if key.lower().startswith("options "):
             attribute = key.split(" ", 1)[1]
             options = [o.strip() for o in props[key].split(",")]
-            attribute_config[attribute] = {
+            attribute_config[attribute.lower().strip()] = {
                 "name": attribute,
                 "type": "option",
                 "options": options,
@@ -91,8 +90,8 @@ def get_logbook(config, name, parent=None,
          for attr in attributes.values())
 
     # Pick up new attributes, overriding inherited ones
-    if "attributes" in props:
-        for attr_name in props["attributes"].split(","):
+    if "Attributes" in props:
+        for attr_name in props["Attributes"].split(","):
             logging.debug("parsing attribute %s", attr_name)
             generic_name = attr_name.strip().lower()
             if generic_name in EXCLUDED_ATTRIBUTES:
@@ -107,7 +106,7 @@ def get_logbook(config, name, parent=None,
                 }
             attributes[generic_name] = attr
 
-    entries_dir = props.get("subdir", name)
+    entries_dir = props.get("Subdir", name)
 
     try:
         if toplevel:
@@ -332,7 +331,7 @@ if __name__ == "__main__":
     import sys
     from requests import Session
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     host_port = sys.argv[1]
     elogd_config = sys.argv[2]
@@ -348,6 +347,7 @@ if __name__ == "__main__":
     ATTACHMENT_URL = "http://%s/api/logbooks/{logbook[id]}/entries/{entry[id]}/attachments/" % host_port
 
     config = configparser.RawConfigParser(strict=False)
+    config.optionxform = str  # preserve key case
     config.read(elogd_config)
 
     sections = {
@@ -356,8 +356,8 @@ if __name__ == "__main__":
         if s.startswith("global ")
     }
     top_logbooks = [
-        sections[key[10:]] for key in config["global"]
-        if key.startswith("top group")
+        sections[key[10:].lower()] for key in config["global"]
+        if key.startswith("Top group")
     ]
 
     # get all logbooks into a flat dict, keyed on name
