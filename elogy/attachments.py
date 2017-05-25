@@ -48,9 +48,11 @@ def save_attachment(file_, timestamp, entry_id, metadata=None, embedded=False):
     upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], today)
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-    filename = "{}-{}".format(epoch, file_.filename)
-    # url = url_for(".get_attachment", "{}/{}".format(today, filename))
-    path = os.path.join(upload_dir, filename)
+    # make sure there's no path part in the filename
+    sanitized_filename = os.path.basename(file_.filename)
+    prefixed_filename = "{}-{}".format(epoch, sanitized_filename)
+    path = os.path.join(upload_dir, prefixed_filename)
+    # store the attachment at the unique path
     file_.save(path)
     try:
         # If it's an image file we create a thumbnail version for preview
@@ -60,29 +62,32 @@ def save_attachment(file_, timestamp, entry_id, metadata=None, embedded=False):
         if metadata:
             new_metadata.update(**metadata)
         if width > 100 or height > 100:
-            # create a tiny preview version of the image
+            # create a tiny version of the image
             image.convert("RGB")
             image.thumbnail((100, 100))
             if ((image.mode in ("RGBA", "LA")) or
                 (image.mode == 'P' and "transparency" in image.info)):
+                # image has transparency. Since JPEG does not support alpha
+                # channel, we'll superimpose it on a white background.
                 alpha = image.convert("RGBA").split()[-1]
-                bg = Image.new("RGB", image.size, (255, 255, 255, 255))  # white
+                bg = Image.new("RGB", image.size, (255, 255, 255, 255))
                 bg.paste(image, mask=alpha)
                 image = bg
             try:
                 image.save(path + ".thumbnail", "JPEG")
                 width, height = image.size
-                new_metadata["thumbnail_size"] = {"width": width, "height": height}
+                new_metadata["thumbnail_size"] = {"width": width,
+                                                  "height": height}
             except IOError as e:
                 print("Error making thumbnail", e)
         else:
+            # small image, re-use it as its own thumbnail
             os.link(path, path + ".thumbnail")
     except IOError as e:
-        # Not a recognized image
-        print("******************* Broken image attacment", e)
+        # Not a recognized image, no thumbnail
+        # TODO: thumbnails of PDF:s and maybe some other formats might be nice
         new_metadata = metadata
 
-    print("entry_id", entry_id)
     if entry_id:
         entry = Entry.get(Entry.id == entry_id)
     else:
@@ -90,8 +95,8 @@ def save_attachment(file_, timestamp, entry_id, metadata=None, embedded=False):
 
     content_type = get_content_type(file_)
 
-    attachment = Attachment(path="{}/{}".format(today, filename),
-                            filename=file_.filename,
+    attachment = Attachment(path="{}/{}".format(today, prefixed_filename),
+                            filename=sanitized_filename,
                             timestamp=timestamp,
                             content_type=content_type,
                             entry=entry, embedded=embedded,
@@ -138,7 +143,7 @@ def handle_img_tags(text, entry_id=None, timestamp=None):
                 continue
             try:
                 # TODO: possible to be more clever about the filename?
-                filename = "decoded-{}-{}.{}".format(
+                filename = "inline-{}-{}.{}".format(
                     len(raw_image), i, filetype.split("/")[1].lower())
             except IndexError:
                 print("weird filetype!?", filetype)
@@ -152,7 +157,8 @@ def handle_img_tags(text, entry_id=None, timestamp=None):
             # to the real URI? That way we could change the way the files
             # are stored under the hood without bothering about having
             # to keep URLs unchanged...
-            src = element.attrib["src"] = url_for("get_attachment", path=attachment.path)
+            src = element.attrib["src"] = url_for("get_attachment",
+                                                  path=attachment.path)
             if element.getparent().tag == "a":
                 element.getparent().attrib["href"] = src
 
