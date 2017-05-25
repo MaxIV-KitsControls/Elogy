@@ -142,7 +142,7 @@ class LogbookTree extends React.Component {
                             : null
                         }
 
-                        <Link to={`${parentUrl}new`}>
+                        <Link to={`${parentUrl}new`} title="Create a new logbook at this level">
                             New
                         </Link>
                     </div>
