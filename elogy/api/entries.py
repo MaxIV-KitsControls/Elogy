@@ -82,8 +82,7 @@ class EntryResource(Resource):
                     pass
                 # TODO: return a helpful error if this fails?
             data["attributes"] = attributes
-        entry = dict_to_model(Entry, data)
-        entry.save()
+        entry = Entry.create(**data)
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
