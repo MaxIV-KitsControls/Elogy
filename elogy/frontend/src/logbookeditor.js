@@ -115,7 +115,7 @@ class LogbookEditor extends React.Component {
     }
 
     changeName(event) {
-        this.setState({newName: event.target.value});
+        this.setState({name: event.target.value});
     }
 
     changeDescription (event) {
@@ -190,7 +190,7 @@ class LogbookEditor extends React.Component {
                     body: JSON.stringify({
                         id: this.state.id,
                         parent_id: this.state.parent? this.state.parent.id : null,                        
-                        name: this.state.newName || this.state.name,
+                        name: this.state.name,
                         description: this.state.description,
                         attributes: this.state.attributes,
                         template: this.state.newTemplate || this.state.template,
@@ -218,7 +218,7 @@ class LogbookEditor extends React.Component {
                     },                    
                     body: JSON.stringify({
                         parent_id: this.state.parent? this.state.parent.id : null,
-                        name: this.state.newName || this.state.name,
+                        name: this.state.name,
                         description: this.state.newDescription || this.state.description,
                         attributes: this.state.attributes,
                         template: this.state.newTemplate || this.state.template,
@@ -281,7 +281,7 @@ class LogbookEditor extends React.Component {
                     <fieldset>
                         <legend>Name</legend>
                         <input type="text" name="name"
-                               value={this.state.newName || this.state.name}
+                               value={this.state.name}
                                onChange={this.changeName.bind(this)}/>
                     </fieldset>
                     <fieldset className="description">
