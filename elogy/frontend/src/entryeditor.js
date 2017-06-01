@@ -12,7 +12,7 @@ import 'react-select/dist/react-select.css';
 
 import { EntryAttachments } from "./entryattachments.js";
 import TINYMCE_CONFIG from "./tinymceconfig.js";
-import {withProps} from './util.js';
+import {withProps, debounce} from './util.js';
 import { InnerEntry } from "./entry.js";
 import "./entryeditor.css";
 
@@ -106,6 +106,7 @@ class EntryEditorBase extends React.Component {
             attachments: [],
             content: null       
         }
+        this.slowFetchUserSuggestions = debounce(this.fetchUserSuggestions.bind(this), 500);
     }
 
     fetchEntry (logbookId, entryId, fill) {
@@ -131,17 +132,19 @@ class EntryEditorBase extends React.Component {
         this.setState({title: event.target.value});
     }
 
-    fetchUserSuggestions (input) {
-        return fetch(`/api/users/`, 
+    fetchUserSuggestions (input, callback) {
+        return fetch(`/api/users/?search=${input}`, 
                      {
                          headers: {"Accept": "application/json"}
                      })
             .then(response => response.json())
-            .then(response => {return {
-                options: (this.state.authors
-                              .concat(response.users)),
-                complete: false
-            }});
+            .then(response => {
+                callback(null, {
+                    options: (this.state.authors
+                                  .concat(response.users)),
+                    complete: false
+                });
+            });
     }
     
     onAuthorsChange (newAuthors) {
@@ -197,9 +200,10 @@ class EntryEditorBase extends React.Component {
                    optionRenderer={o => `${o.login} [${o.name}]`}
                    valueKey="login" labelKey="name"
                    options={ authors }
-                   loadOptions={ this.fetchUserSuggestions.bind(this) }
+                   loadOptions={ this.slowFetchUserSuggestions.bind(this) }
                    onChange={ this.onAuthorsChange.bind(this) }
-               />
+                   ignoreAccents={false}
+        />
     }
         
     getContentHTMLEditor (content) {

@@ -11,36 +11,46 @@ except ImportError:
 from . import fields
 
 
-users_parser = reqparse.RequestParser()
-users_parser.add_argument("search", type=str, default="")
-users_parser.add_argument("groups", type=str, default="")
+def search_ldap(server, basedn, search, max_results=20):
 
+    "Search the ldap server for a user"
 
-def search_ldap(server, basedn, search):
-    l = ldap.open(server)
+    l = ldap.initialize("ldap://" + server)
 
-    # approximate match against login OR full name
-    search_user = "(|(uid~={search}*)(cn~={search}))".format(search=search)
+    # partial match against full name OR login
+    if search:
+        search_user = "(|(cn=*{search}*)(uid=*{search}*))".format(search=search)
+    else:
+        search_user = "cn=*"
 
     ldap_attributes = ["uid", "cn", "mail"]
     attributes = ["login", "name", "email"]
-    resid = l.search(basedn, ldap.SCOPE_SUBTREE, search_user,
-                     ldap_attributes)
-
-    results = []
-    while True:
-        result_type, result_data = l.result(resid, 0)
-        if (result_data == []):
+    results = l.search_s(basedn, ldap.SCOPE_SUBTREE, filterstr=search_user,
+                         attrlist=ldap_attributes)
+    final_results = []
+    for result in results:
+        _, result_data = result
+        if "uid" not in result_data:
+            # users without login probably aren't people
+            continue
+        final_results.append({
+            attr: result_data[ldap_attr][0].decode("utf8")
+            for attr, ldap_attr in zip(attributes, ldap_attributes)
+            if result_data.get(ldap_attr)
+        })
+        if len(final_results) == max_results:
             break
-        else:
-            if result_type == ldap.RES_SEARCH_ENTRY:
-                results.append(dict(zip(attributes, result_data)))
-    l.unbind_s()  # disconnect
-    return results
+    # l.unbind_s()  # disconnect
+    return final_results
 
 
 class GroupDoesNotExist(Exception):
     pass
+
+
+users_parser = reqparse.RequestParser()
+users_parser.add_argument("search", type=str, default="")
+users_parser.add_argument("groups", type=str, default="")
 
 
 class UsersResource(Resource):
@@ -48,19 +58,22 @@ class UsersResource(Resource):
     """
     Note: The list of users is just taken from the underlying
     system. Elogy does not really know or care where users come from,
-    it just stores the authors as a list of arbitrary strings. This
-    is intended as a convenient way to find user names.
+    it just stores the authors as arbitrary strings. This is intended
+    as a convenient way look up user names, not for authentication.
 
     search: arbitrary string that will be matched against logins and
-            full names
-    groups: a list of group names to restrict the search to.
+            full names.
+    groups: a list of group names to restrict the search to
+            (currently has no effect if using LDAP
     """
 
     @marshal_with(fields.user, envelope="users")
     def get(self):
 
         args = users_parser.parse_args()
-        search = args.get("search", "")
+        search = args.get("search")
+        if not search:
+            return []
 
         # if LDAP is configured, let's check that
         LDAP_SERVER = current_app.config.get("LDAP_SERVER")
