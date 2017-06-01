@@ -10,9 +10,10 @@ DATABASE = "elogy.db"  # !!!Do not use /tmp for anything beyond testing!!!
 # The folder where all uploaded files will be stored.
 UPLOAD_FOLDER = '/tmp/elogy'  # !!!Again, /tmp is a bad choice!!!
 
-# Optional LDAP config. Used to autocomplete author names only!
+# Optional LDAP config. Used to autocomplete author names.
+# Requires the "pyldap" package.
 #LDAP_SERVER = "srv-ldap-2.maxiv.lu.se"
-#LDAP_BASEDN = "ou=People,dc=maxlab,dc=lu,dc=se"
+#LDAP_BASEDN = "dc=maxlab,dc=lu,dc=se"
 
 
 # Callbacks for various events
