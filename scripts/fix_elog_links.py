@@ -90,8 +90,9 @@ def update_attachment_links(db):
                         # assume it should also go to the attachment.
                         element.getparent().attrib["href"] = quoted_url
         # now write the updated content to the database
+        new_content = etree.tostring(doc).decode("utf-8")
         db.execute_sql("UPDATE entry SET content = ? WHERE id = ?",
-                       [etree.tostring(doc), entry_id])
+                       [new_content, entry_id])
 
 
 if __name__ == "__main__":
