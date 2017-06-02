@@ -209,7 +209,7 @@ class EntryEditorBase extends React.Component {
     getContentHTMLEditor (content) {
         return (
             <TinyMCEInput
-                value={ content }
+                value={ content || "" }
                 tinymceConfig={ TINYMCE_CONFIG }
                 onBlur={ this.onContentChange.bind(this) }/>            
         );
@@ -351,7 +351,7 @@ class EntryEditorNew extends EntryEditorBase {
                 </header>
                 <div className="content">
                     { this.getContentHTMLEditor(this.state.content ||
-                                                this.state.logbook.template || "") }
+                                                this.state.logbook.template) }
                 </div>
                 <footer>
                     { this.getAttachments(this.state.attachments) }
@@ -439,7 +439,7 @@ class EntryEditorFollowup extends EntryEditorBase {
                 </header>
                 <div className="content">
                     { this.getContentHTMLEditor(this.state.content ||
-                                                this.state.logbook.template || "") }
+                                                this.state.logbook.template) }
                 </div>
                 <footer>
                     { this.getAttachments(this.state.attachments ||
@@ -526,10 +526,8 @@ class EntryEditorEdit extends EntryEditorBase {
                     
                 </header>
                 <div className="content">
-                    <TinyMCEInput
-                        value={ this.state.content || this.state.entry.content }
-                        tinymceConfig={ TINYMCE_CONFIG }
-                        onBlur={ this.onContentChange.bind(this) }/>
+                    { this.getContentHTMLEditor(this.state.content ||
+                                                this.state.entry.content) }
                 </div>
                 <footer>
                     { this.getAttachments(this.state.attachments) }
