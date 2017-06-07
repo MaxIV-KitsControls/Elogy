@@ -30,6 +30,12 @@ class EntryAttributeEditor extends React.Component {
         this.setState({value: event.target.value});
     }
 
+    onKeypressNumber (event) {
+        // very primitive validity checking...
+        if (!(event.key === "." || parseInt(event.key)))
+            event.preventDefault();
+    }
+    
     onChangeBoolean (event) {
         this.setState({value: event.target.checked});
     }
@@ -50,32 +56,36 @@ class EntryAttributeEditor extends React.Component {
         const required = this.props.config.required;
         switch(this.props.config.type) {
             case "text":
-                return <input type="text" value={this.state.value}
-                              ref="attr" required={required}
-                              onChange={this.onChange.bind(this)}
-                              onBlur={this.onBlur.bind(this)}/>;
+                return <input type="text" value={ this.state.value }
+                              ref="attr" required={ required }
+                              onChange={ this.onChange.bind(this) }
+                              onBlur={ this.onBlur.bind(this) }/>;
             case "number":
-                return <input type="text" value={this.state.value}
-                              ref="attr" required={required}
-                              onChange={this.onChange.bind(this)}
-                              onBlur={this.onBlur.bind(this)}/>;
+                return <input type="number" step="any" inputmode="numeric"
+                              value={ this.state.value }
+                              ref="attr" required={ required }
+                              onKeyPress={ this.onKeypressNumber }
+                              onChange={ this.onChange.bind(this) }
+                              onBlur={ this.onBlur.bind(this) }/>;
             case "boolean":
-                return <input type="checkbox" checked={this.state.value}
-                              ref="attr" required={required}
-                              onChange={this.onChangeBoolean.bind(this)}
-                              onBlur={this.onBlur.bind(this)}/>;
+                return <input type="checkbox" checked={ this.state.value }
+                              ref="attr" required={ required }
+                              onChange={ this.onChangeBoolean.bind(this) }
+                              onBlur={ this.onBlur.bind(this) }/>;
             case "option":
-                return <Creatable value={this.state.value}
-                                  required={required}
-                                  options={this.props.config.options.map(o => {return {value: o, label: o}})}
-                                  onChange={this.onChangeSelect.bind(this)}
-                                  onBlur={this.onBlur.bind(this)}/>;
+                return <Creatable value={ this.state.value }
+                                  required={ required }
+                                  options={ this.props.config.options.map(
+                                          o => {return {value: o, label: o}}) }
+                                  onChange={ this.onChangeSelect.bind(this) }
+                                  onBlur={ this.onBlur.bind(this) }/>;
             case "multioption":
-                return <Creatable value={this.state.value} multi={true}
-                                  required={required}
-                                  options={this.props.config.options.map(o => {return {value: o, label: o}})}
-                                  onChange={this.onChangeMultiSelect.bind(this)}
-                                  onBlur={this.onBlur.bind(this)}/>;
+                return <Creatable value={ this.state.value } multi={ true }
+                                  required={ required }
+                                  options={ this.props.config.options.map(
+                                          o => {return {value: o, label: o}}) }
+                                  onChange={ this.onChangeMultiSelect.bind(this) }
+                                  onBlur={ this.onBlur.bind(this) }/>;
         }
     }
     
@@ -185,7 +195,7 @@ class EntryEditorBase extends React.Component {
     }
 
     getTitleEditor (title) {
-        return (<input type="text" placeholder="title"
+        return (<input type="text" placeholder="title" ref="title"
                        value={title} required={true}
                        onChange={this.onTitleChange.bind(this)}/>);
 
@@ -193,7 +203,7 @@ class EntryEditorBase extends React.Component {
 
     getAuthorsEditor (authors) {
         return <Async
-                   name="authors" placeholder="Authors"
+                   name="authors" placeholder="Authors" ref="authors"
                    valueRenderer={o => o.name}
                    multi={true}
                    value={ authors }
@@ -263,7 +273,7 @@ class EntryEditorBase extends React.Component {
                    Cancel
                </Link>;
     }
-
+    
     submitAttachments (entryId) {
         return this.state.attachments.map(attachment => {
             // TODO: also allow removing attachments            
@@ -278,7 +288,7 @@ class EntryEditorBase extends React.Component {
                   {method: "POST", body: data});
         });
     }
-    
+
     render () {
         return <Route render={this.renderInner.bind(this)}/>;
     }
