@@ -51,7 +51,8 @@ export class InnerEntry extends React.Component {
                                </span> :
                                null;
         const lastChangedAt = this.props.last_changed_at?
-                              <span className="last-changed-at">
+                              <span className="last-changed-at"
+                                    title="The entry was last edited at this time">
                                   &nbsp;&nbsp;
                                   <i className="fa fa-pencil"/>&nbsp;
                                   {formatDateTimeString(this.props.last_changed_at)}
@@ -80,17 +81,20 @@ export class InnerEntry extends React.Component {
                                     " current" : "")}>
 
                         <div className="commands">
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}>
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}
+                                  title="A direct link to this entry">
                                 Link
                             </Link>
                             &nbsp;|&nbsp;
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}>
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}
+                                  title="Make changes to this entry">
                                 Edit
                             </Link>
                         </div>
                         <div>
                             { followupNumber }
-                            <span className="created-at">
+                            <span className="created-at"
+                                  title="The entry was created at this time">
                                 <i className="fa fa-clock-o"/> {formatDateTimeString(this.props.created_at)}
                             </span>
                             { lastChangedAt }
@@ -161,12 +165,14 @@ class Entry extends React.Component {
 
         const logbook = this.state.logbook;
         const nextLink = this.state.next?
-                         (<Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}>
+                         (<Link to={`/logbooks/${logbook.id}/entries/${this.state.next}`}
+                                title="Go to the next chronological entry in this logbook">
                              Next
                          </Link>) :
                          "Next";
         const prevLink = this.state.previous?
-                         (<Link to={`/logbooks/${logbook.id}/entries/${this.state.previous}`}>
+                         (<Link to={`/logbooks/${logbook.id}/entries/${this.state.previous}`}
+                                title="Go to the previous chronological entry in this logbook">
                              Prev
                          </Link>) :
                          "Prev";
@@ -182,18 +188,25 @@ class Entry extends React.Component {
 
                         {
                         this.state.follows?
-                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}>Parent</Link>
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}
+                                  title="Go to the entry this one is a followup to">
+                                Parent
+                            </Link>
                         : null
                         }
                         
                         { prevLink } | { nextLink } &nbsp;
 
                         
-                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}>
+                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}
+                              title="Create a new entry as a 'followup' to this one.">
                             <i className="fa fa-reply"/> Followup
                         </Link>                        
             &nbsp;|&nbsp;
-                        <Link to={`/logbooks/${logbook.id}/entries/new`}>New Entry</Link>
+                        <Link to={`/logbooks/${logbook.id}/entries/new`}
+                              title="Create a new entry in this logbook">
+                            New Entry
+                        </Link>
                         
                         </span>    
                         : null
