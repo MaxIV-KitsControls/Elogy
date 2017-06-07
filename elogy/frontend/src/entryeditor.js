@@ -526,8 +526,12 @@ class EntryEditorEdit extends EntryEditorBase {
                         Editing { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
                     </span>
 
-                    { this.getTitleEditor(this.state.title) }
-
+                    {
+                        this.state.follows?
+                        null :
+                        this.getTitleEditor(this.state.title)
+                    }
+                    
                     { this.getAuthorsEditor(this.state.authors) }
                     
                     <div className="attributes">
