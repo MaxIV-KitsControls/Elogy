@@ -116,12 +116,10 @@ class LogbookTree extends React.Component {
                                         search={this.props.location.search}
                                         {...logbook}/>);
         const parentId = this.state.parent? (this.state.parent.id || 0) : 0;
-        const parentUrl = parentId?
-                          {
+        const parentUrl = {
                               pathname:`/logbooks/${parentId}`,
-                              search: `parent=${parentId}`
-                          } :
-                          "/logbooks/";
+                              search: `parent=${parentId || 0}`
+                          };
         
         return (
             <div id="logbooktree">
