@@ -1,13 +1,14 @@
 
 from datetime import datetime
 
-from flask import request, make_response, jsonify
+from flask import request, make_response, jsonify, send_file
 from flask_restful import Resource, reqparse, marshal, marshal_with, abort
 from peewee import DoesNotExist
 from playhouse.shortcuts import dict_to_model
 
 from ..db import Entry, Logbook, EntryLock
 from ..attachments import handle_img_tags
+from ..export import export_entries_as_pdf
 from ..utils import get_utc_datetime
 from . import fields
 
@@ -145,13 +146,13 @@ entries_parser.add_argument("attribute", type=str,
 entries_parser.add_argument("archived", type=bool)
 entries_parser.add_argument("n", type=int, default=50)
 entries_parser.add_argument("offset", type=int, store_missing=False)
+entries_parser.add_argument("download", type=str, store_missing=False)
 
 
 class EntriesResource(Resource):
 
     "Handle requests for entries from a given logbook, optionally filtered"
 
-    @marshal_with(fields.entries)
     def get(self, logbook_id=None):
         args = entries_parser.parse_args()
 
@@ -161,32 +162,42 @@ class EntriesResource(Resource):
         if logbook_id:
             # restrict search to the given logbook and its descendants
             logbook = Logbook.get(Logbook.id == logbook_id)
-            args = dict(child_logbooks=True,
-                        title_filter=args.get("title"),
-                        content_filter=args.get("content"),
-                        author_filter=args.get("authors"),
-                        attribute_filter=attributes,
-                        n=args["n"], offset=args.get("offset"))
-            entries = logbook.get_entries(**args)
+            search_args = dict(child_logbooks=True,
+                               title_filter=args.get("title"),
+                               content_filter=args.get("content"),
+                               author_filter=args.get("authors"),
+                               attribute_filter=attributes,
+                               n=args["n"], offset=args.get("offset"))
+            entries = logbook.get_entries(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
-            count = logbook.get_entries(count=True, **args).tuples()
+            count = logbook.get_entries(count=True, **search_args).tuples()
             count = list(count)[0][0] if list(count) else 0
 
         else:
             # global search (all logbooks)
             logbook = None
-            args = dict(child_logbooks=True,
-                        title_filter=args.get("title"),
-                        content_filter=args.get("content"),
-                        author_filter=args.get("authors"),
-                        attribute_filter=attributes,
-                        n=args["n"], offset=args["offset"])
-            entries = Entry.search(**args)
+            search_args = dict(child_logbooks=True,
+                               title_filter=args.get("title"),
+                               content_filter=args.get("content"),
+                               author_filter=args.get("authors"),
+                               attribute_filter=attributes,
+                               n=args["n"], offset=args["offset"])
+            entries = Entry.search(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
-            count = Entry.search(count=True, **args).tuples()
+            count = Entry.search(count=True, **search_args).tuples()
             count = list(count)[0][0] if list(count) else 0
 
-        return dict(logbook=logbook, entries=list(entries), count=count)
+        if args.get("download") == "pdf":
+            # return a PDF version
+            # TODO: not sure if this belongs in the API
+            pdf = export_entries_as_pdf(logbook, entries)
+            return send_file(pdf, mimetype="application/pdf",
+                             as_attachment=True,
+                             attachment_filename=("{logbook.name}.pdf"
+                                                  .format(logbook=logbook)))
+
+        return marshal(dict(logbook=logbook,
+                            entries=list(entries), count=count), fields.entries)
 
 
 class EntryLockResource(Resource):
