@@ -52,25 +52,38 @@ export class LocalAttachmentPreview extends React.Component {
 
 }
 
-export const AttachmentPreview = ({attachment}) => (
+export const AttachmentPreviewIcon = ({attachment}) => (
     attachment.link?
     <RemoteAttachmentPreview attachment={attachment}/> :
     <LocalAttachmentPreview attachment={attachment}/>
 )
 
 
+export const AttachmentPreview = ({attachment}) => (
+    <tr>
+        <td>
+            <a href={attachment.link}>
+                <AttachmentPreviewIcon attachment={attachment}/>
+            </a>
+        </td>
+        <td><a href={attachment.link}>{attachment.filename}</a></td>
+        <td>{attachment.timestamp}</td>
+    </tr>
+)
+
+
 export const EntryAttachments = ({attachments}) => (
     <div className="attachments">
-        {
-            attachments
-                .map((att, i) => (
-                    <span className="attachment" key={i} title={att.filename}>
-                        <a href={att.link}>
+        <table>
+            {
+                attachments
+                    .map((att, i) => (
+                        <tbody className="attachment" key={i} title={att.filename}>
                             <AttachmentPreview attachment={att}/>
-                        </a>
-                    </span>
-                ))
-        }
+                        </tbody>
+                    ))
+            }
+        </table>
     </div>
 )
 

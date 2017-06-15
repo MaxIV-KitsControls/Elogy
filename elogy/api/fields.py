@@ -93,6 +93,7 @@ logbook_changes = {
 attachment = {
     "filename": fields.String,
     "embedded": fields.Boolean,
+    "timestamp": fields.DateTime,
     "content_type": fields.String,
     "metadata": fields.Raw,
     "link": fields.String,

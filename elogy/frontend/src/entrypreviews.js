@@ -2,7 +2,7 @@ import React from 'react';
 import {Link} from 'react-router-dom';
 import LazyLoad from 'react-lazy-load';
 
-import {AttachmentPreview} from "./entryattachments.js";
+import {AttachmentPreviewIcon} from "./entryattachments.js";
 import {groupBy, formatTimeString, formatDateString} from "./util.js";
 
 
@@ -24,7 +24,7 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
             (<LazyLoad offsetVertical={500}
                        width={ attachmentPreviewWidth }
                        height={ attachmentPreviewHeight }>
-                <AttachmentPreview attachment={entry.attachment_preview}/>
+                <AttachmentPreviewIcon attachment={entry.attachment_preview}/>
             </LazyLoad>) :
             null
         }

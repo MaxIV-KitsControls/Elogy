@@ -142,6 +142,15 @@
     margin: 0;
 }
 
+#entry article .attachments table tr td {
+    border: none;
+    padding: 2px 10px;
+}
+
+#entry article .attachments table tr:nth-child(even) {
+    background: #ccc;
+}
+
 #entry table[width="98%"] {
     border: 1px solid red;
 }
