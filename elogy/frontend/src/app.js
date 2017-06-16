@@ -1,3 +1,5 @@
+/* The main file that ties together the various components into an "app" */
+
 import React from 'react';
 import {
     BrowserRouter as Router,

@@ -1,4 +1,4 @@
-/* A single, full entry */
+/* Display a full entry together with any followups */
 
 import React from 'react';
 import {findDOMNode} from 'react-dom';
@@ -59,7 +59,9 @@ export class InnerEntry extends React.Component {
                               </span>
                              :null;
         const authors = this.props.authors.map((author, i) =>
-            <span key={i} className="author" title={`${author.email || "No email"} (${author.login || "No login"})`}>
+            <span key={i}
+                  className="author"
+                  title={`${author.email || "No email"} (${author.login || "No login"})`}>
             { author.name }
             </span>);
 

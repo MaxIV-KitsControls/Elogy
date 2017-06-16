@@ -1,3 +1,5 @@
+/* Display a list of entries in a compact way */
+
 import React from 'react';
 import {Link} from 'react-router-dom';
 import LazyLoad from 'react-lazy-load';
@@ -47,6 +49,7 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
     const authors = entry.authors
                          .slice(0, 2)
                          .map((author, i) => <span key={i} className="author">{author}</span>);
+    const allAuthors = entry.authors.join(",&nbsp;");
     // for space reasons, we only show up to the two frst authors
     // and then add a summary of the rest, e.g. "(+3)".
     const authorsEllipsis = entry.authors.length > 2?
@@ -68,7 +71,8 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                     <span className="timestamp">
                         <i className="fa fa-clock-o"/> { edited } { timestamp }
                     </span>
-                    <span className="authors">
+                    <span className="authors"
+                          title={allAuthors}>
                         <i className="fa fa-user"/> { authors }{ authorsEllipsis }
                     </span>            
                 </div>

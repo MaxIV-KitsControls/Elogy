@@ -1,3 +1,5 @@
+/* Displays a logbook and the entries in it, after optional filtering */
+
 import React from 'react';
 import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
