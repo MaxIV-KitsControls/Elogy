@@ -1,14 +1,13 @@
 
 from datetime import datetime
 
-from flask import request, make_response, jsonify, send_file
+from flask import request, send_file
 from flask_restful import Resource, reqparse, marshal, marshal_with, abort
-from peewee import DoesNotExist
-from playhouse.shortcuts import dict_to_model
 
 from ..db import Entry, Logbook, EntryLock
 from ..attachments import handle_img_tags
 from ..export import export_entries_as_pdf
+from ..actions import new_entry, edit_entry
 from ..utils import get_utc_datetime
 from . import fields
 
@@ -48,7 +47,7 @@ class EntryResource(Resource):
 
     @marshal_with(fields.entry_full, envelope="entry")
     def post(self, logbook_id, entry_id=None):
-        "new entry"
+        "Creating a new entry"
         logbook = Logbook.get(Logbook.id == logbook_id)
         data = entry_parser.parse_args()
         # TODO: clean up
@@ -87,6 +86,8 @@ class EntryResource(Resource):
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
+
+        new_entry.send(marshal(entry, fields.entry_full))
         return entry
 
     @marshal_with(fields.entry_full, envelope="entry")
@@ -131,6 +132,7 @@ class EntryResource(Resource):
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
+        edit_entry.send(marshal(entry, fields.entry_full))
         return entry
 
 

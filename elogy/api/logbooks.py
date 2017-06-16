@@ -1,8 +1,7 @@
-from flask import jsonify
 from flask_restful import Resource, reqparse, marshal, marshal_with
-from playhouse.shortcuts import dict_to_model
 
 from ..db import Logbook
+from ..actions import new_logbook, edit_logbook
 from . import fields
 
 
@@ -58,6 +57,7 @@ class LogbooksResource(Resource):
             parent = Logbook.get(Logbook.id == logbook_id)
             logbook.parent = parent
         logbook.save()
+        new_logbook.send(logbook=marshal(logbook, fields.logbook))
         return logbook
 
     @marshal_with(fields.logbook, envelope="logbook")
@@ -67,6 +67,7 @@ class LogbooksResource(Resource):
         args = logbooks_parser.parse_args()
         logbook.make_change(**args).save()
         logbook.save()
+        edit_logbook.send(logbook=marshal(logbook, fields.logbook))
         return logbook
 
 
