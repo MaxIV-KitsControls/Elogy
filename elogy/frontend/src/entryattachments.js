@@ -26,7 +26,8 @@ export const RemoteAttachmentPreview = ({attachment}) => {
         return (
                 <img src={ attachment.thumbnail_link }
                      width={ attachment.metadata.thumbnail_size.width }
-                     height={ attachment.metadata.thumbnail_size.height }/>
+                     height={ attachment.metadata.thumbnail_size.height }
+                     alt={attachment.filename}/>
         );
     }
     return <i className="fa fa-file-o fa-2x"/>;
@@ -43,8 +44,8 @@ export class LocalAttachmentPreview extends React.Component {
     }
 
     render () {
-        if (this.props.attachment.type.split("/")[0] == "image") {
-            return <img ref="image" width="100"/>
+        if (this.props.attachment.type.split("/")[0] === "image") {
+            return <img ref="image" width="100" alt=""/>
         }
         const iconClass = ICON_CLASS_MAP[this.props.attachment.type] || "fa fa-file-o fa-2x";
         return <i className={iconClass}/>

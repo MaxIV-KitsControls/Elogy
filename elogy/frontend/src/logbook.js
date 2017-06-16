@@ -5,7 +5,7 @@ import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
 import update from 'immutability-helper';
 
-import {parseQuery, formatTimeString} from "./util.js";
+import {parseQuery} from "./util.js";
 import EntryPreviews from "./entrypreviews.js";
 import './logbook.css';
 
@@ -107,7 +107,7 @@ class Logbook extends React.Component {
     onChangeAttributeFilter (attribute, event) {
         // TODO: this should be encoded in the URL search string, like
         // the other search parameters!
-        if (event.target.selectedIndex == 0) {
+        if (event.target.selectedIndex === 0) {
             this.setState(update(
                 this.state, {
                     attributeFilters: {[attribute]: {$set: undefined}}
@@ -136,7 +136,7 @@ class Logbook extends React.Component {
 
         const logbook = this.state.logbook,
               entryId = this.props.match.params.entryId?
-                        parseInt(this.props.match.params.entryId)
+                        parseInt(this.props.match.params.entryId, 10)
                       : null,
               query = parseQuery(this.props.location.search),
               filter = ["title", "content", "authors"]
@@ -147,7 +147,7 @@ class Logbook extends React.Component {
                       </span>)),
               attributes = this.state.logbook.attributes?
                            this.state.logbook.attributes
-                               .filter(attr => attr.type == "option" || attr.type == "multioption")
+                               .filter(attr => attr.type === "option" || attr.type === "multioption")
                                .map(
                                    attr => (
                                        <select key={attr.name} onChange={this.onChangeAttributeFilter.bind(this, attr.name)}>

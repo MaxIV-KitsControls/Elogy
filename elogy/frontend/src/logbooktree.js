@@ -92,7 +92,7 @@ class LogbookTree extends React.Component {
 
     componentWillReceiveProps ({location}) {
         const query = parseQuery(location.search);
-        if (query.parent != this.state.parent)
+        if (query.parent !== this.state.parent)
             this.fetch(location.search);
     }
     
@@ -108,7 +108,7 @@ class LogbookTree extends React.Component {
     render () {
 
         const logbookId = (this.props.match.params.logbookId?
-                           parseInt(this.props.match.params.logbookId)
+                           parseInt(this.props.match.params.logbookId, 10)
                          : null);
         const nodes = this.state.children.map(
             logbook => <LogbookTreeNode key={logbook.id}
@@ -140,7 +140,8 @@ class LogbookTree extends React.Component {
                             : null
                         }
 
-                        <Link to={`${parentUrl}new`} title="Create a new logbook at this level">
+                        <Link to={`${parentUrl}new`}
+                              title="Create a new logbook at this level">
                             New
                         </Link>
                     </div>

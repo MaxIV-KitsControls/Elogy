@@ -1,11 +1,10 @@
 import React from 'react';
-import { findDOMNode } from 'react-dom';
-import {Link, Route, Prompt, Switch} from 'react-router-dom';
+import {Route, Prompt, Switch} from 'react-router-dom';
 import update from 'immutability-helper';
 import TinyMCEInput from './TinyMCEInput.js';
 
 import TINYMCE_CONFIG from './tinymceconfig.js';
-import {withProps, debounce} from './util.js';
+import {withProps} from './util.js';
 import './logbookeditor.css';
 
 
@@ -71,8 +70,8 @@ class LogbookAttributeEditor extends React.PureComponent {
                     Required                        
                 </label>
                 <label style={
-                    {display: (this.props.type == "option" ||
-                               this.props.type == "multioption")?
+                    {display: (this.props.type === "option" ||
+                               this.props.type === "multioption")?
                               "inline-block" : "none"}}>
                     Options:
                     <textarea rows="3" ref="options"
@@ -140,7 +139,7 @@ class LogbookEditorBase extends React.Component {
     }
     
     findAttribute(name) {
-        const attr = this.state.attributes.find(attr => attr.name == name);
+        const attr = this.state.attributes.find(attr => attr.name === name);
         return this.state.attributes.indexOf(attr);            
     }
     

@@ -10,7 +10,7 @@ const EntryAttribute = ({config, value}) => (
                 // from "option" to "multioption". Should the backend always
                 // convert the value to an array in this case? What about the
                 // opposite case?
-                config.type == "multioption"?
+                config.type === "multioption"?
                 value.map(v => <span className="option">{v}</span>)
                 : value
             }

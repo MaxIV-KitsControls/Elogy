@@ -6,7 +6,7 @@ import React from 'react';
 import {Link, Route, Prompt, Switch} from 'react-router-dom';
 import update from 'immutability-helper';
 import TinyMCEInput from './TinyMCEInput.js';
-import {Select, Creatable, AsyncCreatable, Async} from 'react-select';
+import {Creatable, Async} from 'react-select';
 import Dropzone from 'react-dropzone'
 import 'react-select/dist/react-select.css';
 
@@ -32,7 +32,7 @@ class EntryAttributeEditor extends React.Component {
 
     onKeypressNumber (event) {
         // very primitive validity checking...
-        if (!(event.key === "." || parseInt(event.key)))
+        if (!(event.key === "." || parseInt(event.key, 10)))
             event.preventDefault();
     }
     
@@ -86,6 +86,8 @@ class EntryAttributeEditor extends React.Component {
                                           o => {return {value: o, label: o}}) }
                                   onChange={ this.onChangeMultiSelect.bind(this) }
                                   onBlur={ this.onBlur.bind(this) }/>;
+            default:
+                return <div>?</div>
         }
     }
     
@@ -105,9 +107,6 @@ class EntryEditorBase extends React.Component {
     constructor (props) {
         super(props);
         this.state = {
-            submitted: false,
-
-            submitted: false,
             id: null,
             logbook: {},
             title: "",
@@ -181,9 +180,9 @@ class EntryEditorBase extends React.Component {
     hasEdits () {
         const original = this.state.entry || {};
         return (!this.submitted &&
-                (this.state.title != original.title ||
-                 this.state.content != original.content ||
-                 this.state.authors != original.authors));
+                (this.state.title !== original.title ||
+                 this.state.content !== original.content ||
+                 this.state.authors !== original.authors));
     }
 
     getPromptMessage () {
@@ -285,7 +284,7 @@ class EntryEditorBase extends React.Component {
     }
     
     submitAttachments (entryId) {
-        return this.state.attachments.map(attachment => {
+        return this.state.attachments.forEach(attachment => {
             // TODO: also allow removing attachments            
             if (!(attachment instanceof File)) {
                 // this attachment is already uploaded

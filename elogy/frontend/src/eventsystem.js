@@ -27,7 +27,7 @@ class EventBus {
         if (this.store[topic]) {
             const callbacks = this.store[topic];
             const index = callbacks.indexOf(callback);
-            if (index != -1) {
+            if (index !== -1) {
                 this.store[topic] = this.store[topic].splice(index, 1);
             }
         }        

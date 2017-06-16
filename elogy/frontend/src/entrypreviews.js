@@ -102,7 +102,7 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
                 {dateGroups[date]
                     .map((entry, i) => (
                         <dd key={i}
-                            className={"entry" + (selectedEntryId == entry.id? " selected" : "")}>
+                            className={"entry" + (selectedEntryId === entry.id? " selected" : "")}>
                             <EntryPreview
                                 key={entry.id}
                                 search={search}

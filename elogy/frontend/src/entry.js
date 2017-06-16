@@ -4,11 +4,10 @@ import React from 'react';
 import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
 
-import style from './entry.css';
+import './entry.css';
 import {formatDateTimeString} from './util.js';
 import EntryAttributes from "./entryattributes.js";
 import EntryAttachments from "./entryattachments.js";
-
 
 
 // An "entry" may have "followup" entries attached, and so on, so in
@@ -16,7 +15,7 @@ import EntryAttachments from "./entryattachments.js";
 export class InnerEntry extends React.Component {
 
     componentDidMount() {
-        if (this.props.currentEntryId == this.props.id) 
+        if (this.props.currentEntryId === this.props.id) 
             this.props.scrollToEntry(findDOMNode(this.refs.entry));
     }
     
@@ -148,7 +147,7 @@ class Entry extends React.Component {
     
     componentWillReceiveProps (newProps) {
         console.log("state", this.state);
-        if (newProps.match.params.entryId != this.state.id
+        if (newProps.match.params.entryId !== this.state.id
             || (this.state.logbook && (newProps.match.params.logbookId !== this.state.logbook.id))) {
             this.fetchEntry(newProps.match.params.logbookId,
                             newProps.match.params.entryId);
@@ -230,7 +229,7 @@ class Entry extends React.Component {
                     <div ref="body">
                         <InnerEntry {...this.state}
                                     scrollToEntry={this.scrollToEntry.bind(this)}
-                                    currentEntryId={parseInt(this.props.match.params.entryId)}/>
+                                    currentEntryId={parseInt(this.props.match.params.entryId, 10)}/>
                         
                     </div>
                 </div>

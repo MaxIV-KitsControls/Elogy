@@ -4,7 +4,6 @@ import React from 'react';
 import {
     BrowserRouter as Router,
     Route, Switch,
-    Link
 } from 'react-router-dom'
 
 import Entry from './entry.js';
@@ -13,7 +12,6 @@ import Logbook from './logbook.js';
 import LogbookEditor from './logbookeditor.js';
 import LogbookTree from './logbooktree.js';
 import QuickSearch from './search.js';
-import SearchResults from './searchresults.js';
 import EventBus from './eventsystem.js';
 import { withProps } from './util.js';
 import './app.css';
