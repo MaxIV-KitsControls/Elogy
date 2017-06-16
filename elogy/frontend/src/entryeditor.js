@@ -229,7 +229,9 @@ class EntryEditorBase extends React.Component {
         if (Object.keys(this.state.attributes).length > 0) {
             return this.state.attributes;
         } else {
-            return this.state.entry.attributes;
+            if (this.state.entry)
+                return this.state.entry.attributes;
+            return {}
         }
     }
     
