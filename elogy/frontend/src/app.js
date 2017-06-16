@@ -30,11 +30,23 @@ const LogbookWithEventbus = withProps(Logbook, {eventbus});
 const EntryEditorWithEventbus = withProps(EntryEditor, {eventbus});
 const LogbookEditorWithEventbus = withProps(LogbookEditor, {eventbus});
 
+// dummy components for when nothing is selected
+const NoLogbook = () => (
+    <div className="empty">
+        <i className="fa fa-arrow-left"/> Select a logbook
+    </div>
+);
+const NoEntry = () => (
+    <div className="empty">
+        <i className="fa fa-arrow-left"/> Select an entry
+    </div>
+);
+
 const Elogy = () => (
 
     /* Set up a browser router that will render the correct component
        in the right places, all depending on the current URL.  */
-    
+
     <Router>
         <div id="app">
             
@@ -57,6 +69,7 @@ const Elogy = () => (
                            component={ LogbookWithEventbus }/>
                     <Route path="/logbooks/:logbookId"
                            component={ LogbookWithEventbus }/>
+                    <Route component={NoLogbook}/>
                 </Switch>
             </div>
 
@@ -75,13 +88,15 @@ const Elogy = () => (
                            component={LogbookEditorWithEventbus}/>
                     <Route path="/logbooks/:logbookId/:command"
                            component={LogbookEditorWithEventbus}/>
+
+                    <Route path="/logbooks/" component={NoEntry}/>
                     
                 </Switch>
             </div>
             
         </div>
     </Router>
-)
+);
 
 
-export default Elogy
+export default Elogy;

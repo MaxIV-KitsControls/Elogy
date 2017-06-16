@@ -1,7 +1,13 @@
 #entry {
     background: #bbb;
 }
-    
+
+#entry .empty {
+    width: 100%;
+    padding-top: 10px;
+    text-align: center;
+}
+
 #entry img {
     image-orientation: from-image;
 }

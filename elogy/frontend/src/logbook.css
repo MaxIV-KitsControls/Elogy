@@ -1,7 +1,17 @@
+#logbook {
+    background: #ccc;    
+}
+
 #logbook .container {
     display: flex;
     flex-direction: column;
     height: 100%;     
+}
+
+#logbook .empty {
+    width: 100%;
+    padding-top: 10px;
+    text-align: center;
 }
 
 #logbook header {
