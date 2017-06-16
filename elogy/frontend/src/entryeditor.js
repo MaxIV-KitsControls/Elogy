@@ -163,10 +163,9 @@ class EntryEditorBase extends React.Component {
 
     onAttributeChange (name, value) {
         console.log("onAttributeChange", name, value);
-        if (value)
-            this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
-        else
-            this.setState(update(this.state, {attributes: {$unset: [name]}}));
+        this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
+        /* else
+         *     this.setState(update(this.state, {attributes: {$unset: [name]}}));*/
     }
     
     onContentChange (event) {
@@ -225,7 +224,16 @@ class EntryEditorBase extends React.Component {
         );
     }
 
-    getAttributes (attributes) {
+
+    getAttributes () {
+        if (Object.keys(this.state.attributes).length > 0) {
+            return this.state.attributes;
+        } else {
+            return this.state.entry.attributes;
+        }
+    }
+    
+    getAttributesEditors (attributes) {
         return this.state.logbook.attributes?
                this.state.logbook.attributes
                    .map((attr, i) => (
@@ -355,7 +363,7 @@ class EntryEditorNew extends EntryEditorBase {
                     { this.getAuthorsEditor(this.state.authors) }
                     
                     <div className="attributes">
-                        { this.getAttributes(this.state.attributes) }
+                        { this.getAttributesEditors(this.getAttributes()) }
                     </div>
                     
                 </header>
@@ -387,7 +395,15 @@ class EntryEditorFollowup extends EntryEditorBase {
     
     onSubmit({history}) {
         this.submitted = true;
-        // we're creating a new entry
+
+        const attributes = {};
+        // we want to default to the attributes of the original entry, but
+        // apply any changes on top.
+        this.state.logbook.attributes.forEach(
+            attr => attributes[attr.name] = this.state.attributes.hasOwnProperty(attr.name)?
+                                            this.state.attributes[attr.name] :
+                                            this.state.entry.attributes[attr.name]
+        );
         fetch(`/api/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`, {
             method: "POST",
             headers: {
@@ -398,7 +414,7 @@ class EntryEditorFollowup extends EntryEditorBase {
                 authors: this.state.authors,
                 content: this.state.content,
                 content_type: this.state.content_type,
-                attributes: this.state.attributes,
+                attributes: attributes,
                 archived: this.state.archived
             })
         })
@@ -443,7 +459,7 @@ class EntryEditorFollowup extends EntryEditorBase {
                     { this.getAuthorsEditor(this.state.authors || this.state.entry.authors) }
                     
                     <div className="attributes">
-                        { this.getAttributes(this.state.attributes || this.state.entry.attributes) }
+                        { this.getAttributesEditors(this.getAttributes()) }
                     </div>
                     
                 </header>
@@ -532,10 +548,11 @@ class EntryEditorEdit extends EntryEditorBase {
                         this.getTitleEditor(this.state.title)
                     }
                     
+
                     { this.getAuthorsEditor(this.state.authors) }
                     
                     <div className="attributes">
-                        { this.getAttributes(this.state.attributes) }
+                        { this.getAttributesEditors(this.getAttributes()) }
                     </div>
                     
                 </header>
