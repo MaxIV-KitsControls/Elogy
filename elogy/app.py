@@ -4,7 +4,7 @@ The main entrypoint of the Elogy web application
 
 from time import time
 
-from flask import Flask, current_app, send_from_directory, g
+from flask import Flask, current_app, send_from_directory, g, request
 from flask_restful import Api
 import logging
 from peewee import OperationalError
@@ -38,7 +38,6 @@ def teardown_request(exception=None):
 
 
 # Database setup
-#db.init_app(app)
 setup_database(app.config["DATABASE"]["name"])
 
 

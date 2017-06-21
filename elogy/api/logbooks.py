@@ -2,7 +2,7 @@ from flask_restful import Resource, reqparse, marshal, marshal_with
 
 from ..db import Logbook
 from ..actions import new_logbook, edit_logbook
-from . import fields
+from . import fields, send_signal
 
 
 logbooks_parser = reqparse.RequestParser()
@@ -42,6 +42,7 @@ class LogbooksResource(Resource):
                     .where(Logbook.parent == None))
         return dict(children=children)
 
+    @send_signal(new_logbook)
     @marshal_with(fields.logbook, envelope="logbook")
     def post(self, logbook_id=None):
         "Create a new logbook"
@@ -57,9 +58,9 @@ class LogbooksResource(Resource):
             parent = Logbook.get(Logbook.id == logbook_id)
             logbook.parent = parent
         logbook.save()
-        new_logbook.send(logbook=marshal(logbook, fields.logbook))
         return logbook
 
+    @send_signal(edit_logbook)
     @marshal_with(fields.logbook, envelope="logbook")
     def put(self, logbook_id):
         "Update an existing logbook"
@@ -67,7 +68,6 @@ class LogbooksResource(Resource):
         args = logbooks_parser.parse_args()
         logbook.make_change(**args).save()
         logbook.save()
-        edit_logbook.send(logbook=marshal(logbook, fields.logbook))
         return logbook
 
 

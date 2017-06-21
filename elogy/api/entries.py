@@ -1,7 +1,7 @@
 
 from datetime import datetime
 
-from flask import request, send_file
+from flask import request, send_file, abort
 from flask_restful import Resource, reqparse, marshal, marshal_with, abort
 
 from ..db import Entry, Logbook, EntryLock
@@ -9,7 +9,7 @@ from ..attachments import handle_img_tags
 from ..export import export_entries_as_pdf
 from ..actions import new_entry, edit_entry
 from ..utils import get_utc_datetime
-from . import fields
+from . import fields, send_signal
 
 
 entry_parser = reqparse.RequestParser()
@@ -45,6 +45,7 @@ class EntryResource(Resource):
             return entry._thread
         return entry
 
+    @send_signal(new_entry)
     @marshal_with(fields.entry_full, envelope="entry")
     def post(self, logbook_id, entry_id=None):
         "Creating a new entry"
@@ -86,10 +87,9 @@ class EntryResource(Resource):
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
-
-        new_entry.send(marshal(entry, fields.entry_full))
         return entry
 
+    @send_signal(edit_entry)
     @marshal_with(fields.entry_full, envelope="entry")
     def put(self, entry_id, logbook_id=None):
         "update entry"
@@ -132,7 +132,6 @@ class EntryResource(Resource):
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
-        edit_entry.send(marshal(entry, fields.entry_full))
         return entry
 
 
@@ -193,6 +192,8 @@ class EntriesResource(Resource):
             # return a PDF version
             # TODO: not sure if this belongs in the API
             pdf = export_entries_as_pdf(logbook, entries)
+            if pdf is None:
+                abort(400)
             return send_file(pdf, mimetype="application/pdf",
                              as_attachment=True,
                              attachment_filename=("{logbook.name}.pdf"

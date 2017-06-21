@@ -19,8 +19,10 @@ UPLOAD_FOLDER = '/tmp/elogy'  # !!!Again, /tmp is a bad choice!!!
 
 # Callbacks for various events
 
-def new_entry(entry):
+def new_entry(data):
     "Gets run whenever a new entry has been created"
+
+    entry = data["entry"]
 
     # 'entry' is the entry we just created, so it contains all the
     # data, e.g. title, authors, content, attributes and so on.
@@ -42,11 +44,15 @@ def new_entry(entry):
         pass
 
 
+def edit_logbook(data):
+    print("edit_logbook", data)
+
+
 ACTIONS = {
     "new_entry": new_entry,
     "edit_entry": None,
     "new_logbook": None,
-    "edit_logbook": None
+    "edit_logbook": edit_logbook
 }
 
 
