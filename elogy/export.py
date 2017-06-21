@@ -1,6 +1,9 @@
 from tempfile import NamedTemporaryFile
 
-import pdfkit
+try:
+    import pdfkit
+except ImportError:
+    pdfkit = None
 
 
 def export_entries_as_pdf(logbook, entries):
@@ -12,6 +15,9 @@ def export_entries_as_pdf(logbook, entries):
     TODO: pdfkit seems a bit limited, look for a more flexible alternative.
     "reportlab" looks pretty good (https://bitbucket.org/rptlab/reportlab)
     """
+
+    if pdfkit is None:
+        return None
 
     entries_html = [
         """
