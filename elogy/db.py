@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
+import logging
+import re
 
 from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
@@ -460,10 +462,10 @@ WITH recursive logbook1(id,parent_id) AS (
     WHERE logbook.parent_id=logbook1.id
 )
 SELECT {what}{attributes},
-       coalesce(followup.follows_id, entry.id) thread,
-       count(followup.id) n_followups,
+       coalesce(followup.follows_id, entry.id) AS thread,
+       count(followup.id) AS n_followups,
        max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
-                             coalesce(entry.last_changed_at,entry.created_at)))) timestamp
+                             coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
 FROM entry{authors}
 JOIN logbook1
 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
@@ -474,7 +476,7 @@ WHERE entry.logbook_id=logbook1.id
             else:
                 # In this case we're not searching recursively
                 query = (
-                    "select {what}{attributes},coalesce(entry.last_changed_at, entry.created_at) timestamp from entry{authors} where entry.logbook_id = {logbook}"
+                    "SELECT {what}{attributes},coalesce(entry.last_changed_at, entry.created_at) AS timestamp FROM entry{authors} WHERE entry.logbook_id = {logbook}"
                     .format(what="count()" if count else "entry.*",
                             logbook=logbook,
                             attributes=attributes,
@@ -483,9 +485,9 @@ WHERE entry.logbook_id=logbook1.id
             # In this case we're searching all entries and don't need
             # the recursive logbook filtering
             query = """
-SELECT {what}{attributes},count(followup.id) n_followups,
+SELECT {what}{attributes},count(followup.id) AS n_followups,
        max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
-                    coalesce(entry.last_changed_at,entry.created_at)))) timestamp
+                    coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
 FROM entry{authors}
 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
 WHERE 1
