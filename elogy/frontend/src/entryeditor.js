@@ -284,7 +284,7 @@ class EntryEditorBase extends React.Component {
     }
     
     submitAttachments (entryId) {
-        return this.state.attachments.forEach(attachment => {
+        return this.state.attachments.map(attachment => {
             // TODO: also allow removing attachments            
             if (!(attachment instanceof File)) {
                 // this attachment is already uploaded
@@ -313,6 +313,7 @@ class EntryEditorNew extends EntryEditorBase {
     onSubmit({history}) {
         this.submitted = true;
         // we're creating a new entry
+        let entryId;
         fetch(`/api/logbooks/${this.state.logbook.id}/entries/`, {
             method: "POST",
             headers: {
@@ -331,16 +332,15 @@ class EntryEditorNew extends EntryEditorBase {
             .then(response => response.json())
         // TODO: handle errors 
             .then(response => {
+                entryId = response.entry.id;                
+                return Promise.all(this.submitAttachments(response.entry.id));
+            })
+            .then(response => {
                 // signal other parts of the app that the logbook needs refreshing
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
-                const promise = Promise.all(this.submitAttachments(response.entry.id));
-                this.entryId = response.entry.id;  // hack!
-                return promise
-            })
-            .then(response => {
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.entryId}`);
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
             });
     }
 
@@ -396,7 +396,7 @@ class EntryEditorFollowup extends EntryEditorBase {
     
     onSubmit({history}) {
         this.submitted = true;
-
+        let entryId;
         const attributes = {};
         // we want to default to the attributes of the original entry, but
         // apply any changes on top.
@@ -422,17 +422,15 @@ class EntryEditorFollowup extends EntryEditorBase {
             .then(response => response.json())
         // TODO: handle errors 
             .then(response => {
+                entryId = response.entry.id;                
+                return Promise.all(this.submitAttachments(response.entry.id));
+            })
+            .then(response => {
                 // signal other parts of the app that the logbook needs refreshing
                 this.props.eventbus.publish("logbook.reload",
                                             this.state.logbook.id);
-                // send the browser to view the new entry
-                const promise = Promise.all(this.submitAttachments(response.entry.id));
-                this.entryId = response.entry.id;  // hack!
-                return promise
-            })
-            .then(response => {
-                // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.entryId}`);
+                // send the browser to view the new entry                
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);                
             });
         
     }
@@ -494,6 +492,7 @@ class EntryEditorEdit extends EntryEditorBase {
     onSubmit({history}) {
         this.submitted = true;
         // we're creating a new entry
+        let entryId;
         fetch(`/api/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`, {
             method: "PUT",
             headers: {
@@ -513,17 +512,15 @@ class EntryEditorEdit extends EntryEditorBase {
             .then(response => response.json())
         // TODO: handle errors 
             .then(response => {
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload",
-                                            this.state.logbook.id);
-                // send the browser to view the new entry
-                const promise = Promise.all(this.submitAttachments(response.entry.id));
-                this.entryId = response.entry.id;  // hack!
-                return promise
+                entryId = response.entry.id;                
+                return Promise.all(this.submitAttachments(response.entry.id));
             })
             .then(response => {
+                // signal other parts of the app that the logbook needs refreshing
+                this.props.eventbus.publish("logbook.reload",
+                                            this.state.logbook.id);                
                 // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${this.entryId}`);
+                history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
             });
 
     }
