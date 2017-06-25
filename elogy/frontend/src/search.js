@@ -40,6 +40,11 @@ class QuickSearch extends React.Component {
                      state: this.state
         });
     }
+
+    onReset (history, event) {
+        this.setState({content: null, title: null, authors: null},
+                      this.onSubmit.bind(this, history, event));
+    }
     
     render () {
 
@@ -53,19 +58,23 @@ class QuickSearch extends React.Component {
                 <form id="search" onSubmit={this.onSubmit.bind(this, history)}>
 
                     <input style={{width: "100%"}} name="title"
-                           type="text" ref="title" placeholder="Title"
-                           onChange={this.onChange.bind(this)}/>
+                                 value={this.state.title || ""}
+                                 type="text" ref="title" placeholder="Title"
+                                 onChange={this.onChange.bind(this)}/>
                     <input style={{width: "100%"}} name="content"
-                           type="text" ref="content"
-                           placeholder="Content"      
-                           onChange={this.onChange.bind(this)}/>
+                                 value={this.state.content || ""}
+                                 type="text" ref="content"
+                                 placeholder="Content"      
+                                 onChange={this.onChange.bind(this)}/>
                     <input style={{width: "100%"}} name="authors"
-                           type="text" ref="authors" placeholder="Authors"
-                           onChange={this.onChange.bind(this)}/>
-                                    
+                                 value={this.state.authors || ""}
+                                 type="text" ref="authors" placeholder="Authors"
+                                 onChange={this.onChange.bind(this)}/>
+                    
                     <input type="submit" value="Search"/>
+                    <input type="button" value="Clear" onClick={this.onReset.bind(this, history)}/>
                 </form>
-                )}/>
+            )}/>
         );
     }    
 }
