@@ -14,7 +14,7 @@ from peewee import Model, DoesNotExist, DeferredRelation, fn
 db = SqliteExtDatabase(None)
 
 
-def setup_database(db_name):
+def setup_database(db_name, close=True):
     "Configure the database and make sure all the tables exist"
     # TODO: support further configuration options, see FlaskDB
     db.init(db_name)
@@ -24,7 +24,8 @@ def setup_database(db_name):
     EntryChange.create_table(fail_silently=True)
     EntryLock.create_table(fail_silently=True)
     Attachment.create_table(fail_silently=True)
-    db.close()  # important
+    if close:
+        db.close()  # important
 
 
 class Logbook(Model):

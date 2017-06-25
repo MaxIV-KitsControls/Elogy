@@ -30,27 +30,22 @@ def elogy(request):
     proc.terminate()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def db(request):
 
     from elogy.db import db, setup_database
-    try:
-        os.remove("/tmp/test2.db")
-    except OSError as e:
-        pass
 
-    setup_database("/tmp/test2.db")
+    setup_database(":memory:", close=False)
     return db
+    # with NamedTemporaryFile() as f:
+    #     setup_database(f.name)
+    #     yield db
 
 
 @pytest.fixture(scope="module")
 def elogy_client(request):
-    try:
-        os.remove("/tmp/test.db")
-    except OSError as e:
-        print("isjdisj", e)
-        pass
     os.environ["ELOGY_CONFIG_FILE"] = "../test/config.py"
     from elogy.app import app
     with app.test_client() as c:
         yield c
+    os.remove(app.config["DATABASE"]["name"])

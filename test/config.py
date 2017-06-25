@@ -1,29 +1,20 @@
+# This is a config file for testing purposes, it creates a temporary
+# file for the database.
+
+from tempfile import NamedTemporaryFile
+
 TITLE = "elogy"
 
-SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'  # !!!Change this!!!
+SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
-DEBUG = False  # !!!Change this to False for production use!!!
+DEBUG = False
 
 # The name of the database file
-DATABASE = "/tmp/test.db"  # !!!Do not use /tmp for anything beyond testing!!!
-# DATABASE = ":memory:"  # !!!Do not use /tmp for anything beyond testing!!!
+with NamedTemporaryFile(delete=False) as f:
+    DATABASE = f.name
 
 # The folder where all uploaded files will be stored.
-UPLOAD_FOLDER = '/tmp/test_elogy'  # !!!Again, /tmp is a bad choice!!!
-
-
-# Callbacks for various signals
-
-def new_entry(entry):
-    print("new_entry", entry.id, entry.title)
-
-
-ACTIONS = {
-    "new_entry": new_entry,
-    "edit_logbook": None,
-    "new_logbook": None,
-    "edit_logbook": None
-}
+UPLOAD_FOLDER = '/tmp/test_elogy'
 
 
 # Don't change anything below this line unless you know what you're doing!

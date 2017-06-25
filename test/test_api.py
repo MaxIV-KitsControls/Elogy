@@ -94,7 +94,9 @@ def test_update_entry(elogy_client):
     in_entry, entry = make_entry(elogy_client, logbook)
 
     # change the title
-    new_in_entry = {**in_entry, "title": "New title", "revision_n": 0}
+    new_in_entry = {**in_entry,
+                    "title": "New title",
+                    "revision_n": 0}
     out_entry = decode_response(
         elogy_client.put("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
                          .format(logbook=logbook, entry=entry),
