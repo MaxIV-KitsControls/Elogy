@@ -289,12 +289,12 @@ class EntryEditorBase extends React.Component {
             if (!(attachment instanceof File)) {
                 // this attachment is already uploaded
                 // TODO: do this in a nicer way
-                return
+                return null;
             }
             let data = new FormData()
             data.append("attachment", attachment);
-            fetch(`/api/logbooks/${this.state.logbook.id}/entries/${entryId}/attachments/`,
-                  {method: "POST", body: data});
+            return fetch(`/api/logbooks/${this.state.logbook.id}/entries/${entryId}/attachments/`,
+                         {method: "POST", body: data});
         });
     }
 
