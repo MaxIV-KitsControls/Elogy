@@ -10,6 +10,7 @@ import EntryAttributes from "./entryattributes.js";
 import EntryAttachments from "./entryattachments.js";
 
 
+// This component renders an entry.
 // An "entry" may have "followup" entries attached, and so on, so in
 // practice we may display a whole tree of related entries here.
 export class InnerEntry extends React.Component {
@@ -118,6 +119,7 @@ export class InnerEntry extends React.Component {
 }
 
 
+// entry display including a header
 class Entry extends React.Component {
 
     constructor () {
@@ -133,7 +135,6 @@ class Entry extends React.Component {
     }
 
     fetchEntry (logbookId, entryId) {
-        /*         this.setState({loading: true});*/
         fetch(`/api/logbooks/${logbookId}/entries/${entryId}/?thread=true`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
@@ -146,7 +147,6 @@ class Entry extends React.Component {
     }
     
     componentWillReceiveProps (newProps) {
-        console.log("state", this.state);
         if (newProps.match.params.entryId !== this.state.id
             || (this.state.logbook && (newProps.match.params.logbookId !== this.state.logbook.id))) {
             this.fetchEntry(newProps.match.params.logbookId,
@@ -154,6 +154,11 @@ class Entry extends React.Component {
         }
     }
 
+    componentDidUpdate = () => {
+        // make sure to scroll to top after loading a new entry.
+        setTimeout(() => findDOMNode(this.refs.body).scrollIntoView(), 100);
+    }
+    
     scrollToEntry (element) {
         setTimeout(() => element.scrollIntoView(), 100);
     }
@@ -179,7 +184,7 @@ class Entry extends React.Component {
                          "Prev";
         
         return (
-            <div className="container">
+            <div className="container" ref="container">
                 
                 {/* The header will always stay at the top */}
                 <header>
