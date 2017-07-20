@@ -1,6 +1,8 @@
 from io import BytesIO
 import json
 
+from pytest import mark
+
 from .fixtures import elogy_client
 
 
@@ -370,3 +372,22 @@ def test_create_attachment(elogy_client):
         "/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
         .format(logbook=logbook, entry=entry)))
     assert response["entry"]["attachments"][0]["id"] == att["id"]
+
+
+@mark.xfail(reason="See https://github.com/pallets/werkzeug/issues/1091")
+def test_create_attachment_with_single_quotes(elogy_client):
+    in_logbook, logbook = make_logbook(elogy_client)
+    in_entry, entry = make_entry(elogy_client, logbook)
+
+    # upload an attachment
+    FILENAME = "my_'attachment'.txt"
+    DATA = b"some data"
+    URL = ("/api/logbooks/{logbook[id]}/entries/{entry[id]}/attachments/"
+           .format(logbook=logbook, entry=entry))
+
+    att = decode_response(
+        elogy_client.post(
+            URL,
+            content_type='multipart/form-data',
+            data={"attachment": [(BytesIO(DATA), FILENAME)]}))
+    assert att["filename"] == FILENAME
