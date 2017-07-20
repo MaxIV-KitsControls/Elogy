@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
 import logging
-import re
 
 from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
@@ -276,6 +275,11 @@ def convert_attributes(logbook, attributes):
     return converted
 
 
+def escape_string(s):
+    "Double single quotes for sqlite"
+    return s.replace("'", "''")
+
+
 class Entry(Model):
 
     class Meta:
@@ -430,7 +434,6 @@ class Entry(Model):
         # the query as a raw string is that peewee does not (currently)
         # support recursive queries, which we need in order to search
         # through nested logbooks. Cleanup needed!
-        # TODO: sanitize the SQL queries to prevent bad injections
 
         if attribute_filter:
             # need to extract the attribute values from JSON here, so that
@@ -438,7 +441,8 @@ class Entry(Model):
             attributes = ", {}".format(
                 ", ".join(
                     "json_extract(entry.attributes, '$.{attr}') AS {attr_id}"
-                    .format(attr=attr, attr_id="attr{}".format(i))
+                    .format(attr=escape_string(attr),
+                            attr_id="attr{}".format(i))
                     for i, (attr, _) in enumerate(attribute_filter)))
         else:
             attributes = ""
@@ -463,17 +467,21 @@ WITH recursive logbook1(id,parent_id) AS (
     WHERE logbook.parent_id=logbook1.id
 )
 SELECT {what}{attributes},
+       {attachment}
        coalesce(followup.follows_id, entry.id) AS thread,
        count(followup.id) AS n_followups,
        max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
                              coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
 FROM entry{authors}
 JOIN logbook1
+{join_attachment}
 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
 WHERE entry.logbook_id=logbook1.id
 """.format(attributes=attributes,
+           attachment=("path as attachment_path," if attachment_filter else ""),
            what="COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count" if count else "entry.*",
-           authors=authors, logbook=logbook.id)
+           authors=authors, logbook=logbook.id,
+           join_attachment=("JOIN attachment ON attachment.entry_id == entry.id" if attachment_filter else ""))
             else:
                 # In this case we're not searching recursively
                 query = (
@@ -498,40 +506,36 @@ WHERE 1
         if not archived:
             query += " AND NOT entry.archived"
 
+        variables = []
+
         # if not followups:
         #     query += " AND entry.follows_id IS NULL"
 
         # further filters on the results, depending on search criteria
         if content_filter:
             # need to filter out null or REGEX will explode on them
-            query += " AND entry.content IS NOT NULL AND entry.content REGEXP '{}'".format(content_filter)
+            query += " AND entry.content IS NOT NULL AND entry.content REGEXP ?"
+            variables.append(content_filter)
         if title_filter:
-            query += " AND entry.title IS NOT NULL AND entry.title REGEXP '{}'".format(title_filter)
+            query += " AND entry.title IS NOT NULL AND entry.title REGEXP ?"
+            variables.append(title_filter)
         if author_filter:
-            query += " AND json_extract(authors2.value, '$.name') REGEXP '{}'".format(author_filter)
-
-        # if attachment_filter:
-        #     entries = (
-        #         entries
-        #         .join(Attachment)
-        #         .where(
-        #             (~ Attachment.embedded) &
-        #             # Here, ** means "case insensitive like" or ILIKE
-        #             (Attachment.path ** "%{}%".format(attachment_filter)))
-        #         # avoid multiple hits on the same entry
-        #         .group_by(Entry.id))
-
+            query += " AND json_extract(authors2.value, '$.name') REGEXP ?"
+            variables.append(author_filter)
+        if attachment_filter:
+            query += " AND attachment_path REGEXP ?"
+            variables.append(attachment_filter)
         if attribute_filter:
             for i, (attr, value) in enumerate(attribute_filter):
-                # attr_value = fn.json_extract(Entry.attributes, "$." + attr)
-                query += " AND {} = '{}'".format("attr{}".format(i), value)
+                query += " AND ? = ?"
+                variables.extend(["attr{}".format(i), value])
 
         # Here we're getting into deep water...
         # If we just want the total count of results, we can't group
         # because then the count would be per group. So that makes sense.
         # However, when we're searching, we also don't want the grouping
-        # because it means we
-        if not count:  #,
+        # because it means we won't find individual followups
+        if not count:
             query += " GROUP BY entry.id"
             if not any([title_filter, content_filter, author_filter]):
                 query += " HAVING entry.follows_id IS NULL"
@@ -542,7 +546,8 @@ WHERE 1
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        return Entry.raw(query)
+        logging.debug("{}, variables={}", query, ", ".join(variables))
+        return Entry.raw(query, *variables)
 
 
 DeferredEntry.set_model(Entry)

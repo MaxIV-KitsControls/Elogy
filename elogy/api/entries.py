@@ -167,6 +167,7 @@ class EntriesResource(Resource):
                                title_filter=args.get("title"),
                                content_filter=args.get("content"),
                                author_filter=args.get("authors"),
+                               attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                n=args["n"], offset=args.get("offset"))
             entries = logbook.get_entries(**search_args)
