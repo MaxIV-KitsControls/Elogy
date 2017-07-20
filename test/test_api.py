@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 
 from .fixtures import elogy_client
@@ -341,3 +342,31 @@ def test_entry_lock_steal(elogy_client):
             .format(logbook=logbook, entry=entry)))["lock"]
     assert lock2["id"] == stolen_lock["id"]
     assert lock2["owned_by_ip"] == OTHER_IP
+
+
+def test_create_attachment(elogy_client):
+    in_logbook, logbook = make_logbook(elogy_client)
+    in_entry, entry = make_entry(elogy_client, logbook)
+
+    # upload an attachment
+    FILENAME = "my_attachment.txt"
+    DATA = b"some data"
+    URL = ("/api/logbooks/{logbook[id]}/entries/{entry[id]}/attachments/"
+           .format(logbook=logbook, entry=entry))
+
+    att = decode_response(
+        elogy_client.post(
+            URL,
+            content_type='multipart/form-data',
+            data={"attachment": [(BytesIO(DATA), FILENAME)]}))
+    assert att["filename"] == FILENAME
+
+    # read it back
+    attachment = elogy_client.get(att["location"])
+    assert attachment.get_data() == DATA
+
+    # check that the entry now also has the attachment
+    response = decode_response(elogy_client.get(
+        "/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
+        .format(logbook=logbook, entry=entry)))
+    assert response["entry"]["attachments"][0]["id"] == att["id"]

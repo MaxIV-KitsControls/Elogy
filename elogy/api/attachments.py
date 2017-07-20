@@ -24,7 +24,7 @@ class AttachmentsResource(Resource):
     def post(self, logbook_id, entry_id):
         "Upload attachments to an entry"
         args = attachments_parser.parse_args()
-        if args["timestamp"]:
+        if args.get("timestamp"):
             timestamp = get_utc_datetime(args["timestamp"])
         else:
             timestamp = datetime.utcnow()
