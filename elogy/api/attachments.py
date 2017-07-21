@@ -38,7 +38,8 @@ class AttachmentsResource(Resource):
                                          entry_id, metadata,
                                          embedded=args["embedded"])
             attachment.save()
-        return jsonify(location=url_for("get_attachment",
+        return jsonify(id=attachment.id,
+                       location=url_for("get_attachment",
                                         path=attachment.path),
                        content_type=attachment.content_type,
                        filename=attachment.filename,
