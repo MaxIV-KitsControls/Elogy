@@ -435,6 +435,7 @@ class Entry(Model):
         # support recursive queries, which we need in order to search
         # through nested logbooks. Cleanup needed!
 
+        print("dpsaopdlspalp", attachment_filter)
         if attribute_filter:
             # need to extract the attribute values from JSON here, so that
             # we can match on them later
@@ -494,14 +495,17 @@ WHERE entry.logbook_id=logbook1.id
             # In this case we're searching all entries and don't need
             # the recursive logbook filtering
             query = """
-SELECT {what}{attributes},count(followup.id) AS n_followups,
+SELECT {what}{attributes},count(followup.id) AS n_followups,{attachment}
        max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
                     coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
 FROM entry{authors}
+{join_attachment}
 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
 WHERE 1
 """.format(what="count()" if count else "entry.*",
-           attributes=attributes, authors=authors)
+           attachment=("path as attachment_path," if attachment_filter else ""),
+           attributes=attributes, authors=authors,
+           join_attachment=("JOIN attachment ON attachment.entry_id == entry.id" if attachment_filter else ""))
 
         if not archived:
             query += " AND NOT entry.archived"
@@ -546,7 +550,7 @@ WHERE 1
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        logging.debug("{}, variables={}", query, ", ".join(variables))
+        print("{}, variables={}".format(query, ", ".join(variables)))
         return Entry.raw(query, *variables)
 
 
