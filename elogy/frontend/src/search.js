@@ -10,7 +10,8 @@ class QuickSearch extends React.Component {
         this.state = {
             content: null,
             title: null,
-            authors: null
+            authors: null,
+            attachments: null
         }
     }
 
@@ -37,12 +38,12 @@ class QuickSearch extends React.Component {
         history.push({
             pathname: `/logbooks/${this.props.match.params.logbookId || 0}`,
             search: `?${parentQuery}${query}`,
-                     state: this.state
+            state: this.state
         });
     }
 
     onReset (history, event) {
-        this.setState({content: null, title: null, authors: null},
+        this.setState({content: null, title: null, authors: null, attachments: null},
                       this.onSubmit.bind(this, history, event));
     }
     
@@ -69,6 +70,10 @@ class QuickSearch extends React.Component {
                     <input style={{width: "100%"}} name="authors"
                                  value={this.state.authors || ""}
                                  type="text" ref="authors" placeholder="Authors"
+                                 onChange={this.onChange.bind(this)}/>
+                    <input style={{width: "100%"}} name="attachments"
+                                 value={this.state.attachments || ""}
+                                 type="text" ref="attachments" placeholder="Attachments"
                                  onChange={this.onChange.bind(this)}/>
                     
                     <input type="submit" value="Search"/>
