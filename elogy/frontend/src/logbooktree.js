@@ -118,7 +118,7 @@ class LogbookTree extends React.Component {
         const parentId = this.state.parent? (this.state.parent.id || 0) : 0;
         const parentUrl = {
                               pathname:`/logbooks/${parentId}`,
-                              search: `parent=${parentId || 0}`
+                              search: `parent=${parentId}`
                           };
         
         return (
@@ -140,7 +140,7 @@ class LogbookTree extends React.Component {
                             : null
                         }
 
-                        <Link to={`${parentUrl}new`}
+                        <Link to={`${parentUrl.pathname}/new`}
                               title="Create a new logbook at this level">
                             New
                         </Link>

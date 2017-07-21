@@ -47,14 +47,13 @@ class LogbooksResource(Resource):
     def post(self, logbook_id=None):
         "Create a new logbook"
         args = logbooks_parser.parse_args()
-        print(args, logbook_id)
         logbook = Logbook(name=args["name"], parent=args["parent_id"],
                           description=args["description"],
                           template=args["template"],
                           attributes=args["attributes"],
                           metadata=args["metadata"],
                           archived=args["archived"])
-        if logbook_id is not None:
+        if logbook_id:
             parent = Logbook.get(Logbook.id == logbook_id)
             logbook.parent = parent
         logbook.save()
