@@ -1,3 +1,5 @@
+from operator import attrgetter
+
 from .fixtures import db
 from elogy.db import Entry, EntryChange, EntryRevision
 from elogy.db import Logbook, LogbookChange, LogbookRevision
@@ -172,3 +174,193 @@ def test_entryrevisionwrapper2(db):
     assert wrapper2.revision_n == 2
     assert wrapper2.title == entry_v2["title"]
     assert wrapper2.content == entry_v2["content"]
+
+
+def test_entry_content_search(db):
+    lb1 = Logbook.create(name="Logbook1")
+    lb2 = Logbook.create(name="Logbook2")
+
+    entries = [
+        {
+            "logbook": lb1,
+            "title": "First entry",
+            "content": "This content is great!"
+        },
+        {
+            "logbook": lb1,
+            "title": "Second entry",
+            "content": "Some very neat content."
+        },
+        {
+            "logbook": lb1,
+            "title": "Third entry",
+            "content": "Not so bad content either."
+        },
+        {
+            "logbook": lb2,
+            "title": "Fourth entry",
+            "content": "Not so great content, should be ignored."
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # simple search
+    result, = list(Entry.search(logbook=lb1.id, content_filter="great"))
+    assert result.title == "First entry"
+
+    # regexp search
+    result, = list(Entry.search(logbook=lb1.id, content_filter="Not.*content"))
+    assert result.title == "Third entry"
+
+
+def test_entry_content_search_global(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "First entry",
+            "content": "This content is great!"
+        },
+        {
+            "logbook": lb,
+            "title": "Second entry",
+            "content": "Some very neat content."
+        },
+        {
+            "logbook": lb,
+            "title": "Third entry",
+            "content": "Not so bad content either."
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # simple search
+    result, = list(Entry.search(content_filter="great"))
+    assert result.title == "First entry"
+
+    # regexp search
+    result, = list(Entry.search(content_filter="Not.*content"))
+    assert result.title == "Third entry"
+
+
+def test_entry_title_search(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "First entry",
+            "content": "This content is great!"
+        },
+        {
+            "logbook": lb,
+            "title": "Second entry",
+            "content": "Some very neat content."
+        },
+        {
+            "logbook": lb,
+            "title": "Third entry",
+            "content": "Not so bad content either."
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # simple search
+    result, = list(Entry.search(logbook=lb.id, title_filter="First"))
+    assert result.title == "First entry"
+
+    # regexp search
+    result, = list(Entry.search(logbook=lb.id, title_filter="Th.*ry"))
+    assert result.title == "Third entry"
+
+
+def test_entry_authors_search(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "First entry",
+            "content": "This content is great!",
+            "authors": [{"name": "alpha"}, {"name": "beta"}]
+        },
+        {
+            "logbook": lb,
+            "title": "Second entry",
+            "content": "Some very neat content.",
+            "authors": [{"name": "alpha"}]
+        },
+        {
+            "logbook": lb,
+            "title": "Third entry",
+            "content": "Not so bad content either.",
+            "authors": [{"name": "gamma"}, {"name": "beta"}]
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    results = list(Entry.search(logbook=lb.id, author_filter="alpha"))
+    set([results[0].title, results[0].title]) == set(["First entry",
+                                                      "Second entry"])
+
+    # either
+    results = list(Entry.search(logbook=lb.id, author_filter="alpha|beta"))
+    set(map(attrgetter("title"), results)) == set(["First entry",
+                                                   "Second entry",
+                                                   "Third entry"])
+
+
+def test_entry_attribute_filter(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "First entry",
+            "content": "This content is great!",
+            "attributes": {"a": "1", "b": "2"}
+        },
+        {
+            "logbook": lb,
+            "title": "Second entry",
+            "content": "Some very neat content.",
+            "attributes": {"a": "1", "b": "3"}
+        },
+        {
+            "logbook": lb,
+            "title": "Third entry",
+            "content": "Not so bad content either.",
+            "attributes": {"a": "2", "b": "2"}
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # filter attributes
+    result, = list(Entry.search(logbook=lb.id, attribute_filter=[("a", "2")]))
+    assert result.title == "Third entry"
+
+    results = list(Entry.search(logbook=lb.id, attribute_filter=[("b", "2")]))
+    assert len(results) == 2
+    set([results[0].title, results[0].title]) == set(["First entry",
+                                                      "Third entry"])
