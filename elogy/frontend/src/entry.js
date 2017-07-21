@@ -200,10 +200,7 @@ class Entry extends React.Component {
                             </Link>
                         : null
                         }
-                        
-                        { prevLink } | { nextLink } &nbsp;
-
-                        
+                                                
                         <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}
                               title="Create a new entry as a 'followup' to this one.">
                             <i className="fa fa-reply"/> Followup
