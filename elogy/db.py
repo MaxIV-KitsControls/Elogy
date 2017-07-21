@@ -435,7 +435,6 @@ class Entry(Model):
         # support recursive queries, which we need in order to search
         # through nested logbooks. Cleanup needed!
 
-        print("dpsaopdlspalp", attachment_filter)
         if attribute_filter:
             # need to extract the attribute values from JSON here, so that
             # we can match on them later
@@ -531,8 +530,8 @@ WHERE 1
             variables.append(attachment_filter)
         if attribute_filter:
             for i, (attr, value) in enumerate(attribute_filter):
-                query += " AND ? = ?"
-                variables.extend(["attr{}".format(i), value])
+                query += " AND attr{} = ?".format(i)
+                variables.append(value)
 
         # Here we're getting into deep water...
         # If we just want the total count of results, we can't group
