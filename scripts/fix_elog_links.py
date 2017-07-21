@@ -1,14 +1,20 @@
 """
-After an import with import_elog.py, finds old ELOG links in the
-database and converts them to new URLs. It also finds image links
-to attachments and updates them to point to the new URLs.
+After an import with "import_elog.py", run this script to find old
+ELOG links in the database and convert them to new URLs. It also
+finds image links to attachments and updates them to point to the new
+URLs.
 
 The script assumes that the entries have been imported using
 "import_elog.py" since it requires some metadata to be stored
 for entries and attachments. It can't fix entries that have been
 created in other ways.
 
-Operates directly on the DB file, so back it up before trying.
+Operates directly on the sqlite DB file, so back it up before trying.
+
+Usage:
+
+$ python fix_elog_links.py elogy.db host.of.old.elog other.address.to/elog
+
 """
 
 import os

@@ -1,5 +1,4 @@
-"""
-This script attempts to import an ELOG installation to Elogy.
+"""This script attempts to import an ELOG installation to Elogy.
 
 The process is
 1. parse all logbooks from the config file
@@ -9,13 +8,24 @@ The process is
 6. done!
 
 There are several weird cases where we either do an educated guess,
-or just skip that particular logbook/entry/whatever.
+or just skip that particular logbook/entry/whatever. Hopefully the
+output should give you some hints as to why.
+
+There's no checking to see if a logbook is already present so
+in that case you will end up with several logbooks of the same
+name (which is fine in elogy).
 
 Usage:
 
-$ python import_elog.py http://elogy-host /path/to/elogd.conf /path/to/elog/logbooks Logbook2 Parent/Logbook2
+$ python import_elog.py http://elogy-host /path/to/elogd.conf /path/to/elog/logbooks Logbook1 "Some other logbook" ParentLogbook/ChildLogbook
 
-After this is done, you may also want to run "fix_elog_links.py"
+Note that the (optinal) names of logbooks to be imported must be the
+full names of the logbooks in the config file, not the names of the
+directories they are in! Logbook names are unique in elog, so it's
+not necessary to give them as a "path".
+
+After this is done, you may also want to run "fix_elog_links.py" in
+order to repair any links in entries to attachments or other entries.
 """
 
 from collections import OrderedDict
