@@ -4,7 +4,7 @@ import logging
 
 from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
-from peewee import (CharField, TextField, BooleanField,
+from peewee import (IntegerField, CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField)
 from peewee import Model, DoesNotExist, DeferredRelation, fn
 
@@ -101,6 +101,7 @@ class Logbook(Model):
 
     @property
     def entry_histogram(self):
+        "Return a list of the number of entries per day"
         data = (Entry.select(fn.date(Entry.created_at).alias("date"),
                              fn.min(Entry.id).alias("id"),
                              fn.count(Entry.id).alias("count"))
@@ -284,7 +285,6 @@ class Entry(Model):
 
     class Meta:
         database = db
-        order_by = ("created_at",)
 
     logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField(null=True)
@@ -293,6 +293,7 @@ class Entry(Model):
     content_type = CharField(default="text/html; charset=UTF-8")
     metadata = JSONField(default={})  # general
     attributes = JSONField(default={})
+    priority = IntegerField(default=0)  # used for sorting
     created_at = DateTimeField(default=datetime.utcnow)
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
@@ -322,6 +323,7 @@ class Entry(Model):
     @property
     def next(self):
         "Next entry (order by id)"
+        # TODO: broken
         try:
             return (Entry.select()
                     .where((Entry.logbook == self.logbook) &
@@ -336,6 +338,7 @@ class Entry(Model):
     @property
     def previous(self):
         "Previous entry (order by id)"
+        # TODO: broken
         try:
             return (Entry.select()
                     .where((Entry.logbook == self.logbook) &
@@ -349,7 +352,9 @@ class Entry(Model):
             pass
 
     def make_change(self, **data):
-        "Change the entry, storing the old values as a revision"
+        "Update the entry, storing the old values as a change"
+        # Note: we don't make db changes in this method, the user
+        # must save the entry and change afterwards!
         original_values = {
             attr: getattr(self, attr)
             for attr, value in data.items()
@@ -360,7 +365,12 @@ class Entry(Model):
         for attr in original_values:
             value = data[attr]
             setattr(self, attr, value)
-        self.last_changed_at = change.timestamp
+        # Only update the change timestamp if the edit is "major".
+        # Priority just changes the sorting of entries, so if that's
+        # the only thing that changed, we don't bump the timestamp.
+        # TODO: allow explicitly marking an edit as "minor".
+        if set(original_values.keys()) != set(["priority"]):
+            self.last_changed_at = change.timestamp
         return change
 
     @property
@@ -544,12 +554,12 @@ WHERE 1
                 query += " HAVING entry.follows_id IS NULL"
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
-        query += " ORDER BY timestamp DESC"
+        query += " ORDER BY entry.priority DESC, timestamp DESC"
         if n:
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        print("{}, variables={}".format(query, ", ".join(variables)))
+        logging.debug("%s, variables=%s", query, ", ".join(variables))
         return Entry.raw(query, *variables)
 
 

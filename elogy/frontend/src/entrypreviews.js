@@ -60,26 +60,32 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                           { entry.n_followups }</div> :
                       null;
     const edited = entry.last_changed_at? <i className="fa fa-pencil"/> : null;
-    
+
+    const editTime = entry.priority > 0?
+                     <span className="timestamp">
+                         <i className="fa fa-thumb-tack"/>
+                     </span> :
+                     <span className="timestamp">
+                         <i className="fa fa-clock-o"/> { edited } { timestamp }
+                     </span>;
+
     return (
-        <div key={entry.id} className="entry">
-            <Link to={url}>
-                { attachments }
-                { followups }                                
-                { logbookName }
-                <div className="info">
-                    <span className="timestamp">
-                        <i className="fa fa-clock-o"/> { edited } { timestamp }
-                    </span>
-                    <span className="authors"
-                          title={allAuthors}>
-                        <i className="fa fa-user"/> { authors }{ authorsEllipsis }
-                    </span>            
-                </div>
-                <div className="title"><span>{ entry.title }</span></div>
-                <div className="content"> {entry.content}</div>
-            </Link>
-        </div>
+    <div key={entry.id} className="entry">
+        <Link to={url}>
+            { attachments }
+            { followups }                                
+            { logbookName }
+            <div className="info">
+                { editTime }
+                <span className="authors"
+                      title={allAuthors}>
+                    <i className="fa fa-user"/> { authors }{ authorsEllipsis }
+                </span>            
+            </div>
+            <div className="title"><span>{ entry.title }</span></div>
+            <div className="content"> {entry.content}</div>
+        </Link>
+    </div>
     );
 }
 
@@ -89,30 +95,41 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
     /* First, we'll group the entries according to date of creation */
     const dateGroups = groupBy(
         entries,
-        entry => formatDateString(entry.last_changed_at || entry.created_at)
+        /* 
+           This is a bit hacky; the idea is that we want high priority posts
+           grouped outside of the date groups, so we prepend the priority
+           to the group key. There's probably a better way.
+         */
+        entry => (entry.priority !== 0)? -entry.priority : (-entry.priority + "@" + formatDateString(entry.last_changed_at || entry.created_at))
     );
 
-    /* Now we'll build a nested DOM structure where each date contains 
-       the entries for that date. */
+    /* Now we'll build a nested DOM structure where each group contains 
+       the entries for that group. */
     const entryPreviews = Object
         .keys(dateGroups)
-        .map(date => (
-            <dl key={date} className="date-group">
-                <dt className="date">{date}</dt>
-                {dateGroups[date]
-                    .map((entry, i) => (
-                        <dd key={i}
-                            className={"entry" + (selectedEntryId === entry.id? " selected" : "")}>
-                            <EntryPreview
-                                key={entry.id}
-                                search={search}
-                                logbook={logbook}
-                                entry={entry}/>
-                        </dd>
-                    ))
-                }
-            </dl>
-        ));
+        .map(priorityAndDate => {
+            let [priority, date] = priorityAndDate.split("@");
+            let group = priority !== "0"? priority : date;
+            return (
+                <dl key={priorityAndDate} className="date-group">
+                    <dt className={"group" + (date? " date" : " pinned")}>
+                        {date || "Pinned"}
+                    </dt>
+                    {dateGroups[priorityAndDate]
+                        .map((entry, i) => (
+                            <dd key={i}
+                                className={"entry" + (selectedEntryId === entry.id? " selected" : "") + (entry.priority > 0? " pinned" : "")}>
+                                <EntryPreview
+                                    key={entry.id}
+                                    search={search}
+                                    logbook={logbook}
+                                    entry={entry}/>
+                            </dd>
+                        ))
+                    }
+                </dl>
+            );
+        });
 
     return (
         <div className="entries">

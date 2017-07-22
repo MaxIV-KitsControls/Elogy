@@ -19,6 +19,8 @@ import "./entryeditor.css";
 
 class EntryAttributeEditor extends React.Component {
 
+    /* editor for a single attribute */
+    
     constructor(props) {
         super(props);
         this.state = {
@@ -104,6 +106,8 @@ class EntryAttributeEditor extends React.Component {
 
 class EntryEditorBase extends React.Component {
 
+    /* common functionality for all entry editor variants */
+
     constructor (props) {
         super(props);
         this.state = {
@@ -113,7 +117,9 @@ class EntryEditorBase extends React.Component {
             authors: [],
             attributes: {},
             attachments: [],
-            content: null       
+            metadata: {},
+            content: null,
+            priority: 0
         }
         this.slowFetchUserSuggestions = debounce(this.fetchUserSuggestions.bind(this), 500);
     }
@@ -175,6 +181,10 @@ class EntryEditorBase extends React.Component {
     onAddAttachment (acceptedFiles, rejectedFiles) {
         console.log("drop", acceptedFiles, rejectedFiles);
         this.setState(update(this.state, {attachments: {$push: acceptedFiles}}))
+    }
+    
+    onTogglePinned (event) {
+        this.setState({priority: (event.target.checked? 1 : 0)});
     }
     
     hasEdits () {
@@ -272,7 +282,18 @@ class EntryEditorBase extends React.Component {
             </button>
         );
     }
-        
+
+    getPinnedCheckbox () {
+        return (
+            <label title="The entry will stay at the top of the logbook.">
+                <input type="checkbox"
+                       checked={this.state.priority > 0}
+                       onChange={this.onTogglePinned.bind(this)}/>
+                Pinned
+            </label>
+        );
+    }
+    
     getCancelButton () {
         return this.state.entry?
                <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}`}>
@@ -306,6 +327,8 @@ class EntryEditorBase extends React.Component {
 
 class EntryEditorNew extends EntryEditorBase {
 
+    /* editor for creating a brand new entry */
+
     componentWillMount () {
         this.fetchLogbook(this.props.match.params.logbookId);
     }
@@ -326,7 +349,8 @@ class EntryEditorNew extends EntryEditorBase {
                 content_type: this.state.content_type,
                 attributes: this.state.attributes,
                 follows_id: this.state.follows,
-                archived: this.state.archived
+                archived: this.state.archived,
+                metadata: this.state.metadata
             })
         })
             .then(response => response.json())
@@ -375,6 +399,7 @@ class EntryEditorNew extends EntryEditorBase {
                 <footer>
                     { this.getAttachments(this.state.attachments) }
                     { this.getSubmitButton(history) }
+                    { this.getPinnedCheckbox() }
                     <div className="commands">
                         { this.getCancelButton() }
                     </div>
@@ -387,6 +412,8 @@ class EntryEditorNew extends EntryEditorBase {
 
 
 class EntryEditorFollowup extends EntryEditorBase {
+
+    /* editor for creating a followup to an existing entry */
 
     componentWillMount () {
         this.fetchEntry(this.props.match.params.logbookId,
@@ -416,7 +443,9 @@ class EntryEditorFollowup extends EntryEditorBase {
                 content: this.state.content,
                 content_type: this.state.content_type,
                 attributes: attributes,
-                archived: this.state.archived
+                archived: this.state.archived,
+                priority: this.state.priority,
+                metadata: this.state.metadata
             })
         })
             .then(response => response.json())
@@ -470,6 +499,7 @@ class EntryEditorFollowup extends EntryEditorBase {
                     { this.getAttachments(this.state.attachments ||
                                           this.state.entry.attachments) }
                     { this.getSubmitButton(history) }
+                    { this.getPinnedCheckbox() }                    
                     <div className="commands">
                         { this.getCancelButton() }
                     </div>
@@ -482,6 +512,8 @@ class EntryEditorFollowup extends EntryEditorBase {
 
 
 class EntryEditorEdit extends EntryEditorBase {
+
+    /* editor for changing an existing entry */
 
     componentWillMount () {
         this.fetchLogbook(this.props.match.params.logbookId);
@@ -504,9 +536,11 @@ class EntryEditorEdit extends EntryEditorBase {
                 content: this.state.content,
                 content_type: this.state.content_type,
                 attributes: this.state.attributes,
+                metadata: this.state.metadata,
                 follows_id: this.state.follows,
                 archived: this.state.archived,
-                revision_n: this.state.entry.revision_n  // must be included for edits!
+                revision_n: this.state.entry.revision_n,  // must be included for edits!
+                priority: this.state.priority
             })
         })
             .then(response => response.json())
@@ -561,6 +595,7 @@ class EntryEditorEdit extends EntryEditorBase {
                 <footer>
                     { this.getAttachments(this.state.attachments) }
                     { this.getSubmitButton(history) }
+                    { this.getPinnedCheckbox() }
                     <div className="commands">
                         { this.getCancelButton() }
                     </div>

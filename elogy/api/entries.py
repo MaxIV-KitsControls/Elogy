@@ -26,6 +26,7 @@ entry_parser.add_argument("follows_id", type=int, store_missing=False)
 entry_parser.add_argument("attributes", type=dict, location="json", default={})
 entry_parser.add_argument("archived", type=bool, default=False)
 entry_parser.add_argument("metadata", type=dict, location="json", default={})
+entry_parser.add_argument("priority", type=int, default=0)
 entry_parser.add_argument("revision_n", type=int, store_missing=False)
 
 

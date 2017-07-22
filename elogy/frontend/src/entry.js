@@ -160,7 +160,8 @@ class Entry extends React.Component {
     }
     
     scrollToEntry (element) {
-        setTimeout(() => element.scrollIntoView(), 100);
+        if (element)
+            setTimeout(() => element.scrollIntoView(), 100);
     }
     
     render () {
