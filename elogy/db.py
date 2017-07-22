@@ -445,18 +445,6 @@ class Entry(Model):
         # support recursive queries, which we need in order to search
         # through nested logbooks. Cleanup needed!
 
-        if attribute_filter:
-            # need to extract the attribute values from JSON here, so that
-            # we can match on them later
-            attributes = ", {}".format(
-                ", ".join(
-                    "json_extract(entry.attributes, '$.{attr}') AS {attr_id}"
-                    .format(attr=escape_string(attr),
-                            attr_id="attr{}".format(i))
-                    for i, (attr, _) in enumerate(attribute_filter)))
-        else:
-            attributes = ""
-
         if author_filter:
             # extract the author names as a separate table, so that
             # they can be searched
@@ -470,51 +458,62 @@ class Entry(Model):
                 # recursive query to find all entries in the given logbook
                 # or any of its descendants, to arbitrary depth
                 query = """
-WITH recursive logbook1(id,parent_id) AS (
-    values({logbook}, NULL)
-    UNION ALL
-    SELECT logbook.id, logbook.parent_id FROM logbook,logbook1
-    WHERE logbook.parent_id=logbook1.id
-)
-SELECT {what}{attributes},
-       {attachment}
-       coalesce(followup.follows_id, entry.id) AS thread,
-       count(followup.id) AS n_followups,
-       max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
-                             coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
-FROM entry{authors}
-JOIN logbook1
-{join_attachment}
-LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-WHERE entry.logbook_id=logbook1.id
-""".format(attributes=attributes,
-           attachment=("path as attachment_path," if attachment_filter else ""),
-           what="COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count" if count else "entry.*",
-           authors=authors, logbook=logbook.id,
-           join_attachment=("JOIN attachment ON attachment.entry_id == entry.id" if attachment_filter else ""))
+                WITH recursive logbook1(id,parent_id) AS (
+                    values({logbook}, NULL)
+                    UNION ALL
+                    SELECT logbook.id, logbook.parent_id FROM logbook,logbook1
+                    WHERE logbook.parent_id=logbook1.id
+                )
+                SELECT {what},
+                    {attachment}
+                    coalesce(followup.follows_id, entry.id) AS thread,
+                    count(followup.id) AS n_followups,
+                    max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
+                    coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
+                FROM entry{authors}{from_attributes}
+                JOIN logbook1
+                {join_attachment}
+                LEFT JOIN entry AS followup ON entry.id == followup.follows_id
+                WHERE entry.logbook_id=logbook1.id
+                """.format(attachment=("path as attachment_path,"
+                                       if attachment_filter else ""),
+                           what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
+                                 if count else "entry.*"),
+                           authors=authors, logbook=logbook.id,
+                           from_attributes=(", json_tree(entry.attributes)"
+                                            if attribute_filter else ""),
+                           join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
+                                            if attachment_filter else ""))
             else:
                 # In this case we're not searching recursively
                 query = (
-                    "SELECT {what}{attributes},coalesce(entry.last_changed_at, entry.created_at) AS timestamp FROM entry{authors} WHERE entry.logbook_id = {logbook}"
+                    ("SELECT {what},coalesce(entry.last_changed_at, entry.created_at)"
+                     " AS timestamp FROM entry{authors}{from_attributes}"
+                     " WHERE entry.logbook_id = {logbook}")
                     .format(what="count()" if count else "entry.*",
+                            from_attributes=(", json_tree(entry.attributes)"
+                                             if attribute_filter else ""),
                             logbook=logbook,
-                            attributes=attributes,
                             authors=authors))
         else:
             # In this case we're searching all entries and don't need
             # the recursive logbook filtering
             query = """
-SELECT {what}{attributes},count(followup.id) AS n_followups,{attachment}
-       max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
+            SELECT {what},count(followup.id) AS n_followups,{attachment}
+                max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
                     coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
-FROM entry{authors}
-{join_attachment}
-LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-WHERE 1
-""".format(what="count()" if count else "entry.*",
-           attachment=("path as attachment_path," if attachment_filter else ""),
-           attributes=attributes, authors=authors,
-           join_attachment=("JOIN attachment ON attachment.entry_id == entry.id" if attachment_filter else ""))
+            FROM entry{authors}{from_attributes}
+            {join_attachment}
+            LEFT JOIN entry AS followup ON entry.id == followup.follows_id
+            WHERE 1
+            """.format(what="count()" if count else "entry.*",
+                       from_attributes=(", json_tree(entry.attributes)"
+                                        if attribute_filter else ""),
+                       attachment=("path as attachment_path,"
+                                   if attachment_filter else ""),
+                       authors=authors,
+                       join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
+                                        if attachment_filter else ""))
 
         if not archived:
             query += " AND NOT entry.archived"
@@ -539,9 +538,14 @@ WHERE 1
             query += " AND attachment_path REGEXP ?"
             variables.append(attachment_filter)
         if attribute_filter:
+            # Here we're using the JSON1 extension of sqlite to extract
+            # the attributes and match against the given values. Note that
+            # to match arrays (multioption) we use a string trick... I guess
+            # there's some better way to extract the actual array as a table
+            # or something.
             for i, (attr, value) in enumerate(attribute_filter):
-                query += " AND attr{} = ?".format(i)
-                variables.append(value)
+                query += " AND (json_tree.key = ? AND (json_tree.type = 'array' AND json_tree.value LIKE ? OR json_tree.value = ?))"
+                variables.extend([attr, '%"{}"%'.format(value), value])
 
         # Here we're getting into deep water...
         # If we just want the total count of results, we can't group
@@ -559,7 +563,7 @@ WHERE 1
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        logging.debug("%s, variables=%s", query, ", ".join(variables))
+        print("%s, variables=%s" % (query, ", ".join(variables)))
         return Entry.raw(query, *variables)
 
 

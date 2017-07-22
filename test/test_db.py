@@ -176,6 +176,8 @@ def test_entryrevisionwrapper2(db):
     assert wrapper2.content == entry_v2["content"]
 
 
+# Search
+
 def test_entry_content_search(db):
     lb1 = Logbook.create(name="Logbook1")
     lb2 = Logbook.create(name="Logbook2")
@@ -335,19 +337,19 @@ def test_entry_attribute_filter(db):
             "logbook": lb,
             "title": "First entry",
             "content": "This content is great!",
-            "attributes": {"a": "1", "b": "2"}
+            "attributes": {"a": 1, "b": "2"}
         },
         {
             "logbook": lb,
             "title": "Second entry",
             "content": "Some very neat content.",
-            "attributes": {"a": "1", "b": "3"}
+            "attributes": {"a": 1, "b": "3"}
         },
         {
             "logbook": lb,
             "title": "Third entry",
             "content": "Not so bad content either.",
-            "attributes": {"a": "2", "b": "2"}
+            "attributes": {"a": 2, "b": "2"}
         }
     ]
 
@@ -357,10 +359,50 @@ def test_entry_attribute_filter(db):
         entry.save()
 
     # filter attributes
-    result, = list(Entry.search(logbook=lb.id, attribute_filter=[("a", "2")]))
+    result, = list(Entry.search(logbook=lb.id, attribute_filter=[("a", 2)]))
     assert result.title == "Third entry"
 
     results = list(Entry.search(logbook=lb.id, attribute_filter=[("b", "2")]))
     assert len(results) == 2
     set([results[0].title, results[0].title]) == set(["First entry",
                                                       "Third entry"])
+
+
+def test_entry_attribute_multioption_filter(db):
+
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "First entry",
+            "content": "This content is great!",
+            "attributes": {"a": ["1", "2", "3"]}
+        },
+        {
+            "logbook": lb,
+            "title": "Second entry",
+            "content": "Some very neat content.",
+            "attributes": {"a": ["2"]}
+        },
+        {
+            "logbook": lb,
+            "title": "Third entry",
+            "content": "Not so bad content either.",
+            "attributes": {"a": ["3", "4"]}
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # filter attributes
+    result, = list(Entry.search(logbook=lb.id, attribute_filter=[("a", "1")]))
+    assert result.title == "First entry"
+
+    results = list(Entry.search(logbook=lb.id, attribute_filter=[("a", "2")]))
+    assert len(results) == 2
+    set([results[0].title, results[0].title]) == set(["First entry",
+                                                      "Second entry"])

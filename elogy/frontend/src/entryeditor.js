@@ -350,7 +350,8 @@ class EntryEditorNew extends EntryEditorBase {
                 attributes: this.state.attributes,
                 follows_id: this.state.follows,
                 archived: this.state.archived,
-                metadata: this.state.metadata
+                metadata: this.state.metadata,
+                priority: this.state.priority
             })
         })
             .then(response => response.json())
