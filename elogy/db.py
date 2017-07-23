@@ -544,7 +544,7 @@ class Entry(Model):
             # there's some better way to extract the actual array as a table
             # or something.
             for i, (attr, value) in enumerate(attribute_filter):
-                query += " AND (json_tree.key = ? AND (json_tree.type = 'array' AND json_tree.value LIKE ? OR json_tree.value = ?))"
+                query += " AND (json_tree.key = ? AND (json_tree.type = 'array' AND json_tree.value LIKE ? OR json_tree.value LIKE ?))"
                 variables.extend([attr, '%"{}"%'.format(value), value])
 
         # Here we're getting into deep water...
@@ -563,7 +563,7 @@ class Entry(Model):
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        print("%s, variables=%s" % (query, ", ".join(variables)))
+        logging.error("query=%r, variables=%r" % (query, variables))
         return Entry.raw(query, *variables)
 
 
