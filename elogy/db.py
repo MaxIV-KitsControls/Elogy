@@ -111,7 +111,7 @@ class Logbook(Model):
 
     def convert_attribute(self, name, value):
         "Try to convert an attribute value to the format the logbook expects"
-        # Mainly useful when the logbook configuration may have changed, and
+        # Also useful when the logbook configuration may have changed, and
         # trying to access attributes of previously created entries.
         # Not much point in converting them until someone edits the entry.
         # Note: does not exert itself to convert values and will raise
@@ -124,21 +124,24 @@ class Logbook(Model):
                 raise KeyError("Unknown attribute %s!" % name)
             if value is None and not info.get("required"):
                 # ignore unset values if not required
-                return
+                raise ValueError("No value")
             if info["type"] == "text":
                 return str(value)
             if info["type"] == "number":
                 return float(value)
-            elif info["type"] == "boolean":
+            if info["type"] == "boolean":
                 # Hmm... this will almost always be True
                 return bool(value)
-            elif info["type"] == "text" and isinstance(value, list):
+            if info["type"] == "text" and isinstance(value, list):
                 return value[0]
-            elif info["type"] == "multioption" and isinstance(value, str):
-                return [value]
+            if info["type"] == "multioption":
+                if not isinstance(value, list):
+                    return [str(value)]
+                if isinstance(value, list) and len(value) == 0:
+                    raise ValueError("Empty multioption")
         except (ValueError, KeyError, IndexError) as e:
             raise ValueError(e)
-        return value
+        return value  # assuming no conversion is needed...
 
     def get_form_attributes(self, formdata):
         result = {}

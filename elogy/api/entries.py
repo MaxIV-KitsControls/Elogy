@@ -1,5 +1,5 @@
-
 from datetime import datetime
+import logging
 
 from flask import request, send_file, abort
 from flask_restful import Resource, reqparse, marshal, marshal_with, abort
@@ -76,11 +76,14 @@ class EntryResource(Resource):
         if "attributes" in data:
             attributes = {}
             for attr_name, attr_value in data["attributes"].items():
-                converted_value = logbook.convert_attribute(attr_name, attr_value)
                 try:
-                    if converted_value is not None:
-                        attributes[attr_name] = converted_value
-                except ValueError:
+                    converted_value = logbook.convert_attribute(attr_name,
+                                                                attr_value)
+                    attributes[attr_name] = converted_value
+                except ValueError as e:
+                    logging.warning(
+                        "Discarding attribute %s with value %r; %s",
+                        attr_name, attr_value, e)
                     pass
                 # TODO: return a helpful error if this fails?
             data["attributes"] = attributes
