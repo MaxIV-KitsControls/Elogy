@@ -116,8 +116,8 @@ class EntryEditorBase extends React.Component {
         super(props);
         this.state = {
             id: null,
-            logbook: {},
-            title: "",
+            logbook: null,
+            title: null,
             authors: [],
             attributes: {},
             attachments: [],
@@ -159,7 +159,7 @@ class EntryEditorBase extends React.Component {
             .then(response => response.json())
             .then(response => {
                 callback(null, {
-                    options: (this.state.authors
+                    options: ((this.state.authors || [])
                                   .concat(response.users)),
                     complete: false
                 });
@@ -208,7 +208,7 @@ class EntryEditorBase extends React.Component {
 
     getTitleEditor (title) {
         return (<input type="text" placeholder="title" ref="title"
-                       value={title} required={true}
+                       value={title || ""} required={true}
                        onChange={this.onTitleChange.bind(this)}/>);
 
     }
@@ -424,6 +424,14 @@ class EntryEditorFollowup extends EntryEditorBase {
         this.fetchEntry(this.props.match.params.logbookId,
                         this.props.match.params.entryId);
         this.fetchLogbook(this.props.match.params.logbookId);        
+    }
+
+    hasEdits () {
+        return (!this.submitted &&
+                (this.state.title ||
+                 this.state.content ||
+                 this.state.authors.length > 0 ||
+                 Object.keys(this.state.attributes).length > 0));
     }
     
     onSubmit({history}) {
