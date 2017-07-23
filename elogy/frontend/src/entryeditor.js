@@ -6,6 +6,7 @@ import React from 'react';
 import {Link, Route, Prompt, Switch} from 'react-router-dom';
 import update from 'immutability-helper';
 import TinyMCEInput from './TinyMCEInput.js';
+import Select from 'react-select';
 import {Creatable, Async} from 'react-select';
 import Dropzone from 'react-dropzone'
 import 'react-select/dist/react-select.css';
@@ -75,19 +76,22 @@ class EntryAttributeEditor extends React.Component {
                               onChange={ this.onChangeBoolean.bind(this) }
                               onBlur={ this.onBlur.bind(this) }/>;
             case "option":
-                return <Creatable value={ this.state.value }
-                                  required={ required }
-                                  options={ this.props.config.options.map(
-                                          o => {return {value: o, label: o}}) }
-                                  onChange={ this.onChangeSelect.bind(this) }
-                                  onBlur={ this.onBlur.bind(this) }/>;
+                // Note: use <Creatable> here instead, to allow creating
+                // new options directly from the dropdown. Requires more
+                // machinery here though, to modify the logbook attribute.
+                return <Select value={ this.state.value }
+                               required={ required }
+                               options={ this.props.config.options.map(
+                                       o => {return {value: o, label: o}}) }
+                               onChange={ this.onChangeSelect.bind(this) }
+                               onBlur={ this.onBlur.bind(this) }/>;
             case "multioption":
-                return <Creatable value={ this.state.value } multi={ true }
-                                  required={ required }
-                                  options={ this.props.config.options.map(
-                                          o => {return {value: o, label: o}}) }
-                                  onChange={ this.onChangeMultiSelect.bind(this) }
-                                  onBlur={ this.onBlur.bind(this) }/>;
+                return <Select value={ this.state.value } multi={ true }
+                               required={ required }
+                               options={ this.props.config.options.map(
+                                       o => {return {value: o, label: o}}) }
+                               onChange={ this.onChangeMultiSelect.bind(this) }
+                               onBlur={ this.onBlur.bind(this) }/>;
             default:
                 return <div>?</div>
         }
