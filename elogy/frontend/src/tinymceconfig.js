@@ -1,6 +1,6 @@
 // configuration for the editor
 const TINYMCE_CONFIG = {
-    plugins: "link image textcolor paste table lists advlist code",
+    plugins: "link image textcolor paste table lists advlist code autoresize",
     toolbar: (
         "undo redo | removeformat | styleselect |"
         + " bold italic forecolor backcolor |"
@@ -25,7 +25,8 @@ const TINYMCE_CONFIG = {
     entity_encoding: 'raw',
     entities: '160,nbsp,38,amp,60,lt,62,gt',
     resize: true,
-    theme: "modern"
+    theme: "modern",
+    branding: false
 }    
 
 
