@@ -11,7 +11,7 @@ const EntryAttribute = ({config, value}) => (
                 // convert the value to an array in this case? What about the
                 // opposite case?
                 config.type === "multioption"?
-                value.map(v => <span className="option">{v}</span>)
+                value.map(v => <span key={v} className="option">{v}</span>)
                 : value
             }
         </span>
