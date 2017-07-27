@@ -566,7 +566,7 @@ class Entry(Model):
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        logging.error("query=%r, variables=%r" % (query, variables))
+        logging.debug("query=%r, variables=%r" % (query, variables))
         return Entry.raw(query, *variables)
 
 
