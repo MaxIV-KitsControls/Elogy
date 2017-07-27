@@ -8,6 +8,13 @@ setup(
     packages=['elogy'],
     include_package_data=True,
     install_requires=[
-        'flask', 'peewee', 'blinker', 'lxml', 'pillow', 'dateutils'
+        'flask',
+        'peewee',
+        'blinker',
+        'lxml',
+        'pillow',
+        'dateutils',
+        'flask-restful',
+        'pyldap'  # should be optional, depends on libpdap!
     ],
 )
