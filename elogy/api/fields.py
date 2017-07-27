@@ -57,7 +57,8 @@ logbook = {
 
 authors = {
     "name": fields.String,
-    "login": fields.String
+    "login": fields.String,
+    "email": fields.String
 }
 
 
