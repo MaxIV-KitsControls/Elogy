@@ -6,6 +6,11 @@ from pytest import mark
 from .fixtures import elogy_client
 
 
+def post_json(client, url, data, **kwargs):
+    return client.post(url, data=json.dumps(data),
+                       content_type='application/json', **kwargs)
+
+
 def decode_response(response):
     return json.loads(response.get_data().decode("utf-8"))
 
@@ -24,7 +29,8 @@ def make_entry(client, logbook):
         title="Test entry",
         content="This is some test content!",
         content_type="text/plain")
-    response = client.post(
+    response = post_json(
+        client,
         "/api/logbooks/{logbook[id]}/entries/".format(logbook=logbook),
         data=in_entry)
     assert response.status_code == 200
@@ -50,9 +56,10 @@ def test_create_child_logbook(elogy_client):
 
     # make a child logbook
     child = decode_response(
-        elogy_client.post("/api/logbooks/{logbook[id]}/"
-                          .format(logbook=logbook),
-                          data={"name": "Some name"}))["logbook"]
+        post_json(
+            elogy_client,
+            "/api/logbooks/{logbook[id]}/".format(logbook=logbook),
+            data={"name": "Some name"}))["logbook"]
     assert child["parent"]["id"] == logbook["id"]
 
     # check that it also comes up as child
@@ -143,10 +150,10 @@ def test_create_entry_followup(elogy_client):
         content="This is some followup test content!",
         content_type="text/plain")
     followup = decode_response(
-        elogy_client.post(
-            "/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
-            .format(logbook=logbook, entry=entry),
-            data=in_followup))["entry"]
+        post_json(elogy_client,
+                  "/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
+                  .format(logbook=logbook, entry=entry),
+                  data=in_followup))["entry"]
 
     # get the followup directly
     out_followup = decode_response(
@@ -330,11 +337,11 @@ def test_entry_lock_steal(elogy_client):
 
     # explicitly steal the lock
     stolen_lock = decode_response(
-        elogy_client.post(
-            "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
-            .format(logbook=logbook, entry=entry),
-            data=dict(steal=True),
-            environ_base={'REMOTE_ADDR': OTHER_IP}))["lock"]
+        post_json(elogy_client,
+                  "/api/logbooks/{logbook[id]}/entries/{entry[id]}/lock"
+                  .format(logbook=logbook, entry=entry),
+                  data=dict(steal=True),
+                  environ_base={'REMOTE_ADDR': OTHER_IP}))["lock"]
     assert stolen_lock["id"] != lock["id"]
 
     # verify that the entry lock has changed

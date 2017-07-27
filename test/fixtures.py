@@ -48,4 +48,7 @@ def elogy_client(request):
     from elogy.app import app
     with app.test_client() as c:
         yield c
-    os.remove(app.config["DATABASE"]["name"])
+    try:
+        os.remove(app.config["DATABASE"]["name"])
+    except FileNotFoundError:
+        pass
