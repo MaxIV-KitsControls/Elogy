@@ -469,19 +469,23 @@ class Entry(Model):
                 )
                 SELECT {what},
                     {attachment}
+                    -- 'thread' is the id of the main entry
                     coalesce(followup.follows_id, entry.id) AS thread,
                     count(followup.id) AS n_followups,
+                    -- 'timestamp' is the latest modification time in the thread
                     max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
-                    coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
+                        coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
+                    -- collect authors from all followups
+                    json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
                 FROM entry{authors}{from_attributes}
                 JOIN logbook1
                 {join_attachment}
                 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
                 WHERE entry.logbook_id=logbook1.id
-                """.format(attachment=("path as attachment_path,"
-                                       if attachment_filter else ""),
-                           what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
+                """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
                                  if count else "entry.*"),
+                           attachment=("path as attachment_path,"
+                                       if attachment_filter else ""),
                            authors=authors, logbook=logbook.id,
                            from_attributes=(", json_tree(entry.attributes)"
                                             if attribute_filter else ""),
@@ -490,21 +494,40 @@ class Entry(Model):
             else:
                 # In this case we're not searching recursively
                 query = (
-                    ("SELECT {what},coalesce(entry.last_changed_at, entry.created_at)"
-                     " AS timestamp FROM entry{authors}{from_attributes}"
-                     " WHERE entry.logbook_id = {logbook}")
+                    """
+                    SELECT {what},
+                      {attachment}
+                      coalesce(followup.follows_id, entry.id) AS thread,
+                      count(followup.id) AS n_followups,
+                      max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
+                        coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
+                      json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
+                    FROM entry{authors}{from_attributes}
+                    {join_attachment}
+                    LEFT JOIN entry AS followup ON entry.id == followup.follows_id
+                    WHERE entry.logbook_id = {logbook}"""
                     .format(what="count()" if count else "entry.*",
+                            attachment=("path as attachment_path,"
+                                       if attachment_filter else ""),
+                            authors=authors,
                             from_attributes=(", json_tree(entry.attributes)"
                                              if attribute_filter else ""),
-                            logbook=logbook,
-                            authors=authors))
+                            logbook=logbook.id,
+                            join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
+                                             if attachment_filter else "")))
+
         else:
             # In this case we're searching all entries and don't need
-            # the recursive logbook filtering
+            # the recursive logbook filtering. This always includes
+            # child logbooks.
             query = """
-            SELECT {what},count(followup.id) AS n_followups,{attachment}
+            SELECT {what},
+                {attachment}
+                coalesce(followup.follows_id, entry.id) AS thread,
+                count(followup.id) AS n_followups,
                 max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
-                    coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp
+                    coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
+                json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
             FROM entry{authors}{from_attributes}
             {join_attachment}
             LEFT JOIN entry AS followup ON entry.id == followup.follows_id
@@ -515,8 +538,9 @@ class Entry(Model):
                        attachment=("path as attachment_path,"
                                    if attachment_filter else ""),
                        authors=authors,
-                       join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
-                                        if attachment_filter else ""))
+                       join_attachment=(
+                           "JOIN attachment ON attachment.entry_id == entry.id"
+                           if attachment_filter else ""))
 
         if not archived:
             query += " AND NOT entry.archived"

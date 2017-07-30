@@ -149,6 +149,7 @@ entries_parser.add_argument("attribute", type=str,
                             dest="attributes",
                             action="append", default=[])
 entries_parser.add_argument("archived", type=bool)
+entries_parser.add_argument("child_logbooks", type=bool, default=False)
 entries_parser.add_argument("n", type=int, default=50)
 entries_parser.add_argument("offset", type=int, store_missing=False)
 entries_parser.add_argument("download", type=str, store_missing=False)
@@ -167,7 +168,7 @@ class EntriesResource(Resource):
         if logbook_id:
             # restrict search to the given logbook and its descendants
             logbook = Logbook.get(Logbook.id == logbook_id)
-            search_args = dict(child_logbooks=True,
+            search_args = dict(child_logbooks=args.get("child_logbooks"),
                                title_filter=args.get("title"),
                                content_filter=args.get("content"),
                                author_filter=args.get("authors"),
@@ -182,13 +183,13 @@ class EntriesResource(Resource):
         else:
             # global search (all logbooks)
             logbook = None
-            search_args = dict(child_logbooks=True,
+            search_args = dict(child_logbooks=args.get("child_logbooks"),
                                title_filter=args.get("title"),
                                content_filter=args.get("content"),
                                author_filter=args.get("authors"),
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
-                               n=args["n"], offset=args["offset"])
+                               n=args["n"], offset=args.get("offset"))
             entries = Entry.search(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
             count = Entry.search(count=True, **search_args).tuples()

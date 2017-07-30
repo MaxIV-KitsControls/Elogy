@@ -1,4 +1,7 @@
+from collections import OrderedDict
 from dateutil.parser import parse
+import json
+
 from flask_restful import fields, marshal, marshal_with_field
 import lxml
 
@@ -221,6 +224,14 @@ logbook_very_short = {
 }
 
 
+class FollowupAuthorsField(fields.Raw):
+    def format(self, value):
+        print(value)
+        all_authors = sum(json.loads(value), [])
+        d = OrderedDict((author["name"], None) for author in all_authors)
+        return list(d.keys())
+
+
 short_entry = {
     "id": fields.Integer,
     "logbook": fields.Nested(logbook_very_short),
@@ -231,6 +242,7 @@ short_entry = {
     "last_changed_at": fields.DateTime,
     "timestamp": DateTimeFromStringField,
     "authors": fields.List(fields.String(attribute="name")),
+    "followup_authors": FollowupAuthorsField(),
     "attachment_preview": FirstIfAny(attribute="attachments"),
     "n_attachments": NumberOf(attribute="attachments"),
     "n_followups": fields.Integer
