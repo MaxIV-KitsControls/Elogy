@@ -7,9 +7,6 @@ from time import time
 from flask import Flask, current_app, send_from_directory, g, request
 from flask_restful import Api
 import logging
-from peewee import OperationalError
-
-from .db import setup_database
 
 from .api.errors import errors as api_errors
 from .api.logbooks import LogbooksResource, LogbookChangesResource
@@ -17,6 +14,9 @@ from .api.entries import (EntryResource, EntriesResource,
                           EntryLockResource, EntryChangesResource)
 from .api.users import UsersResource
 from .api.attachments import AttachmentsResource
+from .db import setup_database
+from .admin import setup_admin
+
 
 # Configure the main application object
 app = Flask(__name__,
@@ -37,8 +37,8 @@ def teardown_request(exception=None):
     current_app.logger.debug("Request took %f s", duration)
 
 
-# Database setup
 setup_database(app.config["DATABASE"]["name"])
+setup_admin(app)
 
 
 # Allow CORS requests. Maybe we should only enable this in debug mode?

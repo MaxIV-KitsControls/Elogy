@@ -47,8 +47,10 @@ class Logbook(Model):
     metadata = JSONField(default={})
     archived = BooleanField(default=False)
 
-    def get_entries(self, **kwargs):
+    def __str__(self):
+        return "[{}] {}".format(self.id, self.name)
 
+    def get_entries(self, **kwargs):
         "Convenient way to query for entries in this logbook"
         return Entry.search(logbook=self, **kwargs)
 
@@ -301,6 +303,9 @@ class Entry(Model):
     last_changed_at = DateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
     archived = BooleanField(default=False)
+
+    def __str__(self):
+        return "[{}] {}".format(self.id, self.title)
 
     class Locked(Exception):
         pass
