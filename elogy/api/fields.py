@@ -226,7 +226,6 @@ logbook_very_short = {
 
 class FollowupAuthorsField(fields.Raw):
     def format(self, value):
-        print(value)
         all_authors = sum(json.loads(value), [])
         d = OrderedDict((author["name"], None) for author in all_authors)
         return list(d.keys())
