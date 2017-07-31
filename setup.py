@@ -15,6 +15,8 @@ setup(
         'pillow',
         'dateutils',
         'flask-restful',
-        'pyldap'  # should be optional, depends on libpdap!
+        'pyldap',  # should be optional, depends on libpdap!
+        'flask-admin',  # maybe also optional?
+        'wtf-peewee'
     ],
 )
