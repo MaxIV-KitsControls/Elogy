@@ -512,7 +512,7 @@ class Entry(Model):
                             authors=authors,
                             from_attributes=(", json_tree(entry.attributes)"
                                              if attribute_filter else ""),
-                            logbook=logbook,
+                            logbook=logbook.id,
                             join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
                                              if attachment_filter else "")))
 

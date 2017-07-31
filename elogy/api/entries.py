@@ -149,7 +149,7 @@ entries_parser.add_argument("attribute", type=str,
                             dest="attributes",
                             action="append", default=[])
 entries_parser.add_argument("archived", type=bool)
-entries_parser.add_argument("child_logbooks", type=bool, default=False)
+entries_parser.add_argument("ignore_children", type=bool, default=False)
 entries_parser.add_argument("n", type=int, default=50)
 entries_parser.add_argument("offset", type=int, store_missing=False)
 entries_parser.add_argument("download", type=str, store_missing=False)
@@ -168,7 +168,7 @@ class EntriesResource(Resource):
         if logbook_id:
             # restrict search to the given logbook and its descendants
             logbook = Logbook.get(Logbook.id == logbook_id)
-            search_args = dict(child_logbooks=args.get("child_logbooks"),
+            search_args = dict(child_logbooks=not args.get("ignore_children"),
                                title_filter=args.get("title"),
                                content_filter=args.get("content"),
                                author_filter=args.get("authors"),
@@ -183,7 +183,7 @@ class EntriesResource(Resource):
         else:
             # global search (all logbooks)
             logbook = None
-            search_args = dict(child_logbooks=args.get("child_logbooks"),
+            search_args = dict(child_logbooks=not args.get("ignore_children"),
                                title_filter=args.get("title"),
                                content_filter=args.get("content"),
                                author_filter=args.get("authors"),

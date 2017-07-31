@@ -211,11 +211,11 @@ def test_entry_content_search(db):
         entry.save()
 
     # simple search
-    result, = list(Entry.search(logbook=lb1.id, content_filter="great"))
+    result, = list(Entry.search(logbook=lb1, content_filter="great"))
     assert result.title == "First entry"
 
     # regexp search
-    result, = list(Entry.search(logbook=lb1.id, content_filter="Not.*content"))
+    result, = list(Entry.search(logbook=lb1, content_filter="Not.*content"))
     assert result.title == "Third entry"
 
 
@@ -281,11 +281,11 @@ def test_entry_title_search(db):
         entry.save()
 
     # simple search
-    result, = list(Entry.search(logbook=lb.id, title_filter="First"))
+    result, = list(Entry.search(logbook=lb, title_filter="First"))
     assert result.title == "First entry"
 
     # regexp search
-    result, = list(Entry.search(logbook=lb.id, title_filter="Th.*ry"))
+    result, = list(Entry.search(logbook=lb, title_filter="Th.*ry"))
     assert result.title == "Third entry"
 
 
@@ -318,12 +318,12 @@ def test_entry_authors_search(db):
         entry = Entry.create(**entry)
         entry.save()
 
-    results = list(Entry.search(logbook=lb.id, author_filter="alpha"))
+    results = list(Entry.search(logbook=lb, author_filter="alpha"))
     set([results[0].title, results[0].title]) == set(["First entry",
                                                       "Second entry"])
 
     # either
-    results = list(Entry.search(logbook=lb.id, author_filter="alpha|beta"))
+    results = list(Entry.search(logbook=lb, author_filter="alpha|beta"))
     set(map(attrgetter("title"), results)) == set(["First entry",
                                                    "Second entry",
                                                    "Third entry"])
@@ -359,10 +359,10 @@ def test_entry_attribute_filter(db):
         entry.save()
 
     # filter attributes
-    result, = list(Entry.search(logbook=lb.id, attribute_filter=[("a", 2)]))
+    result, = list(Entry.search(logbook=lb, attribute_filter=[("a", 2)]))
     assert result.title == "Third entry"
 
-    results = list(Entry.search(logbook=lb.id, attribute_filter=[("b", "2")]))
+    results = list(Entry.search(logbook=lb, attribute_filter=[("b", "2")]))
     assert len(results) == 2
     set([results[0].title, results[0].title]) == set(["First entry",
                                                       "Third entry"])
@@ -399,10 +399,10 @@ def test_entry_attribute_multioption_filter(db):
         entry.save()
 
     # filter attributes
-    result, = list(Entry.search(logbook=lb.id, attribute_filter=[("a", "1")]))
+    result, = list(Entry.search(logbook=lb, attribute_filter=[("a", "1")]))
     assert result.title == "First entry"
 
-    results = list(Entry.search(logbook=lb.id, attribute_filter=[("a", "2")]))
+    results = list(Entry.search(logbook=lb, attribute_filter=[("a", "2")]))
     assert len(results) == 2
     set([results[0].title, results[0].title]) == set(["First entry",
                                                       "Second entry"])
