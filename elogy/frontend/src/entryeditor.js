@@ -207,7 +207,8 @@ class EntryEditorBase extends React.Component {
     }
 
     getTitleEditor (title) {
-        return (<input type="text" placeholder="title" ref="title"
+        return (<input type="text" className="title" placeholder="Title for the new entry..."
+                       ref="title"
                        value={title || ""} required={true}
                        onChange={this.onTitleChange.bind(this)}/>);
 
@@ -273,7 +274,7 @@ class EntryEditorBase extends React.Component {
                 {
                     attachments.length > 0 ?
                     <EntryAttachments attachments={ attachments }/> :
-                    "Drop attachments here!"
+                    "Drop attachments here (or click)!"
                 }
             </Dropzone>
         );
@@ -281,7 +282,9 @@ class EntryEditorBase extends React.Component {
 
     getSubmitButton (history) {
         return (
-            <button onClick={this.onSubmit.bind(this, history)}>
+            <button className="submit"
+                    title="Upload the entry"
+                    onClick={this.onSubmit.bind(this, history)}>
                 Submit
             </button>
         );
@@ -300,11 +303,13 @@ class EntryEditorBase extends React.Component {
     
     getCancelButton () {
         return this.state.entry?
-               <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}`}>
-                   Cancel
+               <Link to={`/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}`}
+                     title="Abandon edits without uploading.">
+                   <button className="cancel">Cancel</button>
                </Link> :
-               <Link to={`/logbooks/${this.state.logbook.id}/`}>
-                   Cancel
+               <Link to={`/logbooks/${this.state.logbook.id}/`}
+                     title="Abandon edits without uploading.">
+                   <button className="cancel">Cancel</button>
                </Link>;
     }
     
@@ -339,6 +344,7 @@ class EntryEditorNew extends EntryEditorBase {
     
     onSubmit({history}) {
         this.submitted = true;
+        console.log("submit", this.state);
         // we're creating a new entry
         let entryId;
         fetch(`/api/logbooks/${this.state.logbook.id}/entries/`, {
@@ -377,38 +383,58 @@ class EntryEditorNew extends EntryEditorBase {
         
         if (!this.state.logbook)
             return <div>Loading...</div>;
+
+        // Using a table here, because TinyMCE sometimes does not play well with
+        // flexbox, causing height issues... hopefully this will be more robust.
         
         return (
             <div id="entryeditor">
 
                 <Prompt message={this.getPromptMessage.bind(this)}/>
-                
-                <header>
-                    <span className="title">
-                        New entry in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
-                    </span>
 
-                    { this.getTitleEditor(this.state.title) }
-
-                    { this.getAuthorsEditor(this.state.authors) }
+                <table>
+                    <th>
+                        <tr className="title">
+                            New entry in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
+                        </tr>
+                    </th>
+                    <tr>
+                        <td>
+                            { this.getTitleEditor(this.state.title) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getAuthorsEditor(this.state.authors) }
+                        </td>
+                    </tr>
+                    <tr className="attributes">
+                        <td>
+                            { this.getAttributesEditors(this.getAttributes()) }
+                        </td>
+                    </tr>
                     
-                    <div className="attributes">
-                        { this.getAttributesEditors(this.getAttributes()) }
-                    </div>
-                    
-                </header>
-                <div className="content">
-                    { this.getContentHTMLEditor(this.state.content ||
-                                                this.state.logbook.template) }
-                </div>
-                <footer>
-                    { this.getAttachments(this.state.attachments) }
-                    { this.getSubmitButton(history) }
-                    { this.getPinnedCheckbox() }
-                    <div className="commands">
-                        { this.getCancelButton() }
-                    </div>
-                </footer>
+                    <tr>
+                        <td className="content">
+                            { this.getContentHTMLEditor(this.state.content ||
+                                                        this.state.logbook.template) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getAttachments(this.state.attachments) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getPinnedCheckbox() }
+                            <div className="commands">
+                                { this.getSubmitButton(history) }
+                                { this.getCancelButton() }
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
         );        
     }
@@ -481,44 +507,61 @@ class EntryEditorFollowup extends EntryEditorBase {
         
         if (!this.state.logbook || !this.state.entry)
             return <div>Loading...</div>;
-        
+
         return (
             <div id="entryeditor">
 
                 <Prompt message={this.getPromptMessage.bind(this)}/>
 
-                <span className="title">
-                    Followup to { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
-                </span>                    
-                
-                <div className="entry">
-                    <InnerEntry {...this.state.entry}/>
-                </div>
-                
-                <header>
+                <table>
+                    <th>
+                        <tr className="title">
+                            Followup to { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
+                        </tr>
+                    </th>
+                    <tr>
+                        <td>
+                            <div className="entry">
+                                <InnerEntry {...this.state.entry}/>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getAuthorsEditor(this.state.authors) }
+                        </td>
+                    </tr>
+                    <tr className="attributes">
+                        <td>
+                            { this.getAttributesEditors(this.getAttributes()) }
+                        </td>
+                    </tr>
                     
-                    { this.getAuthorsEditor(this.state.authors || this.state.entry.authors) }
-                    
-                    <div className="attributes">
-                        { this.getAttributesEditors(this.getAttributes()) }
-                    </div>
-                    
-                </header>
-                <div className="content">
-                    { this.getContentHTMLEditor(this.state.content ||
-                                                this.state.logbook.template) }
-                </div>
-                <footer>
-                    { this.getAttachments(this.state.attachments ||
-                                          this.state.entry.attachments) }
-                    { this.getSubmitButton(history) }
-                    { this.getPinnedCheckbox() }                    
-                    <div className="commands">
-                        { this.getCancelButton() }
-                    </div>
-                </footer>
+                    <tr>
+                        <td className="content">
+                            { this.getContentHTMLEditor(this.state.content ||
+                                                        this.state.logbook.template) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getAttachments(this.state.attachments) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getPinnedCheckbox() }
+                            <div className="commands">
+                                { this.getSubmitButton(history) }
+                                { this.getCancelButton() }
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
         );        
+
+                
     }
 }
 
@@ -581,44 +624,58 @@ class EntryEditorEdit extends EntryEditorBase {
             <div id="entryeditor">
 
                 <Prompt message={this.getPromptMessage.bind(this)}/>
-                
-                <header>
-                    <span className="title">
-                        Editing { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
-                    </span>
 
-                    {
-                        this.state.follows?
-                        null :
-                        this.getTitleEditor(this.state.title)
-                    }
+                <table>
+                    <th>
+                        <tr className="title">
+                            Editing { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
+                        </tr>
+                    </th>
+                    <tr>
+                        <td>
+                            {
+                                this.state.follows?
+                                null :
+                                this.getTitleEditor(this.state.title)
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getAuthorsEditor(this.state.authors) }
+                        </td>
+                    </tr>
+                    <tr className="attributes">
+                        <td>
+                            { this.getAttributesEditors(this.getAttributes()) }
+                        </td>
+                    </tr>
                     
-
-                    { this.getAuthorsEditor(this.state.authors) }
-                    
-                    <div className="attributes">
-                        { this.getAttributesEditors(this.getAttributes()) }
-                    </div>
-                    
-                </header>
-                <div className="content">
-                    { this.getContentHTMLEditor(this.state.content ||
-                                                this.state.entry.content) }
-                </div>
-                <footer>
-                    { this.getAttachments(this.state.attachments) }
-                    { this.getSubmitButton(history) }
-                    { this.getPinnedCheckbox() }
-                    <div className="commands">
-                        { this.getCancelButton() }
-                    </div>
-                </footer>
+                    <tr>
+                        <td className="content">
+                            { this.getContentHTMLEditor(this.state.content ||
+                                                        this.state.logbook.template) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getAttachments(this.state.attachments) }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            { this.getPinnedCheckbox() }
+                            <div className="commands">
+                                { this.getSubmitButton(history) }
+                                { this.getCancelButton() }
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
         );        
     }
-    
 }
-
 
 
 class EntryEditor extends React.Component {

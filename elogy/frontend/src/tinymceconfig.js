@@ -1,6 +1,6 @@
 // configuration for the editor
 const TINYMCE_CONFIG = {
-    plugins: "link image textcolor paste table lists advlist code autoresize",
+    plugins: "link image textcolor paste table lists advlist code",
     toolbar: (
         "undo redo | removeformat | styleselect |"
         + " bold italic forecolor backcolor |"
