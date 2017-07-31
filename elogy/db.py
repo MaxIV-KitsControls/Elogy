@@ -548,7 +548,7 @@ class Entry(Model):
                            if attachment_filter else ""))
 
         if not archived:
-            query += " AND NOT entry.archived"
+            query += " AND NOT entry.archived\n"
 
         variables = []
 
@@ -558,16 +558,16 @@ class Entry(Model):
         # further filters on the results, depending on search criteria
         if content_filter:
             # need to filter out null or REGEX will explode on them
-            query += " AND entry.content IS NOT NULL AND entry.content REGEXP ?"
+            query += " AND entry.content IS NOT NULL AND entry.content REGEXP ?\n"
             variables.append(content_filter)
         if title_filter:
-            query += " AND entry.title IS NOT NULL AND entry.title REGEXP ?"
+            query += " AND entry.title IS NOT NULL AND entry.title REGEXP ?\n"
             variables.append(title_filter)
         if author_filter:
-            query += " AND json_extract(authors2.value, '$.name') REGEXP ?"
+            query += " AND json_extract(authors2.value, '$.name') REGEXP ?\n"
             variables.append(author_filter)
         if attachment_filter:
-            query += " AND attachment_path REGEXP ?"
+            query += " AND attachment_path REGEXP ?\n"
             variables.append(attachment_filter)
         if attribute_filter:
             # Here we're using the JSON1 extension of sqlite to extract
@@ -576,7 +576,7 @@ class Entry(Model):
             # there's some better way to extract the actual array as a table
             # or something.
             for i, (attr, value) in enumerate(attribute_filter):
-                query += " AND (json_tree.key = ? AND (json_tree.type = 'array' AND json_tree.value LIKE ? OR json_tree.value LIKE ?))"
+                query += " AND (json_tree.key = ? AND (json_tree.type = 'array' AND json_tree.value LIKE ? OR json_tree.value LIKE ?))\n"
                 variables.extend([attr, '%"{}"%'.format(value), value])
 
         # Here we're getting into deep water...
