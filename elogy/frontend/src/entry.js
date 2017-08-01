@@ -79,23 +79,28 @@ export class InnerEntry extends React.Component {
             <div className="content plain">{this.props.content}</div>
         );
 
+        const link = !this.props.hideLink? 
+                     (<Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}
+                            title="A direct link to this entry">
+                         Link
+                     </Link>)
+                   : null;
+        
+        const editLink = !this.props.hideEditLink?
+                         (<Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}
+                                title="Make changes to this entry">
+                             { lock } Edit
+                         </Link>) 
+                       : null;
         return (
             <div>
                 <article>
                     <div className={"info" + (this.props.currentEntryId === this.props.id?
-                                    " current" : "")}>
+                                              " current" : "")}>
 
                         <div className="commands">
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}`}
-                                  title="A direct link to this entry">
-                                Link
-                            </Link>
-                            &nbsp;|&nbsp;
-                            { lock }
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}
-                                  title="Make changes to this entry">
-                                Edit
-                            </Link>
+                            { link } { editLink }
+                                        
                         </div>
                         <div>
                             { followupNumber }
