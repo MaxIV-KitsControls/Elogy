@@ -108,7 +108,7 @@ class EntryResource(Resource):
             abort(400, message="Missing 'revision_n' field!")
         if args["revision_n"] != entry.revision_n:
             abort(409, message=(
-                "Conflict: Entry {} has been edited since you last saw it!"
+                "Conflict: Entry {} has been edited since you last loaded it!"
                 .format(entry_id)))
         # check for a lock on the entry
         if entry.lock:
@@ -216,7 +216,7 @@ class EntryLockResource(Resource):
     def get(self, entry_id, logbook_id=None):
         "Check for a lock"
         entry = Entry.get(Entry.id == entry_id)
-        lock = entry.get_lock(request.remote_addr)
+        lock = entry.get_lock(request.environ["REMOTE_ADDR"])
         if lock:
             return lock
         raise EntryLock.DoesNotExist
@@ -228,8 +228,9 @@ class EntryLockResource(Resource):
         parser.add_argument("steal", type=bool, default=False)
         args = parser.parse_args()
         entry = Entry.get(Entry.id == entry_id)
-        print("remote_addr", request.remote_addr)
-        return entry.get_lock(ip=request.remote_addr, acquire=True,
+        print("remote_addr", request.environ.get("REMOTE_ADDR"))
+        return entry.get_lock(ip=request.environ["REMOTE_ADDR"],
+                              acquire=True,
                               steal=args["steal"])
 
     @marshal_with(fields.entry_lock, envelope="lock")
@@ -243,7 +244,7 @@ class EntryLockResource(Resource):
         else:
             entry = Entry.get(Entry.id == entry_id)
             lock = entry.get_lock()
-        lock.cancel(request.remote_addr)
+        lock.cancel(request.environ["REMOTE_ADDR"])
         return lock
 
 

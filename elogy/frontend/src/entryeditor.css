@@ -45,7 +45,6 @@
 }
 
 #entryeditor .attributes {
-
     margin-top: 5px;
 }
 
@@ -53,6 +52,7 @@
     display: inline-block;    
     white-space: nowrap;
     margin: 1px 5px;
+    vertical-align: middle;
 }
 
 #entryeditor .attributes > span > label > * {
@@ -172,6 +172,18 @@ button.submit {
 
 
 button.cancel {
+    background: red;
+    color: white;
+}
+
+span.error {
+    width: 100%;
+    text-align: center;
+    background: red;
+    color: white;
+}
+
+span.locked-by-someone-else {
     background: red;
     color: white;
 }

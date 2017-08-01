@@ -123,7 +123,8 @@ class EntryEditorBase extends React.Component {
             attachments: [],
             metadata: {},
             content: null,
-            priority: 0
+            priority: 0,
+            lock: null
         }
         this.slowFetchUserSuggestions = debounce(this.fetchUserSuggestions.bind(this), 500);
     }
@@ -312,7 +313,7 @@ class EntryEditorBase extends React.Component {
                    <button className="cancel">Cancel</button>
                </Link>;
     }
-    
+
     submitAttachments (entryId) {
         return this.state.attachments.map(attachment => {
             // TODO: also allow removing attachments            
@@ -571,10 +572,57 @@ class EntryEditorEdit extends EntryEditorBase {
 
     /* editor for changing an existing entry */
 
+    constructor (props) {
+        super(props);
+        this.state.lockedBySomeoneElse = false;
+        this.state.error = null;
+    }
+    
+    lockEntry (logbookId, entryId) {
+        fetch(`/api/logbooks/${logbookId}/entries/${entryId}/lock`,
+              {method: "POST"})
+            .then(response => {
+                console.log(response);
+                return response.json()
+            })
+            .then(response => {
+                console.log(response);
+                if (response.status === 409) {
+                    // The entry is locked by someone else!
+                    this.setState({lockedBySomeoneElse: true});                                        
+                } else {
+                    // Either we got a new lock, or we already had it
+                    // and we just get the same lock.
+                    this.setState({lock: response.lock})
+                }
+            });
+    }
+
+    stealEntryLock (logbookId, entryId) {
+        fetch(`/api/logbooks/${logbookId}/entries/${entryId}/lock?steal=true`,
+              {method: "POST"})
+            .then(response => {
+                console.log(response);
+                return response.json()
+            })
+            .then(response => {
+                console.log(response);
+                this.setState({lockedBySomeoneElse: false,
+                               lock: response.lock})
+            });
+    }
+
     componentWillMount () {
         this.fetchLogbook(this.props.match.params.logbookId);
         this.fetchEntry(this.props.match.params.logbookId,
                         this.props.match.params.entryId, true);
+        this.lockEntry(this.props.match.params.logbookId,
+                       this.props.match.params.entryId);
+    }
+
+    onStealLock() {
+        this.stealEntryLock(this.props.match.params.logbookId,
+                            this.props.match.params.entryId);
     }
     
     onSubmit({history}) {
@@ -599,20 +647,82 @@ class EntryEditorEdit extends EntryEditorBase {
                 priority: this.state.priority
             })
         })
-            .then(response => response.json())
-        // TODO: handle errors 
             .then(response => {
-                entryId = response.entry.id;                
-                return Promise.all(this.submitAttachments(response.entry.id));
+                if (response.status == 200) {
+                    return response.json()
+                }
+                response.json()
+                        .then(error => {this.setState({error: error})});
+                throw new Error("submit failed");
             })
-            .then(response => {
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload",
-                                            this.state.logbook.id);                
-                // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
-            });
+        // TODO: handle errors 
+            .then(
+                response => {
+                        entryId = response.entry.id;                
+                        Promise.all(this.submitAttachments(response.entry.id))
+                               .then(response => {
+                                   // signal other parts of the app that the logbook needs refreshing
+                                   this.props.eventbus.publish("logbook.reload",
+                                                               this.state.logbook.id);                
+                                   // send the browser to view the new entry
+                                   history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                               });
+                },
+                error => {
+                    console.log(error);
+                }
+            );
+    }
 
+    getLockInfo () {
+        if (this.state.lockedBySomeoneElse) {
+            return (
+                <span className="locked-by-someone-else"
+                      title={`This entry is locked by ${this.state.lock.owned_by_ip} since ${this.state.lock.created_at} in order to prevent edit conflicts.`}>
+                    Locked by {this.state.lock.owned_by_ip}!
+                </span>
+            );
+        } else {
+            return null;
+        }
+    }
+
+    getSubmitButton (history) {
+        if (this.state.lockedBySomeoneElse) {
+            /* 
+               Since it's not allowed to submit an entry that is locked
+               by someone else, we don't show the Submit button here.
+               It's possible however to explicitly "steal" the lock,
+               e.g. if the user knows that the lock is no longer 
+               relevant.
+            */
+            return (
+                <span>                    
+                    <button className="steal-lock"
+                            title="If you are certain that the lock is not relevant (e.g. the owner is not going to submit any changes) you can explicitly 'steal' the lock, allowing you to submit instead."
+                            onClick={this.onStealLock.bind(this)}>
+                        Steal lock
+                    </button>
+                </span>
+            );
+        } else {
+            return (
+                <button className="submit"
+                        title="Upload the entry"
+                        onClick={this.onSubmit.bind(this, history)}>
+                    Submit
+                </button>
+            );
+        }
+    }
+
+
+    getError () {
+        if (this.state.error) {
+            return <span className="error">Error: {this.state.error.message}</span>
+        } else {
+            return null;
+        }
     }
     
     renderInner (history) {
@@ -626,11 +736,11 @@ class EntryEditorEdit extends EntryEditorBase {
                 <Prompt message={this.getPromptMessage.bind(this)}/>
 
                 <table>
-                    <th>
-                        <tr className="title">
+                    <tr>
+                        <th className="title">
                             Editing { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
-                        </tr>
-                    </th>
+                        </th>
+                    </tr>
                     <tr>
                         <td>
                             {
@@ -663,8 +773,12 @@ class EntryEditorEdit extends EntryEditorBase {
                         </td>
                     </tr>
                     <tr>
+                        <td>{this.getError()}</td>
+                    </tr>                    
+                    <tr>
                         <td>
                             { this.getPinnedCheckbox() }
+                            { this.getLockInfo() }
                             <div className="commands">
                                 { this.getSubmitButton(history) }
                                 { this.getCancelButton() }

@@ -57,12 +57,15 @@ export class InnerEntry extends React.Component {
                                   <i className="fa fa-pencil"/>&nbsp;
                                   {formatDateTimeString(this.props.last_changed_at)}
                               </span>
-                             :null;
+                            : null;
+        const lock = this.props.lock?
+                     <span title={`The entry is locked for editing by ${this.props.lock.owned_by_ip} since ${this.props.lock.created_at}`} className="lock fa fa-lock"/> : null;
+        
         const authors = this.props.authors.map((author, i) =>
             <span key={i}
                   className="author"
                   title={`${author.email || "No email"} (${author.login || "No login"})`}>
-            { author.name }
+                { author.name }
             </span>);
 
         const attributes = this.props.logbook?
@@ -88,6 +91,7 @@ export class InnerEntry extends React.Component {
                                 Link
                             </Link>
                             &nbsp;|&nbsp;
+                            { lock }
                             <Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}
                                   title="Make changes to this entry">
                                 Edit
@@ -102,7 +106,7 @@ export class InnerEntry extends React.Component {
                             { lastChangedAt }
                         </div>
                         <div className="authors">
-                            <i className="fa fa-user"/> { authors }
+                            <span className="fa fa-user"/> { authors }
                         </div>
                         { attributes }
                     </div>
