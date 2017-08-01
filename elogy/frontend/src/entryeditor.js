@@ -520,10 +520,10 @@ class EntryEditorFollowup extends EntryEditorBase {
                             Followup to { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
                         </tr>
                     </th>
-                    <tr>
-                        <td>
+                    <tr className="entry">
+                        <td className="entry">
                             <div className="entry">
-                                <InnerEntry {...this.state.entry}/>
+                                <InnerEntry hideLink={true} hideEditLink={true} {...this.state.entry}/>
                             </div>
                         </td>
                     </tr>
