@@ -2,6 +2,13 @@
    creating a new entry, making a followup to another entry or
    modifying an existing entry.  */
 
+/* 
+   TODO: there's quite a lot of repeated functionality here, that
+   should probably be refactored to be re-used more. Also, maybe
+   all the little "get*" helpers should be moved into separate
+   components.
+*/
+
 import React from 'react';
 import {Link, Route, Prompt, Switch} from 'react-router-dom';
 import update from 'immutability-helper';
@@ -124,12 +131,16 @@ class EntryEditorBase extends React.Component {
             metadata: {},
             content: null,
             priority: 0,
-            lock: null
+            lock: null,
+            error: null
         }
+        // we don't want to stress the backend by searching for users
+        // at every keystroke so we'll limit the rate a little.
         this.slowFetchUserSuggestions = debounce(this.fetchUserSuggestions.bind(this), 500);
     }
 
     fetchEntry (logbookId, entryId, fill) {
+        // get all data for the given entry from the backend
         fetch(`/api/logbooks/${logbookId}/entries/${entryId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
@@ -142,17 +153,15 @@ class EntryEditorBase extends React.Component {
     }
 
     fetchLogbook (logbookId) {
+        // get data for the given logbook from the backend
         fetch(`/api/logbooks/${logbookId}/`,
               {headers: {"Accept": "application/json"}})
             .then(response => response.json())
             .then(json => this.setState(json));        
     }
 
-    onTitleChange (event) {
-        this.setState({title: event.target.value});
-    }
-
     fetchUserSuggestions (input, callback) {
+        // search for author names
         return fetch(`/api/users/?search=${input}`, 
                      {
                          headers: {"Accept": "application/json"}
@@ -165,6 +174,10 @@ class EntryEditorBase extends React.Component {
                     complete: false
                 });
             });
+    }
+
+    onTitleChange (event) {
+        this.setState({title: event.target.value});
     }
     
     onAuthorsChange (newAuthors) {
@@ -193,6 +206,7 @@ class EntryEditorBase extends React.Component {
     }
     
     hasEdits () {
+        // return whether the user had edited anything or not
         const original = this.state.entry || {};
         return (!this.submitted &&
                 (this.state.title !== original.title ||
@@ -238,7 +252,6 @@ class EntryEditorBase extends React.Component {
                 onBlur={ this.onContentChange.bind(this) }/>            
         );
     }
-
 
     getAttributes () {
         if (Object.keys(this.state.attributes).length > 0) {
@@ -314,6 +327,14 @@ class EntryEditorBase extends React.Component {
                </Link>;
     }
 
+    getError () {
+        if (this.state.error) {
+            return <span className="error">Error: {this.state.error.message}</span>
+        } else {
+            return null;
+        }
+    }    
+
     submitAttachments (entryId) {
         return this.state.attachments.map(attachment => {
             // TODO: also allow removing attachments            
@@ -330,6 +351,10 @@ class EntryEditorBase extends React.Component {
     }
 
     render () {
+        // we need to wrap up the rendered component in a Route in order
+        // to have access to the "history" object for submitting.
+        // Each subclass should implement a "innerRender" method that
+        // renders as usual.
         return <Route render={this.renderInner.bind(this)}/>;
     }
 }
@@ -345,39 +370,56 @@ class EntryEditorNew extends EntryEditorBase {
     
     onSubmit({history}) {
         this.submitted = true;
-        console.log("submit", this.state);
         // we're creating a new entry
-        let entryId;
-        fetch(`/api/logbooks/${this.state.logbook.id}/entries/`, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                title: this.state.title,
-                authors: this.state.authors,
-                content: this.state.content,
-                content_type: this.state.content_type,
-                attributes: this.state.attributes,
-                follows_id: this.state.follows,
-                archived: this.state.archived,
-                metadata: this.state.metadata,
-                priority: this.state.priority
-            })
-        })
-            .then(response => response.json())
-        // TODO: handle errors 
-            .then(response => {
-                entryId = response.entry.id;                
-                return Promise.all(this.submitAttachments(response.entry.id));
+        fetch(
+            `/api/logbooks/${this.state.logbook.id}/entries/`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: this.state.title,
+                    authors: this.state.authors,
+                    content: this.state.content,
+                    content_type: this.state.content_type,
+                    attributes: this.state.attributes,
+                    follows_id: this.state.follows,
+                    archived: this.state.archived,
+                    metadata: this.state.metadata,
+                    priority: this.state.priority
+                })
             })
             .then(response => {
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload",
-                                            this.state.logbook.id);
-                // send the browser to view the new entry
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
-            });
+                if (response.ok) {
+                    return response.json()
+                }
+                // something went wrong!
+                // TODO: error handling probably needs some work.
+                response.json().then(
+                    error => {this.setState({error: error})},
+                    error => {this.setState({error: {message: response.statusText,
+                                                     code: response.status}})}
+                )
+                throw new Error("submit failed");
+            })
+            .then(
+                response => {
+                    // at this point we have successfully submitted the entry,
+                    // mow we just need to submit any attachments.
+                    const entryId = response.entry.id;                
+                    Promise.all(this.submitAttachments(response.entry.id))
+                           .then(response => {
+                               // signal other parts of the app that the logbook needs refreshing
+                               this.props.eventbus.publish("logbook.reload",
+                                                           this.state.logbook.id);                
+                               // send the browser to view the new entry
+                               history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                           });
+                },
+                error => {
+                    console.log(error);
+                }
+            );
     }
 
     renderInner (history) {
@@ -394,11 +436,12 @@ class EntryEditorNew extends EntryEditorBase {
                 <Prompt message={this.getPromptMessage.bind(this)}/>
 
                 <table>
-                    <th>
-                        <tr className="title">
-                            New entry in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
-                        </tr>
-                    </th>
+                    <tr>
+                        <th className="title">
+                            New entry in <span className="logbook">
+                            <i className="fa fa-book"/> {this.state.logbook.name || "[unknown]"}</span>
+                        </th>
+                    </tr>
                     <tr>
                         <td>
                             { this.getTitleEditor(this.state.title) }
@@ -409,8 +452,8 @@ class EntryEditorNew extends EntryEditorBase {
                             { this.getAuthorsEditor(this.state.authors) }
                         </td>
                     </tr>
-                    <tr className="attributes">
-                        <td>
+                    <tr>
+                        <td className="attributes">
                             { this.getAttributesEditors(this.getAttributes()) }
                         </td>
                     </tr>
@@ -426,6 +469,9 @@ class EntryEditorNew extends EntryEditorBase {
                             { this.getAttachments(this.state.attachments) }
                         </td>
                     </tr>
+                    <tr>
+                        <td>{this.getError()}</td>
+                    </tr>                    
                     <tr>
                         <td>
                             { this.getPinnedCheckbox() }
@@ -463,7 +509,6 @@ class EntryEditorFollowup extends EntryEditorBase {
     
     onSubmit({history}) {
         this.submitted = true;
-        let entryId;
         const attributes = {};
         // we want to default to the attributes of the original entry, but
         // apply any changes on top.
@@ -472,35 +517,50 @@ class EntryEditorFollowup extends EntryEditorBase {
                                             this.state.attributes[attr.name] :
                                             this.state.entry.attributes[attr.name]
         );
-        fetch(`/api/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                title: this.state.title,
-                authors: this.state.authors,
-                content: this.state.content,
-                content_type: this.state.content_type,
-                attributes: attributes,
-                archived: this.state.archived,
-                priority: this.state.priority,
-                metadata: this.state.metadata
-            })
-        })
-            .then(response => response.json())
-        // TODO: handle errors 
-            .then(response => {
-                entryId = response.entry.id;                
-                return Promise.all(this.submitAttachments(response.entry.id));
+        fetch(
+            `/api/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: this.state.title,
+                    authors: this.state.authors,
+                    content: this.state.content,
+                    content_type: this.state.content_type,
+                    attributes: attributes,
+                    archived: this.state.archived,
+                    priority: this.state.priority,
+                    metadata: this.state.metadata
+                })
             })
             .then(response => {
-                // signal other parts of the app that the logbook needs refreshing
-                this.props.eventbus.publish("logbook.reload",
-                                            this.state.logbook.id);
-                // send the browser to view the new entry                
-                history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);                
-            });
+                if (response.ok) {
+                    return response.json()
+                }
+                response.json().then(
+                    error => {this.setState({error: error})},
+                    error => {this.setState({error: {message: response.statusText,
+                                                     code: response.status}})}
+                )
+                throw new Error("submit failed");
+            })
+            .then(
+                response => {
+                    const entryId = response.entry.id;                
+                    Promise.all(this.submitAttachments(response.entry.id))
+                           .then(response => {
+                               // signal other parts of the app that the logbook needs refreshing
+                               this.props.eventbus.publish("logbook.reload",
+                                                           this.state.logbook.id);                
+                               // send the browser to view the new entry
+                               history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                           });
+                },
+                error => {
+                    console.log(error);
+                }
+            );
         
     }
     
@@ -515,11 +575,11 @@ class EntryEditorFollowup extends EntryEditorBase {
                 <Prompt message={this.getPromptMessage.bind(this)}/>
 
                 <table>
-                    <th>
-                        <tr className="title">
+                    <tr>
+                        <th className="title">
                             Followup to { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
-                        </tr>
-                    </th>
+                        </th>
+                    </tr>
                     <tr className="entry">
                         <td className="entry">
                             <div className="entry">
@@ -550,6 +610,9 @@ class EntryEditorFollowup extends EntryEditorBase {
                         </td>
                     </tr>
                     <tr>
+                        <td>{this.getError()}</td>
+                    </tr>                                        
+                    <tr>
                         <td>
                             { this.getPinnedCheckbox() }
                             <div className="commands">
@@ -575,7 +638,6 @@ class EntryEditorEdit extends EntryEditorBase {
     constructor (props) {
         super(props);
         this.state.lockedBySomeoneElse = false;
-        this.state.error = null;
     }
     
     lockEntry (logbookId, entryId) {
@@ -628,45 +690,47 @@ class EntryEditorEdit extends EntryEditorBase {
     onSubmit({history}) {
         this.submitted = true;
         // we're creating a new entry
-        let entryId;
-        fetch(`/api/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`, {
-            method: "PUT",
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                title: this.state.title,
-                authors: this.state.authors,
-                content: this.state.content,
-                content_type: this.state.content_type,
-                attributes: this.state.attributes,
-                metadata: this.state.metadata,
-                follows_id: this.state.follows,
-                archived: this.state.archived,
-                revision_n: this.state.entry.revision_n,  // must be included for edits!
-                priority: this.state.priority
+        fetch(
+            `/api/logbooks/${this.state.logbook.id}/entries/${this.state.entry.id}/`, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: this.state.title,
+                    authors: this.state.authors,
+                    content: this.state.content,
+                    content_type: this.state.content_type,
+                    attributes: this.state.attributes,
+                    metadata: this.state.metadata,
+                    follows_id: this.state.follows,
+                    archived: this.state.archived,
+                    revision_n: this.state.entry.revision_n,  // must be included for edits!
+                    priority: this.state.priority
+                })
             })
-        })
             .then(response => {
-                if (response.status == 200) {
+                if (response.ok) {
                     return response.json()
                 }
-                response.json()
-                        .then(error => {this.setState({error: error})});
+                response.json().then(
+                    error => {this.setState({error: error})},
+                    error => {this.setState({error: {message: response.statusText,
+                                                     code: response.status}})}
+                )
                 throw new Error("submit failed");
             })
-        // TODO: handle errors 
             .then(
                 response => {
-                        entryId = response.entry.id;                
-                        Promise.all(this.submitAttachments(response.entry.id))
-                               .then(response => {
-                                   // signal other parts of the app that the logbook needs refreshing
-                                   this.props.eventbus.publish("logbook.reload",
-                                                               this.state.logbook.id);                
-                                   // send the browser to view the new entry
-                                   history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
-                               });
+                    const entryId = response.entry.id;                
+                    Promise.all(this.submitAttachments(response.entry.id))
+                           .then(response => {
+                               // signal other parts of the app that the logbook needs refreshing
+                               this.props.eventbus.publish("logbook.reload",
+                                                           this.state.logbook.id);                
+                               // send the browser to view the new entry
+                               history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                           });
                 },
                 error => {
                     console.log(error);
@@ -716,12 +780,16 @@ class EntryEditorEdit extends EntryEditorBase {
         }
     }
 
-
-    getError () {
-        if (this.state.error) {
-            return <span className="error">Error: {this.state.error.message}</span>
+    getTitle () {
+        // return a reasonable title
+        // TODO: if editing a followup, ther's usually no title. It would be nice to be able
+        // to display the title of the original entry instead of only the ID...
+        if (this.state.follows !== null) {
+            return <div>Editing followup to [{this.state.follows}] in <span className="logbook">
+                <i className="fa fa-book"/> {this.state.logbook.name || "[unknown]"}</span></div>
         } else {
-            return null;
+            return <div>Editing '{ this.state.title }' in <span className="logbook">
+                <i className="fa fa-book"/> {this.state.logbook.name || "[unknown]"}</span></div>
         }
     }
     
@@ -738,7 +806,7 @@ class EntryEditorEdit extends EntryEditorBase {
                 <table>
                     <tr>
                         <th className="title">
-                            Editing { this.state.entry.title } in <span className="logbook"> <i className="fa fa-book"/> {this.state.logbook.name || "ehe"}</span>
+                            { this.getTitle() }
                         </th>
                     </tr>
                     <tr>
@@ -807,8 +875,7 @@ class EntryEditor extends React.Component {
                        component={withProps(EntryEditorEdit, this.props)}/>            
             </Switch>
         );
-    }
-    
+    }   
 }
 
 

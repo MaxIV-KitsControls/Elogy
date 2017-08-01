@@ -13,8 +13,13 @@
     padding: 2px 5px;
 }
 
-#entryeditor .entry {
-    height: 100%;
+#entryeditor td.entry {
+    /* height: 200px; */
+}
+
+#entryeditor div.entry {
+    max-height: 300px;
+
     overflow-y: auto;
     border-bottom: 1px solid black;
 }
@@ -48,14 +53,9 @@
     margin-top: 5px;
 }
 
-#entryeditor .attributes > span {
+#entryeditor .attributes span label {
     display: inline-block;    
-    white-space: nowrap;
     margin: 1px 5px;
-    vertical-align: middle;
-}
-
-#entryeditor .attributes > span > label > * {
     vertical-align: middle;    
 }
 
