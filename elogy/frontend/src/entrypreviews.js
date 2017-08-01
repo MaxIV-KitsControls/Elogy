@@ -21,20 +21,20 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
     const attachments = (
         entry.n_attachments ?
         <div className="attachments">
-        {
-            entry.attachment_preview?
-            (<LazyLoad offsetVertical={500}
-                       width={ attachmentPreviewWidth }
-                       height={ attachmentPreviewHeight }>
-                <AttachmentPreviewIcon attachment={entry.attachment_preview}/>
-            </LazyLoad>) :
-            null
-        }
-        {
-            entry.n_attachments > 1?
-            <span>{ entry.n_attachments }</span> :
-            null
-        }
+            {
+                entry.attachment_preview?
+                (<LazyLoad offsetVertical={500}
+                           width={ attachmentPreviewWidth }
+                           height={ attachmentPreviewHeight }>
+                    <AttachmentPreviewIcon attachment={entry.attachment_preview}/>
+                </LazyLoad>) :
+                null
+            }
+            {
+                entry.n_attachments > 1?
+                <span>{ entry.n_attachments }</span> :
+                null
+            }
         </div> :
         null
     );
@@ -49,7 +49,7 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
     const authors = entry.authors
                          .slice(0, 2)
                          .map((author, i) => <span key={i} className="author">{author}</span>);
-    const allAuthors = entry.authors.join(",&nbsp;");
+    const allAuthors = entry.authors.join(", ");
     // for space reasons, we only show up to the two frst authors
     // and then add a summary of the rest, e.g. "(+3)".
     const authorsEllipsis = entry.authors.length > 2?
@@ -70,22 +70,23 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                      </span>;
 
     return (
-    <div key={entry.id} className="entry">
-        <Link to={url}>
-            { attachments }
-            { followups }                                
-            { logbookName }
-            <div className="info">
-                { editTime }
-                <span className="authors"
-                      title={allAuthors}>
-                    <i className="fa fa-user"/> { authors }{ authorsEllipsis }
-                </span>            
-            </div>
-            <div className="title"><span>{ entry.title }</span></div>
-            <div className="content"> {entry.content}</div>
-        </Link>
-    </div>
+        <div key={entry.id} className="entry">
+            <Link to={url}>
+                { attachments }
+                { logbookName }
+                <div className="info">
+                    { editTime }
+                    <span className="authors"
+                          title={allAuthors}>
+                        <i className="fa fa-user"/> { authors }{ authorsEllipsis }
+                    </span>            
+                </div>
+                { followups }                                
+                <div className="title"><span>{ entry.title }</span></div>
+                
+                <div className="content"> {entry.content}</div>
+            </Link>
+        </div>
     );
 }
 
