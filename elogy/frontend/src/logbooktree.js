@@ -92,7 +92,7 @@ class LogbookTree extends React.Component {
 
     componentWillReceiveProps ({location}) {
         const query = parseQuery(location.search);
-        if (query.parent !== this.state.parent)
+        if ((query.parent || null) !== (this.state.parent || null))
             this.fetch(location.search);
     }
     
