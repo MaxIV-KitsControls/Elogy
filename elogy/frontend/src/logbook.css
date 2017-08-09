@@ -192,3 +192,22 @@
     font-size: 70%;
     margin: 1px;
 }
+
+#logbook .filters {
+}
+
+#logbook .filter {
+    display: inline-block;  /* prevent line breaks */
+    margin: 3px;
+    padding: 2px 5px;
+    background: #999;
+    color: white;
+}
+
+#logbook .filter .delete {
+    padding: 0;
+    padding-left: 5px;
+    border: 0;
+    background: transparent;
+    color: white;
+}
