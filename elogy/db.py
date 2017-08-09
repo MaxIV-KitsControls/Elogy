@@ -489,7 +489,7 @@ class Entry(Model):
                 WHERE entry.logbook_id=logbook1.id
                 """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
                                  if count else "entry.*"),
-                           attachment=("path as attachment_path,"
+                           attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                            authors=authors, logbook=logbook.id,
                            from_attributes=(", json_tree(entry.attributes)"
@@ -512,7 +512,7 @@ class Entry(Model):
                     LEFT JOIN entry AS followup ON entry.id == followup.follows_id
                     WHERE entry.logbook_id = {logbook}"""
                     .format(what="count()" if count else "entry.*",
-                            attachment=("path as attachment_path,"
+                            attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                             authors=authors,
                             from_attributes=(", json_tree(entry.attributes)"
