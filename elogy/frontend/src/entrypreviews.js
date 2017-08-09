@@ -12,9 +12,11 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
     
     const url = `/logbooks/${logbook.id}/entries/${entry.id}/${search}`
     const attachmentPreviewWidth = (entry.attachment_preview &&
+                                    entry.attachment_preview.metadata &&
                                     entry.attachment_preview.metadata.thumbnail_size &&
                                     entry.attachment_preview.metadata.thumbnail_size.width);
     const attachmentPreviewHeight = (entry.attachment_preview &&
+                                     entry.attachment_preview.metadata &&
                                      entry.attachment_preview.metadata.thumbnail_size &&
                                      entry.attachment_preview.metadata.thumbnail_size.height);
 
