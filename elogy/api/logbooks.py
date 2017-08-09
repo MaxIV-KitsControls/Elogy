@@ -1,28 +1,43 @@
-from flask_restful import Resource, reqparse, marshal, marshal_with
+from flask_restful import Resource, marshal_with
+from webargs.fields import Integer, Str, Boolean, Dict, List, Nested
+from webargs.flaskparser import use_args
 
 from ..db import Logbook
 from ..actions import new_logbook, edit_logbook
 from . import fields, send_signal
 
 
-logbooks_parser = reqparse.RequestParser()
-logbooks_parser.add_argument("parent_id", type=int)
-logbooks_parser.add_argument("name", type=str, required=True)
-logbooks_parser.add_argument("description", type=str)
-logbooks_parser.add_argument("template", type=str)
-logbooks_parser.add_argument("attributes", type=list,
-                             location="json", default=[])
-logbooks_parser.add_argument("metadata", type=dict, location="json",
-                             default={})
-logbooks_parser.add_argument("archived", type=bool, default=False)
+logbook_args = {
+    "parent_id": Integer(),
+    "name": Str(required=True),
+    "description": Str(),
+    "template": Str(),
+    "attributes": List(Nested({
+        "name": Str(required=True),
+        "type": Str(
+            required=True,
+            validate=lambda t: t in ["text",
+                                     "number",
+                                     "boolean",
+                                     "option",
+                                     "multioption"]),
+        "required": Boolean(),
+        "options": List(Str())
+    })),
+    "metadata": Dict(),
+    "archived": Boolean(missing=False)
+}
 
 
 class LogbooksResource(Resource):
 
     "Handle requests for logbooks"
 
+    @use_args({"parent": Integer()})
     @marshal_with(fields.logbook, envelope="logbook")
-    def get(self, logbook_id=None, revision_n=None):
+    def get(self, args, logbook_id=None, revision_n=None):
+
+        "Fetch a given logbook"
 
         if logbook_id:
             logbook = Logbook.get(Logbook.id == logbook_id)
@@ -32,9 +47,6 @@ class LogbooksResource(Resource):
 
         # Get either the direct children of a given parent, or else the
         # global list of top-level (no parent) logbooks
-        parser = reqparse.RequestParser()
-        parser.add_argument("parent", type=int)
-        args = parser.parse_args()
         parent_id = args.get("parent")
         if parent_id:
             return Logbook.get(Logbook.id == parent_id)
@@ -43,15 +55,18 @@ class LogbooksResource(Resource):
         return dict(children=children)
 
     @send_signal(new_logbook)
+    @use_args(logbook_args)
     @marshal_with(fields.logbook, envelope="logbook")
-    def post(self, logbook_id=None):
+    def post(self, args, logbook_id=None):
+
         "Create a new logbook"
-        args = logbooks_parser.parse_args()
-        logbook = Logbook(name=args["name"], parent=args["parent_id"],
-                          description=args["description"],
-                          template=args["template"],
+
+        logbook = Logbook(name=args["name"],
+                          parent=args.get("parent_id"),
+                          description=args.get("description"),
+                          template=args.get("template"),
                           attributes=args["attributes"],
-                          metadata=args["metadata"],
+                          metadata=args.get("metadata", {}),
                           archived=args["archived"])
         if logbook_id:
             parent = Logbook.get(Logbook.id == logbook_id)
@@ -60,11 +75,13 @@ class LogbooksResource(Resource):
         return logbook
 
     @send_signal(edit_logbook)
+    @use_args(logbook_args)
     @marshal_with(fields.logbook, envelope="logbook")
-    def put(self, logbook_id):
+    def put(self, args, logbook_id):
+
         "Update an existing logbook"
+
         logbook = Logbook.get(Logbook.id == logbook_id)
-        args = logbooks_parser.parse_args()
         logbook.make_change(**args).save()
         logbook.save()
         return logbook
