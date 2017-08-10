@@ -15,7 +15,7 @@ class LogbookAttributeEditor extends React.PureComponent {
         super(props);
         this.state = {
             name: props.name,
-            type: props.type,
+            type: props.type || "text",
             options: props.options,
             required: props.required
         }
@@ -70,11 +70,12 @@ class LogbookAttributeEditor extends React.PureComponent {
                     Required                        
                 </label>
                 <label style={
-                    {display: (this.props.type === "option" ||
-                               this.props.type === "multioption")?
+                    {display: (this.state.type === "option" ||
+                               this.state.type === "multioption")?
                               "inline-block" : "none"}}>
                     Options:
                     <textarea rows="3" ref="options"
+                              title="Choices available for the attribute (one per line)"
                               value={(this.state.options || []).join("\n")}
                               onChange={this.onChangeOptions.bind(this)}
                               onBlur={this.onBlur.bind(this)}/>
