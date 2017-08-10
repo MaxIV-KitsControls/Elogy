@@ -464,7 +464,8 @@ class Entry(Model):
         if logbook:
             if child_logbooks:
                 # recursive query to find all entries in the given logbook
-                # or any of its descendants, to arbitrary depth
+                # or any of its descendants, to arbitrary depth, and also
+                # any high priority ("pinned") entries in ancestors
                 query = """
                 -- recursively add all 'descentant' logbooks (children, grandchilren, ...)
                 WITH RECURSIVE logbook1(id,parent_id) AS (
@@ -495,7 +496,8 @@ class Entry(Model):
                 JOIN logbook2
                 {join_attachment}
                 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-                WHERE entry.logbook_id=logbook1.id OR entry.priority > 0 AND entry.logbook_id == logbook2.id
+                WHERE (entry.logbook_id=logbook1.id
+                       OR (entry.priority>0 AND entry.logbook_id=logbook2.id))
                 """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
                                  if count else "entry.*"),
                            attachment=("attachment.path as attachment_path,"
