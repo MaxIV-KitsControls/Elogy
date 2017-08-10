@@ -1,3 +1,7 @@
+a {
+   outline: 0;  /* get rid of annoying selection rectangle in FF */
+}
+
 #app {
     font-family: 'Avenir', Helvetica, Arial, sans-serif;
     display: flex;
