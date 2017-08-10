@@ -14,7 +14,7 @@
     flex-direction: column;
 }
 
-#logbookeditor form > fieldset.description {
+#logbookeditor form > fieldset.description input {
     flex: 1;
     height: 100%;    
 }
