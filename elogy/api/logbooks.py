@@ -8,7 +8,7 @@ from . import fields, send_signal
 
 
 logbook_args = {
-    "parent_id": Integer(missing=0),
+    "parent_id": Integer(allow_none=True),
     "name": Str(),
     "description": Str(allow_none=True),
     "template": Str(allow_none=True),
