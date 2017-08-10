@@ -329,7 +329,7 @@ class EntryEditorBase extends React.Component {
 
     getError () {
         if (this.state.error) {
-            return <span className="error">Error: {this.state.error.message}</span>
+            return <span className="error">Error: {JSON.stringify(this.state.error.messages)}</span>
         } else {
             return null;
         }
