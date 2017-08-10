@@ -8,6 +8,18 @@ import {AttachmentPreviewIcon} from "./entryattachments.js";
 import {groupBy, formatTimeString, formatDateString} from "./util.js";
 
 
+const Tags = ({attributes}) => {
+    console.log("Tags", attributes);
+    if (attributes && attributes.Tags) {
+        const tags = attributes.Tags.map(tag => (
+            <span key={tag} className="tag">{ tag }</span>
+        ));
+        return (<div className="tags">{ tags }</div>);
+    }
+    return null;
+}
+
+
 const EntryPreview = ({logbook, entry, selected, search=""}) => {
     
     const url = `/logbooks/${logbook.id}/entries/${entry.id}/${search}`
@@ -74,19 +86,22 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
     return (
         <div key={entry.id} className={"entry"}>
             <Link to={url}>
-                { attachments }
-                { logbookName }
-                <div className="info">
-                    { editTime }
-                    <span className="authors"
-                          title={allAuthors}>
-                        <i className="fa fa-user"/> { authors }{ authorsEllipsis }
-                    </span>            
+                <div className="inner">
+                    { attachments }
+                    { logbookName }
+                    <div className="info">
+                        { editTime }
+                        <span className="authors"
+                              title={allAuthors}>
+                            <i className="fa fa-user"/> { authors }{ authorsEllipsis }
+                        </span>            
+                    </div>
+                    { followups }                                
+                    <div className="title"><span>{ entry.title }</span></div>
+                    
+                    <div className="content"> {entry.content}</div>
                 </div>
-                { followups }                                
-                <div className="title"><span>{ entry.title }</span></div>
-                
-                <div className="content"> {entry.content}</div>
+                <Tags attributes={entry.attributes}/>
             </Link>
         </div>
     );

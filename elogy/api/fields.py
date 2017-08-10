@@ -241,6 +241,7 @@ short_entry = {
     "last_changed_at": fields.DateTime,
     "timestamp": DateTimeFromStringField,
     "authors": fields.List(fields.String(attribute="name")),
+    "attributes": fields.Raw,
     "followup_authors": FollowupAuthorsField(),
     "attachment_preview": FirstIfAny(attribute="attachments"),
     "n_attachments": NumberOf(attribute="attachments"),

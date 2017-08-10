@@ -73,10 +73,14 @@
 #logbook div.entry {
     position: relative;
     height: 100%;
+}
+
+#logbook div.entry .inner {
+    height: 100%;
     /* Since the entry height is fixed, the gradient is an attempt to make
        the contents "fade out" at the bottom. Not sure it's a great
        idea but it took some time to figure out! */
-    mask-image: linear-gradient(rgba(0, 0, 0, 1.0), rgba(0, 0, 0, 1.0) 80%, transparent);        
+    mask-image: linear-gradient(rgba(0, 0, 0, 1.0), rgba(0, 0, 0, 1.0) 80%, transparent);
 }
 
 #logbook dd.entry.native {
@@ -157,6 +161,24 @@
     padding: 0 3px;
 }
 
+
+#logbook .entry .tags {
+    position: absolute;
+    right: 0;
+    bottom: 5px;
+    z-index: 10;
+}
+
+#logbook .entry .tags .tag {
+    background: green;
+    color: white;
+    border: 2px solid white;
+    border-radius: 5px;
+    padding: 0 3px;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
 #logbook dd.entry:not(:last-child) {
     border-bottom: 1px solid #aaa;
 }
@@ -193,7 +215,6 @@
 #logbook .attributes {
     
 }
-
 
 #logbook .attributes select {
     font-size: 70%;
