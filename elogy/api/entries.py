@@ -151,8 +151,7 @@ entries_args = {
     "content": Str(),
     "authors": Str(),
     "attachments": Str(),
-    "attributes": List(Str(validate=lambda s: len(s.split(":")) == 2),
-                       attribute="attribute"),
+    "attribute": List(Str(validate=lambda s: len(s.split(":")) == 2)),
     "archived": Boolean(),
     "ignore_children": Boolean(),
     "n": Integer(missing=50),
@@ -169,7 +168,7 @@ class EntriesResource(Resource):
     def get(self, args, logbook_id=None):
 
         attributes = [attr.split(":")
-                      for attr in args.get("attributes", [])]
+                      for attr in args.get("attribute", [])]
 
         if logbook_id:
             # restrict search to the given logbook and its descendants
