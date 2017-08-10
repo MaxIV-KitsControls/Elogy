@@ -8,14 +8,13 @@ from . import fields, send_signal
 
 
 logbook_args = {
-    "parent_id": Integer(),
-    "name": Str(required=True),
-    "description": Str(),
-    "template": Str(),
+    "parent_id": Integer(missing=0),
+    "name": Str(),
+    "description": Str(allow_none=True),
+    "template": Str(allow_none=True),
     "attributes": List(Nested({
-        "name": Str(required=True),
+        "name": Str(),
         "type": Str(
-            required=True,
             validate=lambda t: t in ["text",
                                      "number",
                                      "boolean",

@@ -16,8 +16,8 @@ from . import fields, send_signal
 
 
 entry_args = {
-    "id": Integer(),
-    "title": Str(),
+    "id": Integer(allow_none=True),
+    "title": Str(allow_none=True),
     "content": Str(),
     "content_type": Str(missing="text/html"),
     "authors": List(Nested({
@@ -27,7 +27,7 @@ entry_args = {
     }), validate=lambda a: len(a) > 0),
     "created_at": LocalDateTime(),
     "last_changed_at": LocalDateTime(),
-    "follows_id": Integer(),
+    "follows_id": Integer(allow_none=True),
     "attributes": Dict(),
     "archived": Boolean(),
     "metadata": Dict(),
@@ -91,6 +91,9 @@ class EntryResource(Resource):
                     pass
                 # TODO: return a helpful error if this fails?
             args["attributes"] = attributes
+        if args.get("follows_id"):
+            # don't allow pinning followups, that makes no sense
+            args["pinned"] = False
         entry = Entry.create(**args)
         for attachment in inline_attachments:
             attachment.entry = entry
@@ -229,7 +232,6 @@ class EntryLockResource(Resource):
     def post(self, args, entry_id, logbook_id=None):
         "Acquire (optionally stealing) a lock"
         entry = Entry.get(Entry.id == entry_id)
-        print("remote_addr", request.environ.get("REMOTE_ADDR"))
         return entry.get_lock(ip=request.environ["REMOTE_ADDR"],
                               acquire=True,
                               steal=args["steal"])
