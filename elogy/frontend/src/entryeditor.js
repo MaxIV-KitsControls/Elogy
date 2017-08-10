@@ -614,7 +614,6 @@ class EntryEditorFollowup extends EntryEditorBase {
                     </tr>                                        
                     <tr>
                         <td>
-                            { this.getPinnedCheckbox() }
                             <div className="commands">
                                 { this.getSubmitButton(history) }
                                 { this.getCancelButton() }
