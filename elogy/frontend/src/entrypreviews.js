@@ -70,9 +70,9 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                      <span className="timestamp">
                          <i className="fa fa-clock-o"/> { edited } { timestamp }
                      </span>;
-
+    
     return (
-        <div key={entry.id} className="entry">
+        <div key={entry.id} className={"entry"}>
             <Link to={url}>
                 { attachments }
                 { logbookName }
@@ -121,7 +121,12 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
                     {dateGroups[priorityAndDate]
                         .map((entry, i) => (
                             <dd key={i}
-                                className={"entry" + (selectedEntryId === entry.id? " selected" : "") + (entry.priority > 0? " pinned" : "")}>
+                                className={
+                                    "entry" +
+                                    (selectedEntryId === entry.id? " selected" : "") +
+                                    (entry.priority > 0? " pinned" : "") +
+                                    (entry.logbook.id == logbook.id? " native" : "")
+                                }>
                                 <EntryPreview
                                     key={entry.id}
                                     search={search}

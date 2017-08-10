@@ -39,6 +39,8 @@
 #logbook dl {
     padding: 0;
     margin: 0;
+    background: #ccc;        
+        
 }
 
 #logbook .entries {
@@ -61,6 +63,7 @@
 }
 
 #logbook dd.entry {
+    opacity: 0.5;    
     list-style: none;
     padding: 5px 5px 0 5px;
     height: 5em;
@@ -76,8 +79,11 @@
     mask-image: linear-gradient(rgba(0, 0, 0, 1.0), rgba(0, 0, 0, 1.0) 80%, transparent);        
 }
 
+#logbook dd.entry.native {
+    opacity: 1;
+}
+
 #logbook dd.entry.pinned {
-    border-left: 3px solid red;
     background-color: #fdd;
 }
 
@@ -156,6 +162,7 @@
 }
 
 #logbook dd.entry.selected {
+    opacity: 1;
     background: white;
 }
 
