@@ -15,7 +15,7 @@ class LogbookAttributeEditor extends React.PureComponent {
         super(props);
         this.state = {
             name: props.name,
-            type: props.type,
+            type: props.type || "text",
             options: props.options,
             required: props.required
         }
@@ -70,11 +70,12 @@ class LogbookAttributeEditor extends React.PureComponent {
                     Required                        
                 </label>
                 <label style={
-                    {display: (this.props.type === "option" ||
-                               this.props.type === "multioption")?
+                    {display: (this.state.type === "option" ||
+                               this.state.type === "multioption")?
                               "inline-block" : "none"}}>
                     Options:
                     <textarea rows="3" ref="options"
+                              title="Choices available for the attribute (one per line)"
                               value={(this.state.options || []).join("\n")}
                               onChange={this.onChangeOptions.bind(this)}
                               onBlur={this.onBlur.bind(this)}/>
@@ -192,6 +193,12 @@ class LogbookEditorBase extends React.Component {
             return "Looks like you have made some edits. If you leave, you will lose those...";
     }
 
+    getErrors () {
+        if (this.state.error) {
+            return <div className="error">{JSON.stringify(this.state.error.messages)}</div>
+        }
+    }
+
     render () {
         return <Route render={this.innerRender.bind(this)}/>
     }
@@ -207,7 +214,8 @@ class LogbookEditorNew extends LogbookEditorBase {
             description: "",
             metadata: {},
             attributes: [],
-            parent: {}
+            parent: {},
+            error: null
         }
     }
     
@@ -241,11 +249,24 @@ class LogbookEditorNew extends LogbookEditorBase {
                     template_content_type: "text/html",
                 })
             })
-            .then(result => result.json())
-            .then(result => {
-                this.props.eventbus.publish("logbook.reload", this.state.id);
-                history.push({pathname: `/logbooks/${result.id}`});
-            });
+            .then(response => {
+                if (response.ok) {
+                    return response.json()
+                }
+                response.json().then(
+                    error => {this.setState({error: error})},
+                    error => {this.setState({error: {message: response.statusText,
+                                                     code: response.status}})}
+                )
+                throw new Error("submit failed");
+            })
+            .then(
+                result => {
+                    this.props.eventbus.publish("logbook.reload", this.state.id);
+                    history.push({pathname: `/logbooks/${result.id}`});
+                },
+                error => console.log(error)
+            );
     }
 
     innerRender ({history}) {
@@ -287,6 +308,8 @@ class LogbookEditorNew extends LogbookEditorBase {
                         <button onClick={this.insertAttribute.bind(this, this.state.attributes.length)}>New</button>
                     </fieldset>
                 </form>
+
+                { this.getErrors() }
                 
                 <footer>
                     <button onClick={this.onSubmit.bind(this, history)}>
@@ -310,7 +333,8 @@ class LogbookEditorEdit extends LogbookEditorBase {
             description: "",
             metadata: {},
             attributes: [],
-            logbook: {}
+            logbook: {},
+            error: null
         }
     }
     
@@ -340,15 +364,28 @@ class LogbookEditorEdit extends LogbookEditorBase {
                     template_content_type: "text/html",
                 })
             })
-            .then(result => result.json())
-            .then(result => {
-                history.push({
-                    pathname: `/logbooks/${this.state.id}`,
-                });
-                this.props.eventbus.publish("logbook.reload", this.state.id);
-            });
+            .then(response => {
+                    if (response.ok) {
+                        return response.json()
+                    }
+                    response.json().then(
+                        error => {this.setState({error: error})},
+                        error => {this.setState({error: {message: response.statusText,
+                                                         code: response.status}})}
+                    )
+                    throw new Error("submit failed");
+                })
+            .then(
+                result => {
+                    history.push({
+                        pathname: `/logbooks/${this.state.id}`,
+                    });
+                    this.props.eventbus.publish("logbook.reload", this.state.id);
+                },
+                error => console.log(error)
+            );
     }
-    
+
     innerRender ({history}) {
         
         return (
@@ -388,6 +425,8 @@ class LogbookEditorEdit extends LogbookEditorBase {
                         <button onClick={this.insertAttribute.bind(this, this.state.attributes.length)}>New</button>
                     </fieldset>
                 </form>
+
+                { this.getErrors() }
                 
                 <footer>
                     <button onClick={this.onSubmit.bind(this, history)}>

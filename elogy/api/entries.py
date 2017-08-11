@@ -2,7 +2,10 @@ from datetime import datetime
 import logging
 
 from flask import request, send_file, abort
-from flask_restful import Resource, reqparse, marshal, marshal_with, abort
+from flask_restful import Resource, marshal, marshal_with
+from webargs.fields import (Integer, Str, Boolean, Dict, List,
+                            Nested, Email, LocalDateTime)
+from webargs.flaskparser import use_args
 
 from ..db import Entry, Logbook, EntryLock
 from ..attachments import handle_img_tags
@@ -12,70 +15,71 @@ from ..utils import get_utc_datetime
 from . import fields, send_signal
 
 
-entry_parser = reqparse.RequestParser()
-entry_parser.add_argument("id", type=int, store_missing=False)
-entry_parser.add_argument("title", type=str, store_missing=False)
-entry_parser.add_argument("content", type=str, store_missing=False)
-entry_parser.add_argument("content_type", type=str, default="text/html",
-                          store_missing=False)
-entry_parser.add_argument("authors", type=dict, action="append",
-                          store_missing=False)
-entry_parser.add_argument("created_at", type=str, store_missing=False)
-entry_parser.add_argument("last_changed_at", type=str, store_missing=False)
-entry_parser.add_argument("follows_id", type=int, store_missing=False)
-entry_parser.add_argument("attributes", type=dict, location="json", default={})
-entry_parser.add_argument("archived", type=bool, default=False)
-entry_parser.add_argument("metadata", type=dict, location="json", default={})
-entry_parser.add_argument("priority", type=int, default=0)
-entry_parser.add_argument("revision_n", type=int, store_missing=False)
+entry_args = {
+    "id": Integer(allow_none=True),
+    "title": Str(allow_none=True),
+    "content": Str(),
+    "content_type": Str(missing="text/html"),
+    "authors": List(Nested({
+        "name": Str(required=True),
+        "login": Str(),
+        "email": Email(allow_none=True)
+    }), validate=lambda a: len(a) > 0),
+    "created_at": LocalDateTime(),
+    "last_changed_at": LocalDateTime(),
+    "follows_id": Integer(allow_none=True),
+    "attributes": Dict(),
+    "archived": Boolean(),
+    "metadata": Dict(),
+    "priority": Integer(missing=0),
+    "revision_n": Integer()
+}
 
 
 class EntryResource(Resource):
 
     "Handle requests for a single entry"
 
+    @use_args({"thread": Boolean(missing=False)})
     @marshal_with(fields.entry_full, envelope="entry")
-    def get(self, entry_id, logbook_id=None, revision_n=None):
-        parser = reqparse.RequestParser()
-        parser.add_argument("thread", type=bool)
-        args = parser.parse_args()
+    def get(self, args, entry_id, logbook_id=None, revision_n=None):
         entry = Entry.get(Entry.id == entry_id)
         if revision_n is not None:
             return entry.get_revision(revision_n)
-        if args.thread:
+        if args["thread"]:
             return entry._thread
         return entry
 
     @send_signal(new_entry)
+    @use_args(entry_args)
     @marshal_with(fields.entry_full, envelope="entry")
-    def post(self, logbook_id, entry_id=None):
+    def post(self, args, logbook_id, entry_id=None):
         "Creating a new entry"
         logbook = Logbook.get(Logbook.id == logbook_id)
-        data = entry_parser.parse_args()
         # TODO: clean up
         if entry_id is not None:
             # In this case, we're creating a followup to an existing entry
-            data["follows"] = entry_id
-        if "created_at" in data:
-            data["created_at"] = get_utc_datetime(data["created_at"])
+            args["follows"] = entry_id
+        if "created_at" in args:
+            args["created_at"] = get_utc_datetime(args["created_at"])
         else:
-            data["created_at"] = datetime.utcnow()
-        if "last_changed_at" in data:
-            data["last_changed_at"] = get_utc_datetime(data["last_changed_at"])
-        if data.get("content"):
-            content_type = data.get("content_type", "text/html")
+            args["created_at"] = datetime.utcnow()
+        if "last_changed_at" in args:
+            args["last_changed_at"] = get_utc_datetime(args["last_changed_at"])
+        if args.get("content"):
+            content_type = args.get("content_type", "text/html")
             if content_type.startswith("text/html"):
-                data["content"], inline_attachments = handle_img_tags(
-                    data["content"], timestamp=data["created_at"])
+                args["content"], inline_attachments = handle_img_tags(
+                    args["content"], timestamp=args["created_at"])
             else:
                 inline_attachments = []
         else:
             inline_attachments = []
-        data["logbook"] = logbook
+        args["logbook"] = logbook
         # make sure the attributes are of proper types
-        if "attributes" in data:
+        if "attributes" in args:
             attributes = {}
-            for attr_name, attr_value in data["attributes"].items():
+            for attr_name, attr_value in args["attributes"].items():
                 try:
                     converted_value = logbook.convert_attribute(attr_name,
                                                                 attr_value)
@@ -86,18 +90,21 @@ class EntryResource(Resource):
                         attr_name, attr_value, e)
                     pass
                 # TODO: return a helpful error if this fails?
-            data["attributes"] = attributes
-        entry = Entry.create(**data)
+            args["attributes"] = attributes
+        if args.get("follows_id"):
+            # don't allow pinning followups, that makes no sense
+            args["pinned"] = False
+        entry = Entry.create(**args)
         for attachment in inline_attachments:
             attachment.entry = entry
             attachment.save()
         return entry
 
     @send_signal(edit_entry)
+    @use_args(entry_args)
     @marshal_with(fields.entry_full, envelope="entry")
-    def put(self, entry_id, logbook_id=None):
+    def put(self, args, entry_id, logbook_id=None):
         "update entry"
-        args = entry_parser.parse_args()
         entry_id = entry_id or args["id"]
         entry = Entry.get(Entry.id == entry_id)
         # to prevent overwiting someone else's changes we require the
@@ -139,31 +146,29 @@ class EntryResource(Resource):
         return entry
 
 
-# parser for validating query arguments to the entries resource
-entries_parser = reqparse.RequestParser()
-entries_parser.add_argument("title", type=str)
-entries_parser.add_argument("content", type=str)
-entries_parser.add_argument("authors", type=str)
-entries_parser.add_argument("attachments", type=str)
-entries_parser.add_argument("attribute", type=str,
-                            dest="attributes",
-                            action="append", default=[])
-entries_parser.add_argument("archived", type=bool)
-entries_parser.add_argument("ignore_children", type=bool, default=False)
-entries_parser.add_argument("n", type=int, default=50)
-entries_parser.add_argument("offset", type=int, store_missing=False)
-entries_parser.add_argument("download", type=str, store_missing=False)
+entries_args = {
+    "title": Str(),
+    "content": Str(),
+    "authors": Str(),
+    "attachments": Str(),
+    "attribute": List(Str(validate=lambda s: len(s.split(":")) == 2)),
+    "archived": Boolean(),
+    "ignore_children": Boolean(),
+    "n": Integer(missing=50),
+    "offset": Integer(),
+    "download": Boolean()
+}
 
 
 class EntriesResource(Resource):
 
     "Handle requests for entries from a given logbook, optionally filtered"
 
-    def get(self, logbook_id=None):
-        args = entries_parser.parse_args()
+    @use_args(entries_args)
+    def get(self, args, logbook_id=None):
 
         attributes = [attr.split(":")
-                      for attr in args.get("attributes", [])]
+                      for attr in args.get("attribute", [])]
 
         if logbook_id:
             # restrict search to the given logbook and its descendants
@@ -221,24 +226,19 @@ class EntryLockResource(Resource):
             return lock
         raise EntryLock.DoesNotExist
 
+    @use_args({"steal": Boolean(missing=False)})
     @marshal_with(fields.entry_lock, envelope="lock")
-    def post(self, entry_id, logbook_id=None):
+    def post(self, args, entry_id, logbook_id=None):
         "Acquire (optionally stealing) a lock"
-        parser = reqparse.RequestParser()
-        parser.add_argument("steal", type=bool, default=False)
-        args = parser.parse_args()
         entry = Entry.get(Entry.id == entry_id)
-        print("remote_addr", request.environ.get("REMOTE_ADDR"))
         return entry.get_lock(ip=request.environ["REMOTE_ADDR"],
                               acquire=True,
                               steal=args["steal"])
 
+    @use_args({"lock_id": Integer()})
     @marshal_with(fields.entry_lock, envelope="lock")
-    def delete(self, entry_id=None, logbook_id=None):
+    def delete(self, args, entry_id=None, logbook_id=None):
         "Cancel a lock"
-        parser = reqparse.RequestParser()
-        parser.add_argument("lock_id", type=int, store_missing=False)
-        args = parser.parse_args()
         if "lock_id" in args:
             lock = EntryLock.get(EntryLock.id == args["lock_id"])
         else:

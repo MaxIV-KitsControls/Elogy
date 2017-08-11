@@ -464,13 +464,22 @@ class Entry(Model):
         if logbook:
             if child_logbooks:
                 # recursive query to find all entries in the given logbook
-                # or any of its descendants, to arbitrary depth
+                # or any of its descendants, to arbitrary depth, and also
+                # any high priority ("pinned") entries in ancestors
                 query = """
-                WITH recursive logbook1(id,parent_id) AS (
-                    values({logbook}, NULL)
+                -- recursively add all 'descentant' logbooks (children, grandchilren, ...)
+                WITH RECURSIVE logbook1(id,parent_id) AS (
+                    values({logbook}, NULL)  -- parent logbook
                     UNION ALL
                     SELECT logbook.id, logbook.parent_id FROM logbook,logbook1
                     WHERE logbook.parent_id=logbook1.id
+                ),
+                -- recursively add all 'ancestor' logbooks (parent, grandparent, ...)
+                logbook2(id,parent_id) AS (
+                    SELECT id, parent_id from logbook WHERE id = {logbook}
+                    UNION ALL
+                    SELECT logbook.id, logbook.parent_id FROM logbook,logbook2
+                    WHERE logbook2.parent_id=logbook.id
                 )
                 SELECT {what},
                     {attachment}
@@ -484,12 +493,14 @@ class Entry(Model):
                     json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
                 FROM entry{authors}{from_attributes}
                 JOIN logbook1
+                JOIN logbook2
                 {join_attachment}
                 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-                WHERE entry.logbook_id=logbook1.id
+                WHERE (entry.logbook_id=logbook1.id
+                       OR (entry.priority>0 AND entry.logbook_id=logbook2.id))
                 """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
                                  if count else "entry.*"),
-                           attachment=("path as attachment_path,"
+                           attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                            authors=authors, logbook=logbook.id,
                            from_attributes=(", json_tree(entry.attributes)"
@@ -512,7 +523,7 @@ class Entry(Model):
                     LEFT JOIN entry AS followup ON entry.id == followup.follows_id
                     WHERE entry.logbook_id = {logbook}"""
                     .format(what="count()" if count else "entry.*",
-                            attachment=("path as attachment_path,"
+                            attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                             authors=authors,
                             from_attributes=(", json_tree(entry.attributes)"

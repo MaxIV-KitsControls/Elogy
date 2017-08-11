@@ -8,13 +8,27 @@ import {AttachmentPreviewIcon} from "./entryattachments.js";
 import {groupBy, formatTimeString, formatDateString} from "./util.js";
 
 
+const Tags = ({attributes}) => {
+    console.log("Tags", attributes);
+    if (attributes && attributes.Tags) {
+        const tags = attributes.Tags.map(tag => (
+            <span key={tag} className="tag">{ tag }</span>
+        ));
+        return (<div className="tags">{ tags }</div>);
+    }
+    return null;
+}
+
+
 const EntryPreview = ({logbook, entry, selected, search=""}) => {
     
     const url = `/logbooks/${logbook.id}/entries/${entry.id}/${search}`
     const attachmentPreviewWidth = (entry.attachment_preview &&
+                                    entry.attachment_preview.metadata &&
                                     entry.attachment_preview.metadata.thumbnail_size &&
                                     entry.attachment_preview.metadata.thumbnail_size.width);
     const attachmentPreviewHeight = (entry.attachment_preview &&
+                                     entry.attachment_preview.metadata &&
                                      entry.attachment_preview.metadata.thumbnail_size &&
                                      entry.attachment_preview.metadata.thumbnail_size.height);
 
@@ -68,23 +82,26 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
                      <span className="timestamp">
                          <i className="fa fa-clock-o"/> { edited } { timestamp }
                      </span>;
-
+    
     return (
-        <div key={entry.id} className="entry">
+        <div key={entry.id} className={"entry"}>
             <Link to={url}>
-                { attachments }
-                { logbookName }
-                <div className="info">
-                    { editTime }
-                    <span className="authors"
-                          title={allAuthors}>
-                        <i className="fa fa-user"/> { authors }{ authorsEllipsis }
-                    </span>            
+                <div className="inner">
+                    { attachments }
+                    { logbookName }
+                    <div className="info">
+                        { editTime }
+                        <span className="authors"
+                              title={allAuthors}>
+                            <i className="fa fa-user"/> { authors }{ authorsEllipsis }
+                        </span>            
+                    </div>
+                    { followups }                                
+                    <div className="title"><span>{ entry.title }</span></div>
+                    
+                    <div className="content"> {entry.content}</div>
                 </div>
-                { followups }                                
-                <div className="title"><span>{ entry.title }</span></div>
-                
-                <div className="content"> {entry.content}</div>
+                <Tags attributes={entry.attributes}/>
             </Link>
         </div>
     );
@@ -119,7 +136,12 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
                     {dateGroups[priorityAndDate]
                         .map((entry, i) => (
                             <dd key={i}
-                                className={"entry" + (selectedEntryId === entry.id? " selected" : "") + (entry.priority > 0? " pinned" : "")}>
+                                className={
+                                    "entry" +
+                                    (selectedEntryId === entry.id? " selected" : "") +
+                                    (entry.priority > 0? " pinned" : "") +
+                                    (entry.logbook.id == logbook.id? " native" : "")
+                                }>
                                 <EntryPreview
                                     key={entry.id}
                                     search={search}
