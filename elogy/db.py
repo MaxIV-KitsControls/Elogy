@@ -27,6 +27,24 @@ def setup_database(db_name, close=True):
         db.close()  # important
 
 
+class UTCDateTimeField(DateTimeField):
+
+    """
+    A field that stores datetime objects as UTC by recalculating
+    the timestamp and removing the timezone info. This is because
+    sqlite doesn't really handle timezone info.
+    """
+
+    def db_value(self, value):
+        if value is None:
+            return
+        # Note: There are probably neater ways to do this
+        utc_offset = value.utcoffset()
+        if utc_offset:
+            value -= utc_offset
+        return super().db_value(value.replace(tzinfo=None))
+
+
 class Logbook(Model):
 
     """
@@ -36,8 +54,8 @@ class Logbook(Model):
     class Meta:
         database = db
 
-    created_at = DateTimeField(default=datetime.utcnow)
-    last_changed_at = DateTimeField(null=True)
+    created_at = UTCDateTimeField(default=datetime.utcnow)
+    last_changed_at = UTCDateTimeField(null=True)
     name = CharField()
     description = TextField(null=True)
     template = TextField(null=True)
@@ -170,7 +188,7 @@ class LogbookChange(Model):
 
     changed = JSONField()
 
-    timestamp = DateTimeField(default=datetime.utcnow)
+    timestamp = UTCDateTimeField(default=datetime.utcnow)
     change_authors = JSONField(null=True)
     change_comment = TextField(null=True)
     change_ip = CharField(null=True)
@@ -299,8 +317,8 @@ class Entry(Model):
     metadata = JSONField(default={})  # general
     attributes = JSONField(default={})
     priority = IntegerField(default=0)  # used for sorting
-    created_at = DateTimeField(default=datetime.utcnow)
-    last_changed_at = DateTimeField(null=True)
+    created_at = UTCDateTimeField(default=datetime.utcnow)
+    last_changed_at = UTCDateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
     archived = BooleanField(default=False)
 
@@ -635,7 +653,7 @@ class EntryChange(Model):
 
     changed = JSONField()
 
-    timestamp = DateTimeField(default=datetime.utcnow)
+    timestamp = UTCDateTimeField(default=datetime.utcnow)
     change_authors = JSONField(null=True)
     change_comment = TextField(null=True)
     change_ip = CharField(null=True)
@@ -749,11 +767,11 @@ class EntryLock(Model):
         database = db
 
     entry = ForeignKeyField(Entry)
-    created_at = DateTimeField(default=datetime.utcnow)
-    expires_at = DateTimeField(default=(lambda: datetime.utcnow() +
+    created_at = UTCDateTimeField(default=datetime.utcnow)
+    expires_at = UTCDateTimeField(default=(lambda: datetime.utcnow() +
                                         timedelta(hours=1)))
     owned_by_ip = CharField()
-    cancelled_at = DateTimeField(null=True)
+    cancelled_at = UTCDateTimeField(null=True)
     cancelled_by_ip = CharField(null=True)
 
     @property
@@ -778,7 +796,7 @@ class Attachment(Model):
 
     entry = ForeignKeyField(Entry, null=True, related_name="attachments")
     filename = CharField(null=True)
-    timestamp = DateTimeField(default=datetime.utcnow)
+    timestamp = UTCDateTimeField(default=datetime.utcnow)
     path = CharField()  # path within the upload folder
     content_type = CharField(null=True)
     embedded = BooleanField(default=False)  # i.e. an image in the content

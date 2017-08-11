@@ -64,7 +64,7 @@ class LogbooksResource(Resource):
                           parent=args.get("parent_id"),
                           description=args.get("description"),
                           template=args.get("template"),
-                          attributes=args["attributes"],
+                          attributes=args.get("attributes", []),
                           metadata=args.get("metadata", {}),
                           archived=args["archived"])
         if logbook_id:
