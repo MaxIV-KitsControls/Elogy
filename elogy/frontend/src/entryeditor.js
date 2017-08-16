@@ -202,7 +202,7 @@ class EntryEditorBase extends React.Component {
     }
     
     onTogglePinned (event) {
-        this.setState({priority: (event.target.checked? 1 : 0)});
+        this.setState({priority: (event.target.checked? 100 : 0)});
     }
     
     hasEdits () {
@@ -311,6 +311,44 @@ class EntryEditorBase extends React.Component {
                        checked={this.state.priority > 0}
                        onChange={this.onTogglePinned.bind(this)}/>
                 Pinned
+            </label>
+        );
+    }
+
+    onPriorityChange (event) {
+        console.log("onPriorityChange", event.target.value);
+        this.setState({priority: event.target.value});
+    }
+
+    getPriority () {
+        const priority = this.state.priority;
+        if (priority === 0)
+            return 0;
+        if (priority > 0 && priority <= 100) {
+            return 100;
+        }
+        if (priority > 100 && priority <= 200) {
+            return 200;
+        }
+    }
+
+    getPrioritySelector () {
+        return (
+            <label>
+                Priority
+                <select
+                    value={this.getPriority()}
+                    onChange={this.onPriorityChange.bind(this)}>
+                    <option value={200}
+                            title="The entry will be sorted before normal and pinned entries, and also visible in all descendant logbooks.">
+                        Important
+                    </option>
+                    <option value={100}
+                            title="The entry will be sorted before normal entries.">
+                        Pinned
+                    </option>
+                    <option value={0}>Normal</option>
+                </select>
             </label>
         );
     }
@@ -474,7 +512,7 @@ class EntryEditorNew extends EntryEditorBase {
                     </tr>                    
                     <tr>
                         <td>
-                            { this.getPinnedCheckbox() }
+                            { this.getPrioritySelector() }
                             <div className="commands">
                                 { this.getSubmitButton(history) }
                                 { this.getCancelButton() }
@@ -844,7 +882,7 @@ class EntryEditorEdit extends EntryEditorBase {
                     </tr>                    
                     <tr>
                         <td>
-                            { this.getPinnedCheckbox() }
+                            { this.getPrioritySelector() }
                             { this.getLockInfo() }
                             <div className="commands">
                                 { this.getSubmitButton(history) }

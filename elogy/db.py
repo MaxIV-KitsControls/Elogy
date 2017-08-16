@@ -317,6 +317,12 @@ class Entry(Model):
     metadata = JSONField(default={})  # general
     attributes = JSONField(default={})
     priority = IntegerField(default=0)  # used for sorting
+    # Priority is used for sorting; it takes precedence over timestamp.
+    # Currently, there are three priority levels that change behavior
+    # 0 = normal
+    # 100 = pinned  - sorted before normal entries
+    # 200 = important  - sorted before pinned, and shown in descendant
+    #                    logbooks.
     created_at = UTCDateTimeField(default=datetime.utcnow)
     last_changed_at = UTCDateTimeField(null=True)
     follows = ForeignKeyField("self", null=True, related_name="followups")
@@ -483,7 +489,7 @@ class Entry(Model):
             if child_logbooks:
                 # recursive query to find all entries in the given logbook
                 # or any of its descendants, to arbitrary depth, and also
-                # any high priority ("pinned") entries in ancestors
+                # any high priority ("important") entries in ancestors
                 query = """
                 -- recursively add all 'descentant' logbooks (children, grandchilren, ...)
                 WITH RECURSIVE logbook1(id,parent_id) AS (
@@ -501,9 +507,9 @@ class Entry(Model):
                 )
                 SELECT {what},
                     {attachment}
-                    -- 'thread' is the id of the main entry
+                    -- 'thread' is the id of the main entry, ignoring followups
                     coalesce(followup.follows_id, entry.id) AS thread,
-                    count(followup.id) AS n_followups,
+                    count(distinct(followup.id)) AS n_followups,
                     -- 'timestamp' is the latest modification time in the thread
                     max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
                         coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
@@ -515,7 +521,7 @@ class Entry(Model):
                 {join_attachment}
                 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
                 WHERE (entry.logbook_id=logbook1.id
-                       OR (entry.priority>0 AND entry.logbook_id=logbook2.id))
+                       OR (entry.priority>100 AND entry.logbook_id=logbook2.id))
                 """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
                                  if count else "entry.*"),
                            attachment=("attachment.path as attachment_path,"

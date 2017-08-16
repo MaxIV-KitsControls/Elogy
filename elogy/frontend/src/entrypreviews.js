@@ -9,7 +9,6 @@ import {groupBy, formatTimeString, formatDateString} from "./util.js";
 
 
 const Tags = ({attributes}) => {
-    console.log("Tags", attributes);
     if (attributes && attributes.Tags) {
         const tags = attributes.Tags.map(tag => (
             <span key={tag} className="tag">{ tag }</span>
@@ -121,25 +120,38 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
         entry => (entry.priority !== 0)? -entry.priority : (-entry.priority + "@" + formatDateString(entry.last_changed_at || entry.created_at))
     );
 
+    function getPriorityGroup (priority) {
+        if (priority === 0)
+            return;
+        if (priority > 0 && priority <= 100) {
+            return "pinned";
+        }
+        if (priority > 100 && priority <= 200) {
+            return "important";
+        }
+    }
+
     /* Now we'll build a nested DOM structure where each group contains 
        the entries for that group. */
     const entryPreviews = Object
         .keys(dateGroups)
         .map(priorityAndDate => {
             let [priority, date] = priorityAndDate.split("@");
-            let group = priority !== "0"? priority : date;
+            let priorityGroup = getPriorityGroup(-parseInt(priority));
+
+            let group = priorityGroup || date;
             return (
                 <dl key={priorityAndDate} className="date-group">
-                    <dt className={"group" + (date? " date" : " pinned")}>
-                        {date || "Pinned"}
+                    <dt className={"group" + (date? " date" : " "+priorityGroup)}>
+                        { group }
                     </dt>
                     {dateGroups[priorityAndDate]
                         .map((entry, i) => (
                             <dd key={i}
                                 className={
-                                    "entry" +
-                                    (selectedEntryId === entry.id? " selected" : "") +
-                                    (entry.priority > 0? " pinned" : "") +
+                                    "entry " +
+                                    (selectedEntryId === entry.id? " selected " : "") +
+                                    (priorityGroup || "") +
                                     (entry.logbook.id == logbook.id? " native" : "")
                                 }>
                                 <EntryPreview

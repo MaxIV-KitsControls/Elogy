@@ -88,6 +88,10 @@
 }
 
 #logbook dd.entry.pinned {
+    background-color: #ffb;
+}
+
+#logbook dd.entry.important {
     background-color: #fdd;
 }
 
@@ -207,6 +211,12 @@
 
 
 #logbook dt.pinned {
+    background: yellow;
+    color: black;
+    border-color: black;
+}
+
+#logbook dt.important {
     background: red;
     color: white;
     border-color: black;
