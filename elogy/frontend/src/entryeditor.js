@@ -32,7 +32,8 @@ class EntryAttributeEditor extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            value: props.value
+            value: props.value,
+            newOptions: []  // any options that are not in the logbook config
         }
     }
 
@@ -51,15 +52,40 @@ class EntryAttributeEditor extends React.Component {
     }
     
     onChangeSelect (value) {
-        this.setState({value: value? value.value : null})
+        this.setState({value: value? value.value : null})        
     }    
 
-    onChangeMultiSelect (value) {
-        this.setState({value: value.map(o => o.value)});
+    onChangeMultiSelect (values) {
+        const options = this.props.config.options
+                            .concat(this.state.newOptions)
+                            .map(o => o.toLowerCase());
+        /* Since we're using a Creatable, we need to check if the
+           selected values are in the current option list, and if not,
+           add them to the logbook. This is a little messy, hopefully
+           when v1.0 of the react-select component is final, there's a
+           better way to do this.
+
+           TODO: Maybe adding an option here should also add it to the
+           logbook attribute config? */
+        values.forEach(value => {
+            if (options.indexOf(value.value.toLowerCase()) === -1) {
+                this.setState({
+                    newOptions: this.state.newOptions
+                                    .concat([value.label])
+                });
+            }
+        });
+        this.setState({value: values.map(o => o.value)});
     }
 
     onBlur () {
         this.props.onChange(this.props.config.name, this.state.value);
+    }
+
+    getOptions () {
+        return this.props.config.options
+                   .concat(this.state.newOptions)
+                   .map(o => {return {label: o, value: o.toLowerCase()}});
     }
     
     makeInputElement () {
@@ -83,22 +109,19 @@ class EntryAttributeEditor extends React.Component {
                               onChange={ this.onChangeBoolean.bind(this) }
                               onBlur={ this.onBlur.bind(this) }/>;
             case "option":
-                // Note: use <Creatable> here instead, to allow creating
-                // new options directly from the dropdown. Requires more
-                // machinery here though, to modify the logbook attribute.
                 return <Select value={ this.state.value }
                                required={ required }
-                               options={ this.props.config.options.map(
-                                       o => {return {value: o, label: o}}) }
+                               options={ this.getOptions() }
+                               ignoreCase={ true }
                                onChange={ this.onChangeSelect.bind(this) }
-                               onBlur={ this.onBlur.bind(this) }/>;
+                               onBlur={ this.onBlur.bind(this) }/>
             case "multioption":
-                return <Select value={ this.state.value } multi={ true }
-                               required={ required }
-                               options={ this.props.config.options.map(
-                                       o => {return {value: o, label: o}}) }
-                               onChange={ this.onChangeMultiSelect.bind(this) }
-                               onBlur={ this.onBlur.bind(this) }/>;
+                return <Creatable value={ this.state.value } multi={ true }
+                                  required={ required }
+                                  options={ this.getOptions() }
+                                  ignoreCase={ true }
+                                  onChange={ this.onChangeMultiSelect.bind(this) }
+                                  onBlur={ this.onBlur.bind(this) }/>
             default:
                 return <div>?</div>
         }
