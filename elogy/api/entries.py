@@ -17,7 +17,7 @@ entry_args = {
     "id": Integer(allow_none=True),
     "title": Str(allow_none=True),
     "content": Str(),
-    "content_type": Str(default="text/html"),
+    "content_type": Str(missing="text/html"),
     "authors": List(Nested({
         "name": Str(),
         "login": Str(allow_none=True),
