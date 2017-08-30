@@ -161,6 +161,11 @@
     border: 1px solid red;
 }
 
+#entry .attachment .preview {
+    max-width: 100px;
+    overflow: hidden;
+}
+
 #entry table {
     border-collapse: collapse;
 }
