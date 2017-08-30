@@ -71,7 +71,7 @@ class EntryAttributeEditor extends React.Component {
             if (options.indexOf(value.value.toLowerCase()) === -1) {
                 this.setState({
                     newOptions: this.state.newOptions
-                                    .concat([value.label])
+                                    .concat([value.value])
                 });
             }
         });
@@ -85,7 +85,7 @@ class EntryAttributeEditor extends React.Component {
     getOptions () {
         return this.props.config.options
                    .concat(this.state.newOptions)
-                   .map(o => {return {label: o, value: o.toLowerCase()}});
+                   .map(o => {return {label: o, value: o}});
     }
     
     makeInputElement () {
@@ -361,6 +361,7 @@ class EntryEditorBase extends React.Component {
                 Priority
                 <select
                     value={this.getPriority()}
+                    title="Priority determines how the entry is displayed."
                     onChange={this.onPriorityChange.bind(this)}>
                     <option value={200}
                             title="The entry will be sorted before normal and pinned entries, and also visible in all descendant logbooks.">
