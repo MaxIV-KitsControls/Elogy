@@ -485,6 +485,18 @@ class Entry(Model):
         else:
             authors = ""
 
+        if attribute_filter:
+            # need to extract the attribute values from JSON here, so that
+            # we can match on them later
+            attributes = ", {}".format(
+                ", ".join(
+                    "json_extract(entry.attributes, '$.{attr}') AS {attr_id}"
+                    .format(attr=escape_string(attr),
+                            attr_id="attr{}".format(i))
+                    for i, (attr, _) in enumerate(attribute_filter)))
+        else:
+            attributes = ""
+
         if logbook:
             if child_logbooks:
                 # recursive query to find all entries in the given logbook
@@ -505,7 +517,7 @@ class Entry(Model):
                     SELECT logbook.id, logbook.parent_id FROM logbook,logbook2
                     WHERE logbook2.parent_id=logbook.id
                 )
-                SELECT {what},
+                SELECT {what}{attributes},
                     {attachment}
                     -- 'thread' is the id of the main entry, ignoring followups
                     coalesce(followup.follows_id, entry.id) AS thread,
@@ -515,7 +527,7 @@ class Entry(Model):
                         coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
                     -- collect authors from all followups
                     json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
-                FROM entry{authors}{from_attributes}
+                FROM entry{authors}
                 JOIN logbook1
                 JOIN logbook2
                 {join_attachment}
@@ -527,22 +539,21 @@ class Entry(Model):
                            attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                            authors=authors, logbook=logbook.id,
-                           from_attributes=(", json_tree(entry.attributes)"
-                                            if attribute_filter else ""),
+                           attributes=attributes,
                            join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
                                             if attachment_filter else ""))
             else:
                 # In this case we're not searching recursively
                 query = (
                     """
-                    SELECT {what},
+                    SELECT {what}{attributes},
                       {attachment}
                       coalesce(followup.follows_id, entry.id) AS thread,
                       count(followup.id) AS n_followups,
                       max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
                         coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
                       json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
-                    FROM entry{authors}{from_attributes}
+                    FROM entry{authors}
                     {join_attachment}
                     LEFT JOIN entry AS followup ON entry.id == followup.follows_id
                     WHERE entry.logbook_id = {logbook}"""
@@ -550,8 +561,7 @@ class Entry(Model):
                             attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                             authors=authors,
-                            from_attributes=(", json_tree(entry.attributes)"
-                                             if attribute_filter else ""),
+                            attributes=attributes,
                             logbook=logbook.id,
                             join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
                                              if attachment_filter else "")))
@@ -561,20 +571,19 @@ class Entry(Model):
             # the recursive logbook filtering. This always includes
             # child logbooks.
             query = """
-            SELECT {what},
+            SELECT {what}{attributes},
                 {attachment}
                 coalesce(followup.follows_id, entry.id) AS thread,
                 count(followup.id) AS n_followups,
                 max(datetime(coalesce(coalesce(followup.last_changed_at,followup.created_at),
                     coalesce(entry.last_changed_at,entry.created_at)))) AS timestamp,
                 json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
-            FROM entry{authors}{from_attributes}
+            FROM entry{authors}
             {join_attachment}
             LEFT JOIN entry AS followup ON entry.id == followup.follows_id
             WHERE 1
             """.format(what="count()" if count else "entry.*",
-                       from_attributes=(", json_tree(entry.attributes)"
-                                        if attribute_filter else ""),
+                       attributes=attributes,
                        attachment=("path as attachment_path,"
                                    if attachment_filter else ""),
                        authors=authors,
@@ -605,14 +614,9 @@ class Entry(Model):
             query += " AND attachment_path REGEXP ?\n"
             variables.append(attachment_filter)
         if attribute_filter:
-            # Here we're using the JSON1 extension of sqlite to extract
-            # the attributes and match against the given values. Note that
-            # to match arrays (multioption) we use a string trick... I guess
-            # there's some better way to extract the actual array as a table
-            # or something.
             for i, (attr, value) in enumerate(attribute_filter):
-                query += " AND (json_tree.key = ? AND (json_tree.type = 'array' AND json_tree.value LIKE ? OR json_tree.value LIKE ?))\n"
-                variables.extend([attr, '%"{}"%'.format(value), value])
+                query += " AND attr{} LIKE ?".format(i)
+                variables.append('%{}%'.format(value))
 
         # Here we're getting into deep water...
         # If we just want the total count of results, we can't group
