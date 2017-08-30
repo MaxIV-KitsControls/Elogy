@@ -9,13 +9,14 @@ setup(
     include_package_data=True,
     install_requires=[
         'flask',
+        'webargs',
         'peewee',
         'blinker',
         'lxml',
         'pillow',
         'dateutils',
         'flask-restful',
-        'pyldap',  # should be optional, depends on libpdap!
+        'pyldap',  # should be optional, depends on libpdap and libsasl!
         'flask-admin',  # maybe also optional?
         'wtf-peewee'
     ],
