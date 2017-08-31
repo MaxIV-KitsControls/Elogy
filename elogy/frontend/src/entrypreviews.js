@@ -109,7 +109,9 @@ const EntryPreview = ({logbook, entry, selected, search=""}) => {
 
 const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
     
-    /* First, we'll group the entries according to date of creation */
+    /* First, we'll group the entries according to priority if set,
+       otherwise date of creation */
+
     const dateGroups = groupBy(
         entries,
         /* 
@@ -117,7 +119,9 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
            grouped outside of the date groups, so we prepend the priority
            to the group key. There's probably a better way.
          */
-        entry => (entry.priority !== 0)? -entry.priority : (-entry.priority + "@" + formatDateString(entry.last_changed_at || entry.created_at))
+        entry => (entry.priority !== 0)
+             ? -entry.priority  
+             : (-entry.priority + "@" + formatDateString(entry.timestamp))
     );
 
     function getPriorityGroup (priority) {
@@ -133,12 +137,12 @@ const EntryPreviews = ({logbook, entries, selectedEntryId, search}) => {
 
     /* Now we'll build a nested DOM structure where each group contains 
        the entries for that group. */
-    const entryPreviews = Object
-        .keys(dateGroups)
+    /* Also note that we're relying on the object key ordering to be kept.
+       This seems to be true, but AFAIK it's not really guaranteed... */
+    const entryPreviews = Object.keys(dateGroups)
         .map(priorityAndDate => {
             let [priority, date] = priorityAndDate.split("@");
             let priorityGroup = getPriorityGroup(-parseInt(priority));
-
             let group = priorityGroup || date;
             return (
                 <dl key={priorityAndDate} className="date-group">
