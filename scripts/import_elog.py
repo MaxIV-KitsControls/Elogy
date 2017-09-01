@@ -289,7 +289,7 @@ def create_entry(session, url, logbook_id, entry, entries):
     data = {
         "title": entry.get("title"),
         "authors": entry["authors"],
-        "created_at": entry["created_at"].strftime('%Y-%m-%d %H:%M:%S.%f %z'),
+        "created_at": entry["created_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z'),
         "content": entry.get("content"),
         "content_type": entry["content_type"],
         "attributes": entry.get("attributes"),

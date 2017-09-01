@@ -1,5 +1,6 @@
 import React from "react";
 import {findDOMNode} from "react-dom"
+import { formatDateTimeString } from "./util.js";
 
 
 const ICON_CLASS_MAP = {
@@ -63,12 +64,18 @@ export const AttachmentPreviewIcon = ({attachment}) => (
 export const AttachmentPreview = ({attachment}) => (
     <tr>
         <td>
-            <a href={attachment.link}>
-                <AttachmentPreviewIcon attachment={attachment}/>
-            </a>
+            <div className="preview">
+                <a href={attachment.link}>
+                    <AttachmentPreviewIcon attachment={attachment}/>
+                </a>
+            </div>
         </td>
-        <td><a href={attachment.link}>{attachment.filename}</a></td>
-        <td>{attachment.timestamp}</td>
+        <td>
+            <div className="filename"><a href={attachment.link}>{attachment.filename}</a></div>
+            <div className="timestamp">{attachment.timestamp?
+                                        formatDateTimeString(attachment.timestamp)
+                                      : ""}</div>
+        </td>
     </tr>
 )
 

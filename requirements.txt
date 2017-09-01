@@ -6,3 +6,6 @@ pillow
 dateutils
 lxml
 pyldap
+flask-admin
+wtf-peewee
+webargs

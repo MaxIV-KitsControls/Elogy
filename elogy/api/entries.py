@@ -1,8 +1,7 @@
-from datetime import datetime
 import logging
 
-from flask import request, send_file, abort
-from flask_restful import Resource, marshal, marshal_with
+from flask import request, send_file
+from flask_restful import Resource, marshal, marshal_with, abort
 from webargs.fields import (Integer, Str, Boolean, Dict, List,
                             Nested, Email, LocalDateTime)
 from webargs.flaskparser import use_args
@@ -11,7 +10,6 @@ from ..db import Entry, Logbook, EntryLock
 from ..attachments import handle_img_tags
 from ..export import export_entries_as_pdf
 from ..actions import new_entry, edit_entry
-from ..utils import get_utc_datetime
 from . import fields, send_signal
 
 
@@ -21,8 +19,8 @@ entry_args = {
     "content": Str(),
     "content_type": Str(missing="text/html"),
     "authors": List(Nested({
-        "name": Str(required=True),
-        "login": Str(),
+        "name": Str(),
+        "login": Str(allow_none=True),
         "email": Email(allow_none=True)
     }), validate=lambda a: len(a) > 0),
     "created_at": LocalDateTime(),
@@ -58,19 +56,14 @@ class EntryResource(Resource):
         logbook = Logbook.get(Logbook.id == logbook_id)
         # TODO: clean up
         if entry_id is not None:
-            # In this case, we're creating a followup to an existing entry
+            # we're creating a followup to an existing entry
             args["follows"] = entry_id
-        if "created_at" in args:
-            args["created_at"] = get_utc_datetime(args["created_at"])
-        else:
-            args["created_at"] = datetime.utcnow()
-        if "last_changed_at" in args:
-            args["last_changed_at"] = get_utc_datetime(args["last_changed_at"])
         if args.get("content"):
-            content_type = args.get("content_type", "text/html")
+            content_type = args["content_type"]
             if content_type.startswith("text/html"):
+                # extract any inline images as attachments
                 args["content"], inline_attachments = handle_img_tags(
-                    args["content"], timestamp=args["created_at"])
+                    args["content"], timestamp=args.get("created_at"))
             else:
                 inline_attachments = []
         else:
@@ -88,8 +81,7 @@ class EntryResource(Resource):
                     logging.warning(
                         "Discarding attribute %s with value %r; %s",
                         attr_name, attr_value, e)
-                    pass
-                # TODO: return a helpful error if this fails?
+                    # TODO: return a helpful error if this fails?
             args["attributes"] = attributes
         if args.get("follows_id"):
             # don't allow pinning followups, that makes no sense
@@ -205,7 +197,7 @@ class EntriesResource(Resource):
             # TODO: not sure if this belongs in the API
             pdf = export_entries_as_pdf(logbook, entries)
             if pdf is None:
-                abort(400)
+                abort(400, message="Could not create PDF!")
             return send_file(pdf, mimetype="application/pdf",
                              as_attachment=True,
                              attachment_filename=("{logbook.name}.pdf"

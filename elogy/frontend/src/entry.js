@@ -3,9 +3,11 @@
 import React from 'react';
 import {findDOMNode} from 'react-dom';
 import {Link} from 'react-router-dom';
+import Mark from 'mark.js';
 
 import './entry.css';
 import {formatDateTimeString} from './util.js';
+import {parseQuery} from "./util.js";
 import EntryAttributes from "./entryattributes.js";
 import EntryAttachments from "./entryattachments.js";
 
@@ -17,7 +19,20 @@ export class InnerEntry extends React.Component {
 
     componentDidMount() {
         if (this.props.currentEntryId === this.props.id) 
-            this.props.scrollToEntry(findDOMNode(this.refs.entry));
+            this.props.scrollToEntry(findDOMNode(this.refs.content));
+        this.highlightContentFilter();
+    }
+
+    componentDidUpdate () {
+        this.highlightContentFilter();
+    }
+
+    highlightContentFilter () {
+        // highlight the current content filter string in the content
+        if (this.props.contentFilter) {
+            const mark = new Mark(findDOMNode(this.refs.content));
+            mark.markRegExp(new RegExp(this.props.contentFilter, "gmi"));
+        }        
     }
     
     render () {
@@ -74,7 +89,7 @@ export class InnerEntry extends React.Component {
 
         const content = (
             this.props.content_type.slice(0, 9) === "text/html"?
-            <div className="content html" ref="entry"
+            <div className="content html" ref="content"
                  dangerouslySetInnerHTML={{__html: this.props.content}}/> :
             <div className="content plain">{this.props.content}</div>
         );
@@ -193,29 +208,31 @@ class Entry extends React.Component {
                          </Link>) :
                          "Prev";
         
+        const query = parseQuery(this.props.location.search);
+        
         return (
             <div className="container" ref="container">
                 
                 {/* The header will always stay at the top */}
                 <header>
                     {
-                    this.state.logbook?
-                    <span className="commands">
+                        this.state.logbook?
+                        <span className="commands">
 
-                        {
-                        this.state.follows?
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}
-                                  title="Go to the entry this one is a followup to">
-                                Parent
-                            </Link>
-                        : null
-                        }
-                                                
-                        <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}
-                              title="Create a new entry as a 'followup' to this one.">
-                            <i className="fa fa-reply"/> Followup
-                        </Link>                        
-            &nbsp;|&nbsp;
+                            {
+                                this.state.follows?
+                                <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}
+                                      title="Go to the entry this one is a followup to">
+                                    Parent
+                                </Link>
+                                : null
+                            }
+                            
+                            <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}
+                                  title="Create a new entry as a 'followup' to this one.">
+                                <i className="fa fa-reply"/> Followup
+                            </Link>                        
+                        &nbsp;|&nbsp;
                         <Link to={`/logbooks/${logbook.id}/entries/new`}
                               title="Create a new entry in this logbook">
                             New Entry
@@ -240,6 +257,7 @@ class Entry extends React.Component {
                 <div className="body">
                     <div ref="body">
                         <InnerEntry {...this.state}
+                                    contentFilter={query.content}
                                     scrollToEntry={this.scrollToEntry.bind(this)}
                                     currentEntryId={parseInt(this.props.match.params.entryId, 10)}/>
                         

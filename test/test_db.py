@@ -364,8 +364,14 @@ def test_entry_attribute_filter(db):
 
     results = list(Entry.search(logbook=lb, attribute_filter=[("b", "2")]))
     assert len(results) == 2
-    set([results[0].title, results[0].title]) == set(["First entry",
-                                                      "Third entry"])
+    assert set([results[0].title, results[1].title]) == set(["First entry",
+                                                             "Third entry"])
+
+    # multiple attribute filter
+    results = list(Entry.search(logbook=lb,
+                                attribute_filter=[("b", "2"), ("a", "2")]))
+    assert len(results) == 1
+    assert results[0].title == "Third entry"
 
 
 def test_entry_attribute_multioption_filter(db):

@@ -13,8 +13,9 @@
     "react-dropzone": "3.13.0",
     "react-lazy-load": "3.0.12",
     "react-router-dom": "4.1.1",
-    "react-select": "1.0.0-rc.3",
-    "react-tinymce": "0.5.1"
+    "react-select": "1.0.0-rc.5",
+    "react-tinymce": "0.5.1",
+    "mark.js": "github:julmot/mark.js",
   },
   "devDependencies": {
     "react-scripts": "0.9.5"
