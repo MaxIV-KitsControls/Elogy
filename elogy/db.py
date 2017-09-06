@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
+import sys
 import logging
+
 
 from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
 from peewee import (IntegerField, CharField, TextField, BooleanField,
-                    DateTimeField, ForeignKeyField)
+                    DateTimeField, ForeignKeyField, sqlite3)
 from peewee import Model, DoesNotExist, DeferredRelation, fn
 
 
@@ -16,6 +18,7 @@ db = SqliteExtDatabase(None)
 def setup_database(db_name, close=True):
     "Configure the database and make sure all the tables exist"
     # TODO: support further configuration options, see FlaskDB
+    db_dependencies_installed()
     db.init(db_name)
     Logbook.create_table(fail_silently=True)
     LogbookChange.create_table(fail_silently=True)
@@ -25,6 +28,25 @@ def setup_database(db_name, close=True):
     Attachment.create_table(fail_silently=True)
     if close:
         db.close()  # important
+
+
+def db_dependencies_installed(type='SQLite'):
+    if type == 'SQLite':
+        #Check that version is high enough to have JSON1
+        if sqlite3.sqlite_version_info[:3] < (3,9,0):
+            sys.exit('Sqlite version too low, 3.9.0 or later required')
+        tmp_db = sqlite3.connect(':memory:')
+        setup_test_table = 'create table temp(attrib1,attrib2)'
+        tmp_db.execute(setup_test_table)
+        test_json_ext = 'insert into temp (attrib1, attrib2) values("first", json(\'{"A":"12345", "B":"54321"}\'))'
+        try:
+            #Test if query with function using JSON1 works
+            tmp_db.execute(test_json_ext)
+        except:
+            tmp_db.close()
+            sys.exit('Could not find SQLite JSON1 extension.')
+        finally:
+            tmp_db.close()
 
 
 class UTCDateTimeField(DateTimeField):
