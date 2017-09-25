@@ -1,4 +1,5 @@
-"""This script attempts to import an ELOG installation to Elogy.
+"""
+This script attempts to import an ELOG installation to Elogy.
 
 The process is
 1. parse all logbooks from the config file
@@ -6,6 +7,10 @@ The process is
 3. import the logbooks to elogy
 4. import entries (with attachments)
 6. done!
+
+For each logbook and entry, we first check if they are already
+imported (using some metadata properties) and if so, ignore them
+unless they have been edited since then.
 
 There are several weird cases where we either do an educated guess,
 or just skip that particular logbook/entry/whatever. Hopefully the
@@ -17,19 +22,29 @@ name (which is fine in elogy).
 
 Usage:
 
-$ python import_elog.py http://elogy-host /path/to/elogd.conf /path/to/elog/logbooks Logbook1 "Some other logbook" ParentLogbook/ChildLogbook
+    $ python import_elog.py http://elogy-host /path/to/elogd.conf /path/to/elog/logbooks --logbook Logbook1 --logbook "Some other logbook" --logbook ParentLogbook/ChildLogbook --since 2017-08-10
 
-Note that the (optinal) names of logbooks to be imported must be the
+Note that the (optional) names of logbooks to be imported must be the
 full names of the logbooks in the config file, not the names of the
 directories they are in! Logbook names are unique in elog, so it's
-not necessary to give them as a "path".
+not necessary to give them as a "path". If none are given, all logbooks
+in the config are imported.
 
-After this is done, you may also want to run "fix_elog_links.py" in
-order to repair any links in entries to attachments or other entries.
+The "--since" parameter tells the script to not care about entries
+not created or edited since that timestamp. This is intended for the
+case where you want to sync an elog instance to elogy by running a
+script at regular intervals. This is probably not a great idea unless
+needed for a limited transfer period, as it likely does not cover all
+possible corner cases.
+
+After running this script, you may also want to run "fix_elog_links.py" in
+order to repair any links in entries to attachments or other entries. See
+that script for more details
 """
 
 from collections import OrderedDict
 import configparser
+from datetime import datetime
 from glob import glob
 import json
 import logging
@@ -57,8 +72,12 @@ def get_logbook(config, name, parent=None,
                 root_path=".", toplevel=False, accumulator={},
                 to_import=None):
 
+    if not name:
+        # a logbook must have a name; something is wrong
+        return
+
     # get configuration properties for the logbook
-    logging.info("parsing logbook '%s'", name)
+    logging.info("parsing logbook '%s' in '%s'", name, parent)
     if to_import and name not in to_import:
         return
     try:
@@ -146,7 +165,11 @@ def get_logbook(config, name, parent=None,
         "attributes": list(attributes.values()),
         "path": os.path.join(root_path, entries_dir),
         "parent": parent,
-        "children": child_logbooks
+        "children": child_logbooks,
+        "metadata": {
+            "original_elog_name": name,
+            "original_elog_path": os.path.join(root_path, entries_dir)
+        }
     }
     return logbook_uuid
 
@@ -155,14 +178,14 @@ def get_entries(logbook, accumulator):
     "Parse all entries belonging to a given logbook"
     logbook_path = logbook["path"]
     logging.info("parsing entries for logbook '%s'", logbook["name"])
-    for logfile in sorted(glob(os.path.join(logbook_path, "*.log")),
+    for logfile in sorted(glob(os.path.join(logbook_path, "**/*.log"),
+                               recursive=True),
                           key=os.path.getmtime):
         try:
             entries = load_elog_file(logfile)
             for entry in entries:
-                logging.debug("parsing entry %d in %s", entry["mid"], logbook["name"])
-                timestamp = parse_time(entry["date"])
-
+                logging.info("parsing entry %d in %s", entry["mid"], logbook["name"])
+                timestamp = parse_time(entry["date"]).replace(tzinfo=tzlocal())
                 data = {
                     "mid": entry["mid"],
                     "logbook_uuid": logbook["uuid"],
@@ -203,6 +226,7 @@ def get_entries(logbook, accumulator):
                         logging.warning("Could not parse change date '%s' in %s/%s: %s",
                                         entry["last edited"], logbook["name"], entry["mid"], e)
 
+                # is this a reply to another entry ("followup")?
                 if "in reply to" in entry:
                     logging.debug("found reply: %s -> %s", data["mid"], entry["in reply to"])
                     follows = int(entry["in reply to"])
@@ -211,14 +235,17 @@ def get_entries(logbook, accumulator):
                         # guess means it's not a reply after all..?
                         data["in_reply_to"] = (logbook["uuid"], follows)
 
+                # content
                 if entry.get("body"):
                     content, content_type = process_body(entry["body"], entry["encoding"])
                     data["content"] = content
                     data["content_type"] = content_type
 
+                # attachments
+                attachment_path = os.path.dirname(logfile)
                 if entry.get("attachment"):
                     attachments = [
-                        a.strip() for a in
+                        os.path.join(attachment_path, a.strip()) for a in
                         entry["attachment"].split(",")
                     ]
                     data["attachments"] = attachments
@@ -281,7 +308,8 @@ def create_logbook(session, url, logbook):
     return session.post(url,
                         json={"name": logbook["name"],
                               "description": logbook["description"],
-                              "attributes": logbook["attributes"]}).json()
+                              "attributes": logbook["attributes"],
+                              "metadata": logbook["metadata"]}).json()
 
 
 def create_entry(session, url, logbook_id, entry, entries):
@@ -296,7 +324,7 @@ def create_entry(session, url, logbook_id, entry, entries):
         "metadata": entry.get("metadata"),
     }
     if "last_changed_at" in entry:
-        data["last_changed_at"] = entry["last_changed_at"].strftime('%Y-%m-%d %H:%M:%S.%f %z')
+        data["last_changed_at"] = entry["last_changed_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z')
     if "in_reply_to" in entry:
         try:
             follows = entries[entry["in_reply_to"]]
@@ -309,18 +337,48 @@ def create_entry(session, url, logbook_id, entry, entries):
     return entry_result
 
 
+def update_entry(session, url, logbook_id, entry, entries, revision_n):
+    "helper to update an entry"
+    print("update_entry", mid, revision_n)
+    data = {
+        "title": entry.get("title"),
+        "authors": entry["authors"],
+        "created_at": entry["created_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z'),
+        "content": entry.get("content"),
+        "content_type": entry["content_type"],
+        "attributes": entry.get("attributes"),
+        "metadata": entry.get("metadata"),
+        "revision_n": revision_n
+    }
+    if "last_changed_at" in entry:
+        data["last_changed_at"] = entry["last_changed_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z')
+        print(data["last_changed_at"])
+    if "in_reply_to" in entry:
+        try:
+            follows = entries[entry["in_reply_to"]]
+            url += "{}/".format(follows["id"])
+        except KeyError:
+            logging.warning("could not find entry {} which {} is replying to!"
+                            .format(entry["in_reply_to"], entry["mid"]))
+    entry_result = session.put(url.format(logbook_id=logbook_id), json=data)
+    return entry_result
+
+
 def create_attachment(session, url, filename, embedded=False):
     "helper to upload an attachment"
     try:
-        print(filename)
-        timestamp = time.ctime(os.path.getctime(filename))
+        # use the filesystem timestamp for the attachment
+        timestamp = (datetime.fromtimestamp(os.path.getctime(filename))
+                     .replace(tzinfo=tzlocal()))  # use local timestamp
         with open(filename, "rb") as f:
-            data = dict(timestamp=timestamp)
+            data = dict(
+                timestamp=timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f%z'),
+                metadata=json.dumps({
+                    "original_elog_filename": filename.rsplit("/", 1)[-1]
+                })
+            )
             if embedded:
                 data["embedded"] = True
-            data["metadata"] = json.dumps({
-                "original_elog_filename": filename.rsplit("/", 1)[-1]
-            })
             response = session.post(url, files={"attachment": f}, data=data)
             if response.status_code == 200:
                 return response.json()["location"]
@@ -332,26 +390,35 @@ def create_attachment(session, url, filename, embedded=False):
 
 if __name__ == "__main__":
 
-    # Argument 1 is the host:port of the logbook server to post to
-    # Argument 2 is the name of a elogd config file to import
-    # Argument 3 is the base path where to look for logbook files
-    # Further arguments should be names of the toplevel logbooks to
-    # import. If none are given, imports all logbooks it finds in the config.
-
-    import sys
+    import argparse
     from requests import Session
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
-    host_port = sys.argv[1]
-    elogd_config = sys.argv[2]
-    logbook_path = sys.argv[3]
-    logbooks_to_import = sum((lb.split("/") for lb in sys.argv[4:]), [])
-    print("logbooks to import", logbooks_to_import)
+    parser = argparse.ArgumentParser(description='Import data from Elog to Elogy.')
+
+    parser.add_argument("elogy_host", metavar="HOST", type=str,
+                        help="Host:port of the target elogy instance")
+    parser.add_argument("elogd_config", metavar="CONFIG", type=str,
+                        help="Config file of the source Elog installation")
+    parser.add_argument("elog_logbook_path", metavar="PATH", type=str,
+                        help="Path to the directory where ELog logbooks are stored")
+    parser.add_argument("-l", "--logbooks", type=str, nargs="+",
+                        help="Specific logbook to import (by name)")
+    parser.add_argument("-s", "--since", type=parse_time,
+                        help="Only consider entries added/modified after this time")
+    parser.add_argument("-i", "--ignore", type=boolean, action="store_false",
+                        dest="check",  help="Don't care if logbooks and entries already exist")
+
+    args = parser.parse_args()
+
+    host_port = args.elogy_host
+    elogd_config = args.elogd_config
+    logbook_path = args.elog_logbook_path
+    logbooks_to_import = args.logbooks
 
     s = Session()
 
-    # create a new logbook through the API
     LOGBOOK_URL = "http://%s/api/logbooks/" % host_port
     ENTRY_URL = "http://%s/api/logbooks/{logbook_id}/entries/" % host_port
     ATTACHMENT_URL = "http://%s/api/logbooks/{logbook[id]}/entries/{entry[id]}/attachments/" % host_port
@@ -370,6 +437,8 @@ if __name__ == "__main__":
         if key.startswith("Top group")
     ]
 
+    print("Top logbooks", top_logbooks)
+
     # get all logbooks into a flat dict, keyed on name
     # I think logbook names are unique but to be sure
     # i assign them uuids.
@@ -380,6 +449,7 @@ if __name__ == "__main__":
         get_logbook(config, logbook,
                     root_path=logbook_path, toplevel=True,
                     accumulator=logbooks, to_import=logbooks_to_import)
+    print(sorted(logbook["name"] for logbook in logbooks.values()))
     # get the entries in each logbook, also in a flat dict
     # keyed on (logbook_uuid, mid)
     entries = {}
@@ -391,12 +461,34 @@ if __name__ == "__main__":
 
     imported_logbooks = {}
 
-    def create_logbooks(lb, parent=None):
+    logbook_tree = s.get(LOGBOOK_URL).json()["logbook"]
+    # now we have a tree of all the logbooks currently in the system
+
+    def flatten_logbooks(lbtree):
+        for lb in lbtree:
+            # only care about logbooks that were originally imported from elog
+            if "metadata" in lb and lb["metadata"]:
+                if "original_elog_name" in lb["metadata"]:
+                    yield (lb["metadata"]["original_elog_name"], lb)
+                    yield from flatten_logbooks(lb.get("children", []))
+
+    existing_logbooks = dict(flatten_logbooks([logbook_tree]))
+
+    def create_logbooks(lb, existing, parent=None):
         "Helper to recursively import logbooks"
-        # skip logbooks already imported (should never happen...)
+
+        # if the logbook already exists (same name, logbook names are unique in Elog)
+        # we don't create it (but maybe update?)
+
+        if lb["name"] in existing:
+            imported_logbooks[lb["uuid"]] = existing[lb["name"]]
+            return
+
+        # skip logbooks already imported during this run (should never happen...)
         if lb["uuid"] in imported_logbooks:
             return
-        # skip child logbooks whose parents have not been imported
+
+        # skip child logbooks whose parents have not yet been imported
         # (they will be imported after the parent is done)
         if lb["parent"] is not None and lb["parent"] not in imported_logbooks:
             return
@@ -410,18 +502,30 @@ if __name__ == "__main__":
             return
         result = result["logbook"]
         imported_logbooks[lb["uuid"]] = result
+
         for lid in lb["children"]:
-            create_logbooks(logbooks[lid], parent=result["id"])
+            create_logbooks(logbooks[lid], existing, parent=result["id"])
 
     logging.info("importing logbooks")
     # import all the toplevel logbooks
     for lid, logbook in logbooks.items():
-        create_logbooks(logbook)
+        create_logbooks(logbook, existing_logbooks)
+
+    def get_modification_time(entry):
+        if entry.get("last_changed_at"):
+            return entry["last_changed_at"]
+        return entry["created_at"]
+
+    if args.since:
+        since = args.since.replace(tzinfo=tzlocal())
+        entries = dict((k, e) for k, e in entries.items()
+                       if get_modification_time(e) > since)
 
     # sort entries by creation time. By inserting them in chronological order,
     # hopefully we can be sure that replies will work properly
-    sorted_entries = OrderedDict(sorted(entries.items(),
-                                        key=lambda t: t[1]["created_at"]))
+    sorted_entries = OrderedDict(
+        sorted(entries.items(),
+               key=lambda t: get_modification_time(t[1])))
 
     imported_entries = {}
 
@@ -429,23 +533,40 @@ if __name__ == "__main__":
     for (logbook_uuid, mid), entry in sorted_entries.items():
         logbook_result = imported_logbooks[logbook_uuid]
         logbook = logbooks[logbook_uuid]
-        result = create_entry(s, ENTRY_URL, logbook_result["id"],
-                              entry, imported_entries)
-        if result.status_code == 200:
-            result = result.json()["entry"]
-            for attachment in entry.get("attachments", []):
-                filename = os.path.join(logbook["path"], attachment)
-                create_attachment(
-                    s, ATTACHMENT_URL.format(logbook=logbook_result,
-                                             entry=result),
-                    filename)
-            imported_entries[(logbook_uuid, mid)] = result
-
-    # TO CONSIDER
-    # + How do we make this script idempotent?
-    #   The whole parsing step takes only a few seconds
-    #   so it can be done often. If we just sort by descending
-    #   creation date we could find the first entry that already
-    #   exists and then start from the next..?
-    #   I guess logbook changes will be harder. But they are
-    #   infrequent and can only be done by KITS.
+        metadata_filter = ("original_elog_url:{}"
+                           .format(entry["metadata"]["original_elog_url"]))
+        get_url = ENTRY_URL.format(logbook_id=logbook_result["id"])
+        results = s.get(get_url, params={"metadata": metadata_filter}).json()["entries"]
+        if results:
+            short_entry = results[0]
+            existing_entry = s.get(get_url + str(short_entry["id"]) + "/").json()["entry"]
+            if parse_time(get_modification_time(existing_entry)) >= get_modification_time(entry):
+                continue
+            logging.info("updating entry %s/%d -> %d", logbook_result["name"], mid, existing_entry["id"])
+            update_url = "{}{}/".format(ENTRY_URL, existing_entry["id"])
+            result = update_entry(s, update_url, logbook_result["id"],
+                                  entry, imported_entries, revision_n=existing_entry["revision_n"])
+            if result.status_code != 200:
+                logging.info("failed to update entry {}/{} {}",
+                             logbook_result["name"], mid, result.json())
+            # TODO: update attachments?
+        else:
+            logging.info("creating entry %s/%d", logbook["name"], mid)
+            result = create_entry(s, ENTRY_URL, logbook_result["id"],
+                                  entry, imported_entries)
+            if result.status_code == 200:
+                result = result.json()["entry"]
+                logging.info("successfully created entry %s/%d -> %d",
+                             logbook_result["name"], mid, result["id"])
+                for attachment in entry.get("attachments", []):
+                    filename = os.path.join(logbook["path"], attachment)
+                    create_attachment(
+                        s, ATTACHMENT_URL.format(logbook=logbook_result,
+                                                 entry=result),
+                        filename)
+                    logging.info("uploaded attachment %s to %s/%d -> %d",
+                                 filename, logbook_result["name"], mid, result["id"])
+                imported_entries[(logbook_uuid, mid)] = result
+            else:
+                logging.error("failed to create entry %s/%d %r",
+                              logbook.result["name"], mid, result.json())
