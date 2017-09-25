@@ -525,7 +525,7 @@ if __name__ == "__main__":
     # hopefully we can be sure that replies will work properly
     sorted_entries = OrderedDict(
         sorted(entries.items(),
-               key=lambda t: get_modification_time(t[1])))
+               key=lambda t: t[1].get("created_at")))
 
     imported_entries = {}
 
