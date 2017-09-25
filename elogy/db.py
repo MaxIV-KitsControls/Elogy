@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
-import sys
+import json
 import logging
-
+import sys
 
 from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
@@ -10,9 +10,18 @@ from peewee import (IntegerField, CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField, sqlite3)
 from peewee import Model, DoesNotExist, DeferredRelation, fn
 
+from .utils import CustomJSONEncoder
+
 
 # defer the actual db setup to later, when we have read the config
 db = SqliteExtDatabase(None)
+
+
+class CustomJSONField(JSONField):
+
+    def db_value(self, value):
+        if value is not None:
+            return json.dumps(value, cls=CustomJSONEncoder)
 
 
 def setup_database(db_name, close=True):
@@ -208,7 +217,7 @@ class LogbookChange(Model):
 
     logbook = ForeignKeyField(Logbook, related_name="changes")
 
-    changed = JSONField()
+    changed = CustomJSONField()
 
     timestamp = UTCDateTimeField(default=datetime.utcnow)
     change_authors = JSONField(null=True)
@@ -422,9 +431,17 @@ class Entry(Model):
         # Only update the change timestamp if the edit is "major".
         # Priority just changes the sorting of entries, so if that's
         # the only thing that changed, we don't bump the timestamp.
-        # TODO: allow explicitly marking an edit as "minor".
+        # TODO: allow explicitly marking an edit as "minor", not bumping
+        # the timestamp.
         if set(original_values.keys()) != set(["priority"]):
-            self.last_changed_at = change.timestamp
+            # This is a little tricky; in order to make it possible for e.g.
+            # a script to sync changes from another system, it's important to
+            # be able to set the "last_changed_at" timestamp to whatever.
+            if "last_changed_at" in original_values:
+                self.last_changed_at = data["last_changed_at"]
+            else:
+                # default to using the generated "now" timestamp
+                self.last_changed_at = change.timestamp
         return change
 
     @property
@@ -701,7 +718,7 @@ class EntryChange(Model):
 
     entry = ForeignKeyField(Entry, related_name="changes")
 
-    changed = JSONField()
+    changed = CustomJSONField()
 
     timestamp = UTCDateTimeField(default=datetime.utcnow)
     change_authors = JSONField(null=True)
