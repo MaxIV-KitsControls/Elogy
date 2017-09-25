@@ -18,15 +18,22 @@ import EntryAttachments from "./entryattachments.js";
 export class InnerEntry extends React.Component {
 
     componentDidMount() {
-        if (this.props.currentEntryId === this.props.id) 
-            this.props.scrollToEntry(findDOMNode(this.refs.content));
         this.highlightContentFilter();
+        this.scrollToCurrentEntry();
     }
 
     componentDidUpdate () {
         this.highlightContentFilter();
+        this.scrollToCurrentEntry();
     }
 
+    scrollToCurrentEntry () {
+        if (this.props.currentEntryId === this.props.id)  {
+            var node = findDOMNode(this.refs.article);
+            setTimeout(node.scrollIntoView(true));
+        }
+    }
+    
     highlightContentFilter () {
         // highlight the current content filter string in the content
         if (this.props.contentFilter) {
@@ -46,8 +53,8 @@ export class InnerEntry extends React.Component {
                                       className="followupd"
                                       followupNumber={i}
                                       logbook={this.props.logbook}
-                                      scrollToEntry={this.props.scrollToEntry}
                                       currentEntryId={this.props.currentEntryId}
+                                      contentFilter={this.props.contentFilter}
                                       {...followup}/>)) :
                           null;
 
@@ -109,7 +116,7 @@ export class InnerEntry extends React.Component {
                        : null;
         return (
             <div>
-                <article>
+                <article ref="article" >
                     <div className={"info" + (this.props.currentEntryId === this.props.id?
                                               " current" : "")}>
 
@@ -176,16 +183,6 @@ class Entry extends React.Component {
             this.fetchEntry(newProps.match.params.logbookId,
                             newProps.match.params.entryId);
         }
-    }
-
-    componentDidUpdate = () => {
-        // make sure to scroll to top after loading a new entry.
-        setTimeout(() => findDOMNode(this.refs.body).scrollIntoView(), 100);
-    }
-    
-    scrollToEntry (element) {
-        if (element)
-            setTimeout(() => element.scrollIntoView(), 100);
     }
     
     render () {
@@ -258,7 +255,6 @@ class Entry extends React.Component {
                     <div ref="body">
                         <InnerEntry {...this.state}
                                     contentFilter={query.content}
-                                    scrollToEntry={this.scrollToEntry.bind(this)}
                                     currentEntryId={parseInt(this.props.match.params.entryId, 10)}/>
                         
                     </div>
