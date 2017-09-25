@@ -30,7 +30,7 @@ attribute = {
 class LogbookField(fields.Raw):
     "Helper for returning nested logbooks"
     def format(self, value):
-        return marshal(value, logbook_short)
+        return marshal(value, logbook)
 
 
 logbook_short = {

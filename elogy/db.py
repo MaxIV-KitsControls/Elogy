@@ -492,7 +492,7 @@ class Entry(Model):
                n=None, offset=0, count=False,
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
-               attachment_filter=None):
+               attachment_filter=None, metadata_filter=None):
 
         # Note: this is all pretty messy. The reason we're building
         # the query as a raw string is that peewee does not (currently)
@@ -519,6 +519,17 @@ class Entry(Model):
         else:
             attributes = ""
 
+        if metadata_filter:
+            # This works just like the attribute filter
+            metadata = ", {}".format(
+                ", ".join(
+                    "json_extract(entry.metadata, '$.{meta}') AS {meta_id}"
+                    .format(meta=escape_string(meta),
+                            meta_id="meta{}".format(i))
+                    for i, (meta, _) in enumerate(metadata_filter)))
+        else:
+            metadata = ""
+
         if logbook:
             if child_logbooks:
                 # recursive query to find all entries in the given logbook
@@ -539,7 +550,7 @@ class Entry(Model):
                     SELECT logbook.id, logbook.parent_id FROM logbook,logbook2
                     WHERE logbook2.parent_id=logbook.id
                 )
-                SELECT {what}{attributes},
+                SELECT {what}{attributes}{metadata},
                     {attachment}
                     -- 'thread' is the id of the main entry, ignoring followups
                     coalesce(followup.follows_id, entry.id) AS thread,
@@ -562,13 +573,14 @@ class Entry(Model):
                                        if attachment_filter else ""),
                            authors=authors, logbook=logbook.id,
                            attributes=attributes,
+                           metadata=metadata,
                            join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
                                             if attachment_filter else ""))
             else:
                 # In this case we're not searching recursively
                 query = (
                     """
-                    SELECT {what}{attributes},
+                    SELECT {what}{attributes}{metadata},
                       {attachment}
                       coalesce(followup.follows_id, entry.id) AS thread,
                       count(followup.id) AS n_followups,
@@ -584,6 +596,7 @@ class Entry(Model):
                                        if attachment_filter else ""),
                             authors=authors,
                             attributes=attributes,
+                            metadata=metadata,
                             logbook=logbook.id,
                             join_attachment=("JOIN attachment ON attachment.entry_id == entry.id"
                                              if attachment_filter else "")))
@@ -593,7 +606,7 @@ class Entry(Model):
             # the recursive logbook filtering. This always includes
             # child logbooks.
             query = """
-            SELECT {what}{attributes},
+            SELECT {what}{attributes}{metadata},
                 {attachment}
                 coalesce(followup.follows_id, entry.id) AS thread,
                 count(followup.id) AS n_followups,
@@ -606,6 +619,7 @@ class Entry(Model):
             WHERE 1
             """.format(what="count()" if count else "entry.*",
                        attributes=attributes,
+                       metadata=metadata,
                        attachment=("path as attachment_path,"
                                    if attachment_filter else ""),
                        authors=authors,
@@ -639,6 +653,10 @@ class Entry(Model):
             for i, (attr, value) in enumerate(attribute_filter):
                 query += " AND attr{} LIKE ?".format(i)
                 variables.append('%{}%'.format(value))
+        if metadata_filter:
+            for i, (meta, value) in enumerate(metadata_filter):
+                query += " AND meta{} LIKE ?".format(i)
+                variables.append('{}'.format(value))
 
         # Here we're getting into deep water...
         # If we just want the total count of results, we can't group

@@ -24,7 +24,7 @@ entry_args = {
         "email": Email(allow_none=True)
     }), validate=lambda a: len(a) > 0),
     "created_at": LocalDateTime(),
-    "last_changed_at": LocalDateTime(),
+    "last_changed_at": LocalDateTime(allow_none=True),
     "follows_id": Integer(allow_none=True),
     "attributes": Dict(),
     "archived": Boolean(),
@@ -144,6 +144,7 @@ entries_args = {
     "authors": Str(),
     "attachments": Str(),
     "attribute": List(Str(validate=lambda s: len(s.split(":")) == 2)),
+    "metadata": List(Str(validate=lambda s: len(s.split(":")) == 2)),
     "archived": Boolean(),
     "ignore_children": Boolean(),
     "n": Integer(missing=50),
@@ -161,6 +162,8 @@ class EntriesResource(Resource):
 
         attributes = [attr.split(":")
                       for attr in args.get("attribute", [])]
+        metadata = [meta.split(":")
+                    for meta in args.get("metadata", [])]
 
         if logbook_id:
             # restrict search to the given logbook and its descendants
@@ -171,6 +174,7 @@ class EntriesResource(Resource):
                                author_filter=args.get("authors"),
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
+                               metadata_filter=metadata,
                                n=args["n"], offset=args.get("offset"))
             entries = logbook.get_entries(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
@@ -186,6 +190,7 @@ class EntriesResource(Resource):
                                author_filter=args.get("authors"),
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
+                               metadata_filter=metadata,
                                n=args["n"], offset=args.get("offset"))
             entries = Entry.search(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
