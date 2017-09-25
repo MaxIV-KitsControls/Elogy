@@ -135,7 +135,9 @@ class LogbookTree extends React.Component {
                         {
                             this.state.id?
                             <span>
-                                <Link to={ parentUrl }>Up</Link> |
+                                <Link to={ parentUrl } title="Go to the parent logbook" >
+                                    Up
+                                </Link> |
                             </span>
                             : null
                         }
