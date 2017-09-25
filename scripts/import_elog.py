@@ -407,7 +407,7 @@ if __name__ == "__main__":
                         help="Specific logbook to import (by name)")
     parser.add_argument("-s", "--since", type=parse_time,
                         help="Only consider entries added/modified after this time")
-    parser.add_argument("-i", "--ignore", type=boolean, action="store_false",
+    parser.add_argument("-i", "--ignore", action="store_false",
                         dest="check",  help="Don't care if logbooks and entries already exist")
 
     args = parser.parse_args()
