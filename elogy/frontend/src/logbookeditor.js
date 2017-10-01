@@ -336,6 +336,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
             metadata: {},
             attributes: [],
             logbook: {},
+            archived: false,
             error: null
         }
     }
@@ -351,6 +352,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
     onSubmit (history) {
         this.submitted = true
         const parentId = (this.state.parentId || (this.state.parent? this.state.parent.id : null));
+        console.log("submit", this.state);
         fetch(
             `/api/logbooks/${this.state.id}/`, {
                 method: "PUT",
@@ -363,6 +365,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
                     name: this.state.name,
                     description: this.state.description,
                     attributes: this.state.attributes,
+                    archived: this.state.archived,
                     template: this.state.newTemplate || this.state.template,
                     template_content_type: "text/html",
                 })
@@ -392,6 +395,10 @@ class LogbookEditorEdit extends LogbookEditorBase {
     onParentChange (parentId) {
         console.log("onParentChange", parentId);
         this.setState({parentId: parentId});
+    }
+
+    onArchivedChange (event) {
+        this.setState({archived: event.target.checked});
     }
     
     innerRender ({history}) {
@@ -442,6 +449,13 @@ class LogbookEditorEdit extends LogbookEditorBase {
                 { this.getErrors() }
                 
                 <footer>
+                    <label>
+                        <input type="checkbox"
+                               checked={this.state.archived}
+                               onChange={this.onArchivedChange.bind(this)} />
+                        Archived
+                    </label>
+                    
                     <button onClick={this.onSubmit.bind(this, history)}>
                         Submit
                     </button>

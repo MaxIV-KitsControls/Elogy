@@ -580,10 +580,12 @@ class Entry(Model):
                 FROM entry{authors}
                 JOIN logbook1
                 JOIN logbook2
+                JOIN logbook ON entry.logbook_id = logbook.id
                 {join_attachment}
                 LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-                WHERE (entry.logbook_id=logbook1.id
+                WHERE ((entry.logbook_id=logbook1.id)
                        OR (entry.priority>100 AND entry.logbook_id=logbook2.id))
+                      AND NOT logbook.archived
                 """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
                                  if count else "entry.*"),
                            attachment=("attachment.path as attachment_path,"
@@ -606,8 +608,9 @@ class Entry(Model):
                       json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
                     FROM entry{authors}
                     {join_attachment}
+                    JOIN logbook on logbook.id = entry.logbook_id
                     LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-                    WHERE entry.logbook_id = {logbook}"""
+                    WHERE entry.logbook_id = {logbook} AND NOT logbook.archived"""
                     .format(what="count()" if count else "entry.*",
                             attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
@@ -632,8 +635,9 @@ class Entry(Model):
                 json_group_array(json(ifnull(followup.authors, "[]"))) as followup_authors
             FROM entry{authors}
             {join_attachment}
+            JOIN logbook on logbook.id = entry.logbook_id
             LEFT JOIN entry AS followup ON entry.id == followup.follows_id
-            WHERE 1
+            WHERE NOT logbook.archived
             """.format(what="count()" if count else "entry.*",
                        attributes=attributes,
                        metadata=metadata,

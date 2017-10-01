@@ -33,12 +33,22 @@ class LogbookField(fields.Raw):
         return marshal(value, logbook)
 
 
+class NonArchivedList(fields.List):
+    "Filter out archived items from the given list"
+    def format(self, value):
+        items = []
+        for item in value:
+            if not item.archived:
+                items.append(item)
+        return super().format(items)
+
+
 logbook_short = {
     "id": fields.Integer,
     "parent_id": fields.Integer(attribute="parent.id"),
     "name": fields.String,
     "description": fields.String,
-    "children": fields.List(LogbookField),
+    "children": NonArchivedList(LogbookField),
 }
 
 
@@ -52,9 +62,10 @@ logbook = {
         "name": fields.String
     }, allow_null=True),
     "created_at": fields.String,
-    "children": fields.List(LogbookField),
+    "children": NonArchivedList(LogbookField),
     "attributes": fields.List(fields.Nested(attribute)),
-    "metadata": fields.Raw
+    "metadata": fields.Raw,
+    "archived": fields.Boolean
 }
 
 
@@ -123,7 +134,7 @@ followup = {
     "attributes": fields.Raw,
     "content": fields.String,
     "content_type": fields.String,
-    "followups": fields.List(Followup),
+    "followups": NonArchivedList(Followup),
 }
 
 
@@ -156,11 +167,12 @@ entry_full = {
     "content_type": fields.String,
     "follows": EntryId,
     "n_followups": NumberOf(attribute="followups"),
-    "followups": fields.List(Followup),
+    "followups": NonArchivedList(Followup),
     "revision_n": fields.Integer,
     "lock": fields.Nested(entry_lock, allow_null=True),
     "next": EntryId,
     "previous": EntryId,
+    "archived": fields.Boolean
 }
 
 entry = {

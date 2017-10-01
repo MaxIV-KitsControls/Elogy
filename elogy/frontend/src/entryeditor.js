@@ -231,6 +231,10 @@ class EntryEditorBase extends React.Component {
     onTogglePinned (event) {
         this.setState({priority: (event.target.checked? 100 : 0)});
     }
+
+    onToggleArchived (event) {
+        this.setState({archived: event.target.checked});
+    }
     
     hasEdits () {
         // return whether the user had edited anything or not
@@ -344,6 +348,17 @@ class EntryEditorBase extends React.Component {
         );
     }
 
+    getArchivedCheckbox () {
+        return (
+            <label title="The entry will no longer be visible. Note: there's currently no easy way to retrieve archived entries so please be careful with this.">
+                <input type="checkbox"
+                       checked={this.state.archived}
+                       onChange={this.onToggleArchived.bind(this)}/>
+                Archived
+            </label>
+        );
+    }
+    
     onPriorityChange (event) {
         this.setState({priority: event.target.value});
     }
@@ -875,10 +890,10 @@ class EntryEditorEdit extends EntryEditorBase {
                         <th className="title">
                             Editing entry #{this.state.id} in logbook {
                                 this.state.follows ?
-                                this.state.logbook.name :
-                                <LogbookSelector logbookId={this.state.logbookId ||
-                                                            this.state.logbook.id}
-                                                 onLogbookChange={this.onLogbookChange.bind(this)} />
+                                                                       this.state.logbook.name :
+                                                                       <LogbookSelector logbookId={this.state.logbookId ||
+                                                                                                   this.state.logbook.id}
+                                                                                        onLogbookChange={this.onLogbookChange.bind(this)} />
                             }
                         </th>                        
                     </tr>
@@ -919,7 +934,9 @@ class EntryEditorEdit extends EntryEditorBase {
                     <tr>
                         <td>
                             { this.getPrioritySelector() }
+                            { this.getArchivedCheckbox() }
                             { this.getLockInfo() }
+                            
                             <div className="commands">
                                 { this.getSubmitButton(history) }
                                 { this.getCancelButton() }
