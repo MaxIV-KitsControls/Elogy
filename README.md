@@ -29,9 +29,11 @@ It assumes that you've started the server on port 8000 (see below).
 Installation
 ============
 
-Requires Python 3.x (currently only tested with 3.5, 3.4 should work.)
+Requires Python 3.x (currently only tested with 3.5, 3.4 should work.) 
 
-To run with flask's built-in development server:
+Also required is the `JSON1` extension to sqlite, which is an optional compile time option that is fairly new, and may or may not be enabled in your installation. It's available by default in recent Ubuntu versions, at least. If not, one way to get a compatible version is to use the "Anaconda" python distribution and installing `sqlite` from the `conda-forge` channel. If you don't want the whole distribution you can install "miniconda".
+
+To run elogy with flask's built-in development server, on port 8000:
 ```
 $ python -m venv env
 $ env/bin/pip install -r requirements.txt
@@ -43,6 +45,8 @@ For actual deployment you probably want to run it with something else, such as:
 ```
 $ gunicorn -k gevent --threads 3 elogy.app:app
 ```
+
+Or possibly using uWSGI+nginx or something. There is lots of documentation out there on how to deploy Flask applications in different scenarios.
 
 Also have a look in ```config.py``` for further settings.
 
@@ -171,7 +175,7 @@ To post a new entry, basically just do a POST to e.g. `localhost:8000/api/logboo
 
 Same principle works for writing logbooks.
 
-Previous versions of an entry are available by appending e.g. `/revisions/0` to the entry's URL. That will retrieve the first version, the revision number increments by one each time the entry is edited. If you omit the revision number, you instead get a list of the changes between each revision.
+Previous versions of an entry are available by appending e.g. `/revisions/0` to the entry's URL. That will retrieve the original version, the revision number increments by one each time the entry is edited. If you omit the revision number, you instead get a list of the changes between each revision.
 
 There are also some other parts of the API:
 
@@ -180,3 +184,9 @@ There are also some other parts of the API:
 `/api/users/` is just a convenience feature for finding proper author names. It looks in LDAP if configured, or the system's password and group files to find users matching a search string. Probably not very useful outside the frontend.
 
 There are some basic API tests that may provide helpful hints. 
+
+
+Admin interface
+===============
+
+There is a simple, generic database interface accessible at `/admin`. It's not protected in any way and can quite easily be used to corrupt the database. It's currently only recommended for use as a read only debugging tool.
