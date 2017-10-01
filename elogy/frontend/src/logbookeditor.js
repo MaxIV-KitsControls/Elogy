@@ -278,7 +278,9 @@ class LogbookEditorNew extends LogbookEditorBase {
                 <Prompt message={this.getPromptMessage.bind(this)}/>
                 
                 <header>
-                    New logbook in "{this.state.parent? this.state.parent.name : ''}"
+                    {this.state.parent.id?
+                     `New logbook in "${this.state.parent.name}"`
+                     : 'New top level logbook'}
                 </header>
                 
                 <form>
