@@ -179,11 +179,8 @@ class Logbook extends React.Component {
                                       New entry
                                   </Link>
                               </div>
-                              <Link to={`/logbooks/${logbook.id}/?parent=${logbook.id}`}
-                                    title={`Show only the logbook '${logbook.name}' and it's children`}>
-                                  Enter
-                              </Link> | <Link to={`/logbooks/${logbook.id}/edit`}
-                                              title={`Edit the settings of the logbook '${logbook.name}'`}>
+                              <Link to={`/logbooks/${logbook.id}/edit`}
+                                    title={`Edit the settings of the logbook '${logbook.name}'`}>
                                   Edit
                               </Link> |&nbsp;
                           </span> 

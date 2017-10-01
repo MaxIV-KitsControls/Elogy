@@ -126,16 +126,25 @@ class LogbookTree extends React.Component {
                 <header>
                     
                     <Link to={{pathname: `/logbooks/${this.state.id || 0}`,
-                               search: this.props.location.search}}>
+                               search: this.props.location.search}}
+                          title="Show entries from all the logbooks at this level">
                         {this.state.name? this.state.name : "All"}
                     </Link>
-                    
                     <div className="commands">
+                        {
+                            logbookId !== this.state.id?
+                            <Link to={`/logbooks/${logbookId}/?parent=${logbookId}`}
+                                  title={`Show only the selected logbook and its children`}>
+                                <i className="fa fa-arrow-down"/>
+                            </Link> : null
+                        }
+                        &nbsp;
                         {
                             this.state.id?
                             <span>
-                                <Link to={ parentUrl } title="Go to the parent logbook" >
-                                    Up
+                                <Link to={ parentUrl }
+                                      title="Show the parent logbook">
+                                    <i className="fa fa-arrow-up"/>
                                 </Link>
                             </span>
                             : null
