@@ -85,6 +85,30 @@ def test_update_logbook(elogy_client):
     assert response["name"] == "New name"
 
 
+def test_move_logbook(elogy_client):
+    in_logbook, logbook = make_logbook(elogy_client)
+    in_logbook2, logbook2 = make_logbook(elogy_client)
+
+    response = decode_response(
+        elogy_client.put(
+            "/api/logbooks/{}/".format(logbook["id"]),
+            data=dict(parent_id=logbook2["id"])))["logbook"]
+
+    # read it back
+    out_logbook = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[id]}/"
+                         .format(logbook=logbook)))["logbook"]
+
+    assert response["parent"]["id"] == logbook2["id"]
+
+    # check that the logbook is now the child of the parent
+    parent_logbook = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[parent][id]}/"
+                         .format(logbook=response)))["logbook"]
+
+    assert parent_logbook["children"][0]["id"] == logbook["id"]
+
+
 def test_create_entry(elogy_client):
     in_logbook, logbook = make_logbook(elogy_client)
     in_entry, entry = make_entry(elogy_client, logbook)
