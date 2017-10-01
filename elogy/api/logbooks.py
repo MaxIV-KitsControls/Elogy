@@ -80,15 +80,14 @@ class LogbooksResource(Resource):
 
         "Update an existing logbook"
 
-        if "parent_id" in args:
-            if args["parent_id"] == 0:
-                # TODO: this is a little ugly, but we can't allow a parent
-                # id of 0 since there's no such logbook id. Top-level logbooks
-                # should have parent_id NULL (= None).
-                args["parent_id"] = None
-            else:
-                # make sure the parent exists
-                Logbook.get(Logbook.id == args["parent_id"])
+        if not args.get("parent_id"):
+            # TODO: this is a little ugly, but we can't allow a parent
+            # id of 0 since there's no such logbook id. Top-level logbooks
+            # should have parent_id NULL (= None).
+            args["parent_id"] = None
+        else:
+            # make sure the parent exists
+            Logbook.get(Logbook.id == args["parent_id"])
         logbook = Logbook.get(Logbook.id == logbook_id)
         logbook.make_change(**args).save()
         logbook.save()
