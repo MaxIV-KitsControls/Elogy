@@ -46,6 +46,7 @@ from collections import OrderedDict
 import configparser
 from datetime import datetime
 from glob import glob
+from itertools import chain
 import json
 import logging
 import os
@@ -393,8 +394,6 @@ if __name__ == "__main__":
     import argparse
     from requests import Session
 
-    logging.basicConfig(level=logging.INFO)
-
     parser = argparse.ArgumentParser(description='Import data from Elog to Elogy.')
 
     parser.add_argument("elogy_host", metavar="HOST", type=str,
@@ -410,12 +409,14 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--ignore", action="store_false",
                         dest="check",  help="Don't care if logbooks and entries already exist")
 
+    logging.basicConfig(level=logging.INFO)
+
     args = parser.parse_args()
 
     host_port = args.elogy_host
     elogd_config = args.elogd_config
     logbook_path = args.elog_logbook_path
-    logbooks_to_import = args.logbooks
+    logbooks_to_import = set(chain(*(lb.split("/") for lb in args.logbooks)))
 
     s = Session()
 
@@ -437,19 +438,20 @@ if __name__ == "__main__":
         if key.startswith("Top group")
     ]
 
-    print("Top logbooks", top_logbooks)
-
     # get all logbooks into a flat dict, keyed on name
     # I think logbook names are unique but to be sure
     # i assign them uuids.
     logbooks = {}
+    print(logbooks_to_import)
     for logbook in top_logbooks:
-        # if logbooks_to_import and logbook not in logbooks_to_import:
-        #     continue
+        print(logbook)
+        if logbooks_to_import and logbook not in logbooks_to_import:
+            continue
         get_logbook(config, logbook,
                     root_path=logbook_path, toplevel=True,
                     accumulator=logbooks, to_import=logbooks_to_import)
-    print(sorted(logbook["name"] for logbook in logbooks.values()))
+    logging.info("Got logbooks %r",
+                 sorted(logbook["name"] for logbook in logbooks.values()))
     # get the entries in each logbook, also in a flat dict
     # keyed on (logbook_uuid, mid)
     entries = {}
@@ -465,32 +467,39 @@ if __name__ == "__main__":
     # now we have a tree of all the logbooks currently in the system
 
     def flatten_logbooks(lbtree):
+        "A generator that recursively yields logbooks from a tree"
         for lb in lbtree:
             # only care about logbooks that were originally imported from elog
             if "metadata" in lb and lb["metadata"]:
                 if "original_elog_name" in lb["metadata"]:
-                    yield (lb["metadata"]["original_elog_name"], lb)
-                    yield from flatten_logbooks(lb.get("children", []))
+                    yield lb["metadata"]["original_elog_name"], lb
+            yield from flatten_logbooks(lb.get("children", []))
 
     existing_logbooks = dict(flatten_logbooks([logbook_tree]))
 
     def create_logbooks(lb, existing, parent=None):
         "Helper to recursively import logbooks"
 
-        # if the logbook already exists (same name, logbook names are unique in Elog)
-        # we don't create it (but maybe update?)
-
-        if lb["name"] in existing:
+        # if the logbook already exists (same name, logbook names are
+        # unique in Elog) we don't create it
+        # TODO but maybe update?
+        if lb["name"] in existing_logbooks:
+            logging.info("Skipping existing logbook %s", lb["name"])
             imported_logbooks[lb["uuid"]] = existing[lb["name"]]
             return
 
         # skip logbooks already imported during this run (should never happen...)
         if lb["uuid"] in imported_logbooks:
+            logging.warning("Skipping already imported logbook '%s'!?",
+                            lb["name"])
             return
 
         # skip child logbooks whose parents have not yet been imported
         # (they will be imported after the parent is done)
-        if lb["parent"] is not None and lb["parent"] not in imported_logbooks:
+        logging.info("parent %r", lb.get("parent"))
+        if (lb["parent"] is not None
+                and lb["parent"] not in imported_logbooks):
+            logging.info("Deferring child logbook '%s'", lb["name"])
             return
 
         if parent is not None:
@@ -504,6 +513,7 @@ if __name__ == "__main__":
         imported_logbooks[lb["uuid"]] = result
 
         for lid in lb["children"]:
+            logging.info("create %s", lid)
             create_logbooks(logbooks[lid], existing, parent=result["id"])
 
     logging.info("importing logbooks")
@@ -529,23 +539,32 @@ if __name__ == "__main__":
 
     imported_entries = {}
 
-    logging.info("importing entries")
+    logging.info("* importing entries *")
     for (logbook_uuid, mid), entry in sorted_entries.items():
-        logbook_result = imported_logbooks[logbook_uuid]
         logbook = logbooks[logbook_uuid]
+
+        if logbook_uuid in imported_logbooks:
+            logbook_result = imported_logbooks[logbook_uuid]
+        else:
+            logbook_result = existing_logbooks[logbook["name"]]
         metadata_filter = ("original_elog_url:{}"
                            .format(entry["metadata"]["original_elog_url"]))
         get_url = ENTRY_URL.format(logbook_id=logbook_result["id"])
-        results = s.get(get_url, params={"metadata": metadata_filter}).json()["entries"]
+        results = s.get(get_url,
+                        params={"metadata": metadata_filter}).json()["entries"]
         if results:
             short_entry = results[0]
-            existing_entry = s.get(get_url + str(short_entry["id"]) + "/").json()["entry"]
-            if parse_time(get_modification_time(existing_entry)) >= get_modification_time(entry):
+            existing_entry = s.get(get_url +
+                                   str(short_entry["id"]) + "/").json()["entry"]
+            if (parse_time(get_modification_time(existing_entry))
+                    >= get_modification_time(entry)):
                 continue
-            logging.info("updating entry %s/%d -> %d", logbook_result["name"], mid, existing_entry["id"])
+            logging.info("updating entry %s/%d -> %d",
+                         logbook_result["name"], mid, existing_entry["id"])
             update_url = "{}{}/".format(ENTRY_URL, existing_entry["id"])
             result = update_entry(s, update_url, logbook_result["id"],
-                                  entry, imported_entries, revision_n=existing_entry["revision_n"])
+                                  entry, imported_entries,
+                                  revision_n=existing_entry["revision_n"])
             if result.status_code != 200:
                 logging.info("failed to update entry {}/{} {}",
                              logbook_result["name"], mid, result.json())
