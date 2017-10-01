@@ -63,7 +63,9 @@ class QuickSearch extends React.Component {
             // when the form is submitted...
             <Route render={({history}) => (
                 <form id="search" onSubmit={this.onSubmit.bind(this, history)}>
-                    
+                    <span title="Filters which can be used to limit the entries that are displayed.">
+                        Search
+                    </span>
                     <input style={{width: "100%"}} name="title"
                                  value={this.state.title || ""}
                                  title="Filter entries on title (supports regular expressions)"
