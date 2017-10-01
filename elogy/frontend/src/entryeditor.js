@@ -495,7 +495,11 @@ class EntryEditorNew extends EntryEditorBase {
                                this.props.eventbus.publish("logbook.reload",
                                                            this.state.logbook.id);                
                                // send the browser to view the new entry
-                               history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                               console.log("history", history.location);
+                               history.push({
+                                   pathname: `/logbooks/${this.state.logbook.id}/entries/${entryId}`,
+                                   search: window.location.search
+                               });
                            });
                 },
                 error => {
@@ -636,7 +640,10 @@ class EntryEditorFollowup extends EntryEditorBase {
                                this.props.eventbus.publish("logbook.reload",
                                                            this.state.logbook.id);                
                                // send the browser to view the new entry
-                               history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                               history.push({
+                                   pathname: `/logbooks/${this.state.logbook.id}/entries/${entryId}`,
+                                   search: window.location.search
+                               })
                            });
                 },
                 error => {
@@ -811,7 +818,10 @@ class EntryEditorEdit extends EntryEditorBase {
                                this.props.eventbus.publish("logbook.reload",
                                                            this.state.logbook.id);                
                                // send the browser to view the new entry
-                               history.push(`/logbooks/${this.state.logbook.id}/entries/${entryId}`);
+                               history.push({
+                                   pathname: `/logbooks/${this.state.logbook.id}/entries/${entryId}`,
+                                   search: window.location.search
+                               });
                            });
                 },
                 error => {

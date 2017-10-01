@@ -47,7 +47,6 @@ class LogbookTreeNode extends React.Component {
 
         // make sure we keep any parent setting 
         const query = parseQuery(this.props.search);
-        const parentQuery = query.parent? `?parent=${query.parent}` : "";
         
         return (
             <li key={this.props.id}
@@ -57,7 +56,10 @@ class LogbookTreeNode extends React.Component {
                       (this.state.n_children > 0? "has-children" : "")
                           }>
                 { expander }
-                <Link to={`/logbooks/${this.props.id}${parentQuery}`}>
+                <Link to={{
+                    pathname: `/logbooks/${this.props.id}`,
+                    search: window.location.search
+                }}>
                     { this.props.name }
                 </Link>
                 { children }
@@ -124,16 +126,18 @@ class LogbookTree extends React.Component {
         return (
             <div id="logbooktree">
                 <header>
-                    
-                    <Link to={{pathname: `/logbooks/${this.state.id || 0}`,
-                               search: this.props.location.search}}
-                          title="Show entries from all the logbooks at this level">
-                        {this.state.name? this.state.name : "All"}
-                    </Link>
+                    <span className={this.state.id === logbookId? "selected" : null }>
+                        <Link to={{pathname: `/logbooks/${this.state.id || 0}`,
+                                   search: window.location.search}}
+                              title="Show entries from all the logbooks at this level">
+                            {this.state.name? this.state.name : "All logbooks"}
+                        </Link>
+                    </span>
                     <div className="commands">
                         {
                             logbookId !== this.state.id?
-                            <Link to={`/logbooks/${logbookId}/?parent=${logbookId}`}
+                            <Link to={{pathname: `/logbooks/${logbookId}/`,
+                                       search: `parent=${logbookId}`}}
                                   title={`Show only the selected logbook and its children`}>
                                 <i className="fa fa-arrow-down"/>
                             </Link> : null

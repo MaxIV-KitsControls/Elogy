@@ -264,7 +264,10 @@ class LogbookEditorNew extends LogbookEditorBase {
             .then(
                 result => {
                     this.props.eventbus.publish("logbook.reload", this.state.id);
-                    history.push({pathname: `/logbooks/${result.id}`});
+                    history.push({
+                        pathname: `/logbooks/${result.logbook.id}`,
+                        search: window.location.search
+                    });
                 },
                 error => console.log(error)
             );
@@ -354,7 +357,6 @@ class LogbookEditorEdit extends LogbookEditorBase {
     onSubmit (history) {
         this.submitted = true
         const parentId = (this.state.parentId || (this.state.parent? this.state.parent.id : null));
-        console.log("submit", this.state);
         fetch(
             `/api/logbooks/${this.state.id}/`, {
                 method: "PUT",
@@ -387,6 +389,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
                 result => {
                     history.push({
                         pathname: `/logbooks/${this.state.id}`,
+                        search: window.location.search
                     });
                     this.props.eventbus.publish("logbook.reload", this.state.id);
                 },
@@ -395,7 +398,6 @@ class LogbookEditorEdit extends LogbookEditorBase {
     }
 
     onParentChange (parentId) {
-        console.log("onParentChange", parentId);
         this.setState({parentId: parentId});
     }
 

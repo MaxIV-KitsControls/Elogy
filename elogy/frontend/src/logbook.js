@@ -55,7 +55,6 @@ class Logbook extends React.Component {
     }
     
     componentWillMount () {
-        console.log("dksoakodk")
         this.fetch(this.props.match.params.logbookId,
                    this.props.location.search,
                    this.state.attributeFilters);
@@ -174,19 +173,22 @@ class Logbook extends React.Component {
                         { logbook.id?
                           <span>
                               <div className="entry">
-                                  <Link to={`/logbooks/${logbook.id}/entries/new`}
+                                  <Link to={{pathname: `/logbooks/${logbook.id}/entries/new`,
+                                             search: window.location.search}}
                                         title={`Create a new entry in the logbook '${logbook.name}'`}>
                                       New entry
                                   </Link>
                               </div>
-                              <Link to={`/logbooks/${logbook.id}/edit`}
+                              <Link to={{pathname:`/logbooks/${logbook.id}/edit`,
+                                         search: window.location.search}}
                                     title={`Edit the settings of the logbook '${logbook.name}'`}>
                                   Edit
                               </Link> |&nbsp;
                           </span> 
                           : null
                         }
-                        <Link to={`/logbooks/${logbook.id}/new`}
+                        <Link to={{pathname: `/logbooks/${logbook.id}/new`,
+                                   search: window.location.search}}
                               title={logbook.id === 0 ?
                                      "Create a new top level logbook" :
                                      `Create a new logbook as a child of '${logbook.name}'`}>

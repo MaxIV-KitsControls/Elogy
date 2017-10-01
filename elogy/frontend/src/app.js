@@ -39,7 +39,10 @@ class NoLogbook extends React.Component {
         return (
             <div className="empty">
                 <i className="fa fa-arrow-left"/> Select a logbook
-                <div> or <Link to={"/logbooks/0/new"}>create a new one</Link>.</div>
+                <div> or <Link to={{pathname: "/logbooks/0/new",
+                                    search: window.location.search}}>
+                    create a new one
+                </Link>.</div>
             </div>
         );
     }
@@ -52,11 +55,15 @@ class NoEntry extends React.Component {
     
     render () {
         const logbookId = parseInt(this.props.match.params.logbookId);
+        console.log(this.props.match.location);
         return (
             <div className="empty">
-                <i className="fa fa-arrow-left"/> Select an entry
+                <i className="fa fa-arrow-left"/> Select an entry to read it
                 { logbookId?
-                  (<div> or <Link to={`/logbooks/${logbookId}/entries/new`}>click here to create a new one</Link>
+                  (<div> or <Link to={{pathname: `/logbooks/${logbookId}/entries/new`,
+                                       search: window.location.search}}>
+                      click here to make a new entry.
+                  </Link>
                   </div>)
                   : null }
             </div>

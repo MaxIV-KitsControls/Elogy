@@ -109,7 +109,10 @@ export class InnerEntry extends React.Component {
                    : null;
         
         const editLink = !this.props.hideEditLink?
-                         (<Link to={`/logbooks/${logbook.id}/entries/${this.props.id}/edit`}
+                         (<Link to={{
+                             pathname: `/logbooks/${logbook.id}/entries/${this.props.id}/edit`,
+                             search: window.location.search
+                         }}
                                 title="Make changes to this entry">
                              { lock } Edit
                          </Link>) 
@@ -218,19 +221,28 @@ class Entry extends React.Component {
 
                             {
                                 this.state.follows?
-                                <Link to={`/logbooks/${logbook.id}/entries/${this.state.follows}`}
+                                <Link to={{
+                                    pathname: `/logbooks/${logbook.id}/entries/${this.state.follows}`,
+                                    search: window.location.search
+                                }}
                                       title="Go to the entry this one is a followup to">
                                     Parent
                                 </Link>
                                 : null
                             }
                             
-                            <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}/new`}
+                            <Link to={{
+                                pathname: `/logbooks/${logbook.id}/entries/${this.state.id}/new`,
+                                search: window.location.search
+                            }}
                                   title="Create a new entry as a 'followup' to this one.">
                                 <i className="fa fa-reply"/> Followup
                             </Link>                        
                         &nbsp;|&nbsp;
-                        <Link to={`/logbooks/${logbook.id}/entries/new`}
+                        <Link to={{
+                            pathname: `/logbooks/${logbook.id}/entries/new`,
+                            search: window.location.search
+                        }}
                               title="Create a new entry in this logbook">
                             New Entry
                         </Link>
@@ -239,7 +251,10 @@ class Entry extends React.Component {
                         : null
                     }
                     
-                    <Link to={`/logbooks/${logbook.id}/entries/${this.state.id}`}>
+                    <Link to={{
+                        pathname: `/logbooks/${logbook.id}/entries/${this.state.id}`,
+                        search: window.location.search
+                    }}>
                         <span className="logbook">
                             <i className="fa fa-book"/> {this.state.logbook && this.state.logbook.name}
                         </span>

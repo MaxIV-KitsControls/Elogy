@@ -26,10 +26,9 @@
     text-decoration: none;    
 }
 
-#logbooktree li.selected {
+#logbooktree .selected {
     background: white;
 }
-
 
 #logbooktree li.has-children {
     /* padding-left: 5px; */
