@@ -137,6 +137,43 @@ def test_update_entry(elogy_client):
             .format(logbook=logbook, entry=entry)))["entry_changes"]
 
 
+def test_move_entry(elogy_client):
+    in_logbook1, logbook1 = make_logbook(elogy_client)
+    in_logbook2, logbook2 = make_logbook(elogy_client)
+    in_entry, entry = make_entry(elogy_client, logbook1)
+
+    # change the logbook
+    new_in_entry = {**in_entry,
+                    "logbook_id": logbook2["id"],
+                    "revision_n": 0}
+    out_entry = decode_response(
+        elogy_client.put("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
+                         .format(logbook=logbook1, entry=entry),
+                         data=new_in_entry))["entry"]
+    assert out_entry["logbook"]["id"] == logbook2["id"]
+
+    # verify that the new revision can be retrieved
+    new_entry_version = decode_response(
+        elogy_client.get("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
+                         .format(logbook=logbook2, entry=entry)))["entry"]
+    assert new_entry_version == out_entry
+    assert new_entry_version["revision_n"] == 1
+
+    # verify that the original revision is available
+    old_entry_version = decode_response(
+        elogy_client.get(
+            "/api/entries/{entry[id]}/revisions/0"
+            .format(entry=entry)))["entry"]
+    print(old_entry_version)
+    assert old_entry_version["logbook"]["id"] == logbook1["id"]
+    assert old_entry_version["revision_n"] == 0
+
+    revisions = decode_response(
+        elogy_client.get(
+            "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
+            .format(logbook=logbook2, entry=entry)))["entry_changes"]
+
+
 def test_create_entry_followup(elogy_client):
     in_logbook, logbook = make_logbook(elogy_client)
     in_entry, entry = make_entry(elogy_client, logbook)

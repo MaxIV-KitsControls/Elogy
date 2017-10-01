@@ -143,6 +143,77 @@ class EntryAttributeEditor extends React.Component {
 }
 
 
+function flattenLogbook (logbook, ancestors) {
+    // return a flat array of all the logbooks, along with their ancestors
+    if (!logbook)
+        return [];
+    ancestors = ancestors || [];
+    return logbook.children.reduce(
+        (acc, ch) => (
+            acc.concat(
+                flattenLogbook(ch, logbook.name? ancestors.concat([logbook.name]) : ancestors))),
+        [[logbook, ancestors]]
+    );
+}
+
+
+// build a nice path string out of the ancestors to the logbook
+const LogbookOption = ({ logbook, current, ancestors }) => {
+    const logbookPath = (ancestors.join(" / ") 
+                       + (ancestors.length > 0? " / " : ""));
+    return (
+        <option value={ logbook.id }>
+            {
+                (current? "" : "→ ") +
+                 (logbookPath + ((logbook && logbook.name)? logbook.name : "[Top]"))
+            }
+        </option>
+    );
+}
+
+
+class EntryMove extends React.Component {
+
+    constructor () {
+        super();
+        this.state = {
+            logbook: null
+        }
+    }
+    
+    fetch () {
+        fetch("/api/logbooks/",
+              {headers: {"Accept": "application/json"}})
+            .then(response => response.json())
+            .then(json => this.setState(json));
+    }
+
+    componentDidMount () {
+        this.fetch();
+    }
+
+    onChange (event) {
+        this.props.onLogbookChange(event.target.value);
+    }
+    
+    render () {
+        const options = flattenLogbook(this.state.logbook)
+            .map(([logbook, ancestors]) => (
+                <LogbookOption logbook={logbook}
+                               current={logbook.id === this.props.logbookId}
+                               ancestors={ancestors}/>));
+        
+        return (
+            <select value={this.props.logbookId}
+                    title="Current logbook"
+                    onChange={this.onChange.bind(this)}>
+                { options }
+            </select>
+        );
+    }
+    
+}
+
 class EntryEditorBase extends React.Component {
 
     /* common functionality for all entry editor variants */
@@ -152,6 +223,7 @@ class EntryEditorBase extends React.Component {
         this.state = {
             id: null,
             logbook: null,
+            logbookId: null,
             title: null,
             authors: [],
             attributes: {},
@@ -213,19 +285,16 @@ class EntryEditorBase extends React.Component {
     }
 
     onAttributeChange (name, value) {
-        console.log("onAttributeChange", name, value);
         this.setState(update(this.state, {attributes: {[name]: {$set: value}}}));
         /* else
          *     this.setState(update(this.state, {attributes: {$unset: [name]}}));*/
     }
     
     onContentChange (event) {
-        console.log("set content", event.target.getContent());
         this.setState({content: event.target.getContent()});
     }
     
     onAddAttachment (acceptedFiles, rejectedFiles) {
-        console.log("drop", acceptedFiles, rejectedFiles);
         this.setState(update(this.state, {attachments: {$push: acceptedFiles}}))
     }
     
@@ -250,7 +319,9 @@ class EntryEditorBase extends React.Component {
     }
 
     getTitleEditor (title) {
-        return (<input type="text" className="title" placeholder="Title for the new entry..."
+        return (<input type="text"
+                       className="title"
+                       placeholder="Title for the new entry..."
                        ref="title"
                        value={title || ""} required={true}
                        onChange={this.onTitleChange.bind(this)}/>);
@@ -344,7 +415,6 @@ class EntryEditorBase extends React.Component {
     }
 
     onPriorityChange (event) {
-        console.log("onPriorityChange", event.target.value);
         this.setState({priority: event.target.value});
     }
 
@@ -710,11 +780,9 @@ class EntryEditorEdit extends EntryEditorBase {
         fetch(`/api/logbooks/${logbookId}/entries/${entryId}/lock`,
               {method: "POST"})
             .then(response => {
-                console.log(response);
                 return response.json()
             })
             .then(response => {
-                console.log(response);
                 if (response.status === 409) {
                     // The entry is locked by someone else!
                     this.setState({lockedBySomeoneElse: true});                                        
@@ -730,11 +798,9 @@ class EntryEditorEdit extends EntryEditorBase {
         fetch(`/api/logbooks/${logbookId}/entries/${entryId}/lock?steal=true`,
               {method: "POST"})
             .then(response => {
-                console.log(response);
                 return response.json()
             })
             .then(response => {
-                console.log(response);
                 this.setState({lockedBySomeoneElse: false,
                                lock: response.lock})
             });
@@ -752,6 +818,10 @@ class EntryEditorEdit extends EntryEditorBase {
         this.stealEntryLock(this.props.match.params.logbookId,
                             this.props.match.params.entryId);
     }
+
+    onLogbookChange(logbookId) {
+        this.setState({logbookId}); 
+    }
     
     onSubmit({history}) {
         this.submitted = true;
@@ -763,6 +833,7 @@ class EntryEditorEdit extends EntryEditorBase {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    logbook_id: this.state.logbookId || this.state.logbook.id,
                     title: this.state.title,
                     authors: this.state.authors,
                     content: this.state.content,
@@ -872,8 +943,14 @@ class EntryEditorEdit extends EntryEditorBase {
                 <table>
                     <tr>
                         <th className="title">
-                            { this.getTitle() }
-                        </th>
+                            Editing entry #{this.state.id} in logbook {
+                                this.state.follows ?
+                                this.state.logbook.name :
+                                <EntryMove logbookId={this.state.logbookId ||
+                                                      this.state.logbook.id}
+                                           onLogbookChange={this.onLogbookChange.bind(this)} />
+                            }
+                        </th>                        
                     </tr>
                     <tr>
                         <td>
@@ -885,7 +962,7 @@ class EntryEditorEdit extends EntryEditorBase {
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td> 
                             { this.getAuthorsEditor(this.state.authors) }
                         </td>
                     </tr>

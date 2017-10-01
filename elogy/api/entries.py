@@ -15,6 +15,7 @@ from . import fields, send_signal
 
 entry_args = {
     "id": Integer(allow_none=True),
+    "logbook_id": Integer(allow_none=True),
     "title": Str(allow_none=True),
     "content": Str(),
     "content_type": Str(missing="text/html"),

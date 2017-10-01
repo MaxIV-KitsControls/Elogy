@@ -780,12 +780,16 @@ class EntryRevision:
     def __init__(self, change):
         self.change = change
 
+    @property
+    def logbook(self):
+        return Logbook.get(Logbook.id == self.logbook_id)
+
     def __getattr__(self, attr):
         if attr == "id":
             return self.change.entry.id
         if attr == "revision_n":
             return list(self.change.entry.changes).index(self.change)
-        if attr in ("logbook", "title", "authors", "content", "attributes",
+        if attr in ("logbook_id", "title", "authors", "content", "attributes",
                     "metadata", "follows_id", "tags", "archived"):
             return self.change.get_old_value(attr)
         if attr == "converted_attributes":

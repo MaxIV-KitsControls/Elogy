@@ -65,6 +65,7 @@ api.add_resource(EntriesResource,
 
 api.add_resource(EntryResource,
                  "/entries/<int:entry_id>/",
+                 "/entries/<int:entry_id>/revisions/<int:revision_n>",
                  "/logbooks/<int:logbook_id>/entries/",   # POST, PUT
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/",
                  "/logbooks/<int:logbook_id>/entries/<int:entry_id>/revisions/<int:revision_n>")

@@ -111,11 +111,12 @@
     padding: 5px;
 }
 
-#entryeditor {
-
+#entryeditor select {
+    width: 200px;
 }
 
- .mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
+
+.mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
      min-height: 100%;
  }
  /*Container body*/
