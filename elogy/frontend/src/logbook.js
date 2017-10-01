@@ -31,9 +31,9 @@ class Logbook extends React.Component {
         query["n"] = n || query["n"] || 50;
         query["offset"] = offset || 0;  // || query["offset"] || 0;
         const attributes = Object.keys(attributeFilters)
-            .filter(key => attributeFilters[key])
-            .map(key => `attribute=${key}:${attributeFilters[key]}`)
-            .join("&");
+                                 .filter(key => attributeFilters[key])
+                                 .map(key => `attribute=${key}:${attributeFilters[key]}`)
+                                 .join("&");
         const newSearch = Object.keys(query)
                                 .map(key => `${key}=${query[key]}`)
                                 .join("&") + "&" + attributes;
@@ -169,28 +169,33 @@ class Logbook extends React.Component {
                         { logbook.id === 0? "[All logbooks]" : logbook.name }
                     </span>
                     
-                    { logbook.id?
-                      <div>
 
-                          <div className="entry">
-                              <Link to={`/logbooks/${logbook.id}/entries/new`}
-                                    title={`Create a new entry in the logbook '${logbook.name}'`}>
-                                  New entry
-                              </Link>
-                          </div>
-                          <Link to={`/logbooks/${logbook.id}/?parent=${logbook.id}`}
-                                title={`Show only the logbook '${logbook.name}' and it's children`}>
-                              Enter
-                          </Link> | <Link to={`/logbooks/${logbook.id}/edit`}
-                                          title={`Edit the settings of the logbook '${logbook.name}'`}>
-                              Edit
-                          </Link> | <Link to={`/logbooks/${logbook.id}/new`}
-                                          title={`Create a new logbook as a child of '${logbook.name}'`}>
-                              New child
-                          </Link>
-                      </div>
-                      : null
-                    }
+                    <div>
+                        { logbook.id?
+                          <span>
+                              <div className="entry">
+                                  <Link to={`/logbooks/${logbook.id}/entries/new`}
+                                        title={`Create a new entry in the logbook '${logbook.name}'`}>
+                                      New entry
+                                  </Link>
+                              </div>
+                              <Link to={`/logbooks/${logbook.id}/?parent=${logbook.id}`}
+                                    title={`Show only the logbook '${logbook.name}' and it's children`}>
+                                  Enter
+                              </Link> | <Link to={`/logbooks/${logbook.id}/edit`}
+                                              title={`Edit the settings of the logbook '${logbook.name}'`}>
+                                  Edit
+                              </Link> |&nbsp;
+                          </span> 
+                          : null
+                        }
+                        <Link to={`/logbooks/${logbook.id}/new`}
+                              title={logbook.id === 0 ?
+                                     "Create a new top level logbook" :
+                                     `Create a new logbook as a child of '${logbook.name}'`}>
+                            New logbook
+                        </Link>
+                    </div>
                     <div className="filters"> {filter} </div>
                     <div className="attributes">
                         {attributes}
