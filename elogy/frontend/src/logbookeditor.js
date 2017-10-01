@@ -191,7 +191,7 @@ class LogbookEditorBase extends React.Component {
 
     getPromptMessage () {
         if (this.hasEdits())
-            return "Looks like you have made some edits. If you leave, you will lose those...";
+            return "Looks like you are making edits to a logbook! If you leave, you will lose those.";
     }
 
     getErrors () {

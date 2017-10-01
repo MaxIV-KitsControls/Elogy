@@ -249,7 +249,7 @@ class EntryEditorBase extends React.Component {
         /* This is a little confusing, but the <Prompt> component will
            only show a prompt if this function returns a message. */        
         if (this.hasEdits())
-            return "Looks like you have made some edits. If you leave, you will lose those...";
+            return "Looks like you are making edits to an entry. If you leave, you will lose those.";
     }
 
     getTitleEditor (title) {
