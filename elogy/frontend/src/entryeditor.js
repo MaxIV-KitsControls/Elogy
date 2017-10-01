@@ -22,6 +22,7 @@ import { EntryAttachments } from "./entryattachments.js";
 import TINYMCE_CONFIG from "./tinymceconfig.js";
 import {withProps, debounce} from './util.js';
 import { InnerEntry } from "./entry.js";
+import { LogbookSelector } from "./logbookselector.js";
 import "./entryeditor.css";
 
 
@@ -142,77 +143,6 @@ class EntryAttributeEditor extends React.Component {
     }
 }
 
-
-function flattenLogbook (logbook, ancestors) {
-    // return a flat array of all the logbooks, along with their ancestors
-    if (!logbook)
-        return [];
-    ancestors = ancestors || [];
-    return logbook.children.reduce(
-        (acc, ch) => (
-            acc.concat(
-                flattenLogbook(ch, logbook.name? ancestors.concat([logbook.name]) : ancestors))),
-        [[logbook, ancestors]]
-    );
-}
-
-
-// build a nice path string out of the ancestors to the logbook
-const LogbookOption = ({ logbook, current, ancestors }) => {
-    const logbookPath = (ancestors.join(" / ") 
-                       + (ancestors.length > 0? " / " : ""));
-    return (
-        <option value={ logbook.id }>
-            {
-                (current? "" : "→ ") +
-                 (logbookPath + ((logbook && logbook.name)? logbook.name : "[Top]"))
-            }
-        </option>
-    );
-}
-
-
-class EntryMove extends React.Component {
-
-    constructor () {
-        super();
-        this.state = {
-            logbook: null
-        }
-    }
-    
-    fetch () {
-        fetch("/api/logbooks/",
-              {headers: {"Accept": "application/json"}})
-            .then(response => response.json())
-            .then(json => this.setState(json));
-    }
-
-    componentDidMount () {
-        this.fetch();
-    }
-
-    onChange (event) {
-        this.props.onLogbookChange(event.target.value);
-    }
-    
-    render () {
-        const options = flattenLogbook(this.state.logbook)
-            .map(([logbook, ancestors]) => (
-                <LogbookOption logbook={logbook}
-                               current={logbook.id === this.props.logbookId}
-                               ancestors={ancestors}/>));
-        
-        return (
-            <select value={this.props.logbookId}
-                    title="Current logbook"
-                    onChange={this.onChange.bind(this)}>
-                { options }
-            </select>
-        );
-    }
-    
-}
 
 class EntryEditorBase extends React.Component {
 
@@ -946,9 +876,9 @@ class EntryEditorEdit extends EntryEditorBase {
                             Editing entry #{this.state.id} in logbook {
                                 this.state.follows ?
                                 this.state.logbook.name :
-                                <EntryMove logbookId={this.state.logbookId ||
-                                                      this.state.logbook.id}
-                                           onLogbookChange={this.onLogbookChange.bind(this)} />
+                                <LogbookSelector logbookId={this.state.logbookId ||
+                                                            this.state.logbook.id}
+                                                 onLogbookChange={this.onLogbookChange.bind(this)} />
                             }
                         </th>                        
                     </tr>
