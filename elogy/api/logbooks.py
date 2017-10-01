@@ -21,7 +21,7 @@ logbook_args = {
                                      "option",
                                      "multioption"]),
         "required": Boolean(),
-        "options": List(Str())
+        "options": List(Str(), missing=None)
     })),
     "metadata": Dict(),
     "archived": Boolean(missing=False)
