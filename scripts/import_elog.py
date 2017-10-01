@@ -402,7 +402,7 @@ if __name__ == "__main__":
                         help="Config file of the source Elog installation")
     parser.add_argument("elog_logbook_path", metavar="PATH", type=str,
                         help="Path to the directory where ELog logbooks are stored")
-    parser.add_argument("-l", "--logbooks", type=str, nargs="+",
+    parser.add_argument("-l", "--logbooks", type=str, nargs="+", default=[],
                         help="Specific logbook to import (by name)")
     parser.add_argument("-s", "--since", type=parse_time,
                         help="Only consider entries added/modified after this time")
@@ -588,4 +588,4 @@ if __name__ == "__main__":
                 imported_entries[(logbook_uuid, mid)] = result
             else:
                 logging.error("failed to create entry %s/%d %r",
-                              logbook.result["name"], mid, result.json())
+                              logbook_result["name"], mid, result.json())
