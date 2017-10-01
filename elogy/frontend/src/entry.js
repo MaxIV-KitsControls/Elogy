@@ -188,7 +188,7 @@ class Entry extends React.Component {
     render () {
 
         if (!(this.state.id && this.state.logbook)) {
-            return <div>No entry selected!</div>
+            return <div></div>;  // placeholder
         }
 
         const logbook = this.state.logbook;

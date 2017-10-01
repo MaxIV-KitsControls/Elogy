@@ -5,6 +5,7 @@ import {
     BrowserRouter as Router,
     Route, Switch,
 } from 'react-router-dom'
+import {Link} from 'react-router-dom';
 
 import Entry from './entry.js';
 import EntryEditor from './entryeditor.js';
@@ -30,17 +31,38 @@ const LogbookWithEventbus = withProps(Logbook, {eventbus});
 const EntryEditorWithEventbus = withProps(EntryEditor, {eventbus});
 const LogbookEditorWithEventbus = withProps(LogbookEditor, {eventbus});
 
-// dummy components for when nothing is selected
-const NoLogbook = () => (
-    <div className="empty">
-        <i className="fa fa-arrow-left"/> Select a logbook
-    </div>
-);
-const NoEntry = () => (
-    <div className="empty">
-        <i className="fa fa-arrow-left"/> Select an entry
-    </div>
-);
+
+// dummy components for when no logbook is selected
+class NoLogbook extends React.Component {
+    
+    render () {
+        return (
+            <div className="empty">
+                <i className="fa fa-arrow-left"/> Select a logbook
+                <div> or <Link to={"/logbooks/0/new"}>create a new one</Link>.</div>
+            </div>
+        );
+    }
+}
+
+
+class NoEntry extends React.Component {
+
+    // a dummy for when no entry is selected
+    
+    render () {
+        const logbookId = parseInt(this.props.match.params.logbookId);
+        return (
+            <div className="empty">
+                <i className="fa fa-arrow-left"/> Select an entry
+                { logbookId?
+                  (<div> or <Link to={`/logbooks/${logbookId}/entries/new`}>click here to create a new one</Link>
+                  </div>)
+                  : null }
+            </div>
+        );
+    }
+}
 
 const Elogy = () => (
 
@@ -69,7 +91,7 @@ const Elogy = () => (
                            component={ LogbookWithEventbus }/>
                     <Route path="/logbooks/:logbookId"
                            component={ LogbookWithEventbus }/>
-                    <Route component={NoLogbook}/>
+                    <Route component={ NoLogbook }/>
                 </Switch>
             </div>
 
@@ -89,7 +111,7 @@ const Elogy = () => (
                     <Route path="/logbooks/:logbookId/:command"
                            component={LogbookEditorWithEventbus}/>
 
-                    <Route path="/logbooks/" component={NoEntry}/>
+                    <Route path="/logbooks/:logbookId" component={NoEntry}/>
                     
                 </Switch>
             </div>
