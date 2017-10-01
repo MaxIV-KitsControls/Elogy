@@ -5,6 +5,7 @@ import TinyMCEInput from './TinyMCEInput.js';
 
 import TINYMCE_CONFIG from './tinymceconfig.js';
 import {withProps} from './util.js';
+import {LogbookSelector} from './logbookselector.js';
 import './logbookeditor.css';
 
 
@@ -309,6 +310,7 @@ class LogbookEditorNew extends LogbookEditorBase {
                     </fieldset>
                 </form>
 
+                "error"
                 { this.getErrors() }
                 
                 <footer>
@@ -348,6 +350,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
 
     onSubmit (history) {
         this.submitted = true
+        const parentId = (this.state.parentId || (this.state.parent? this.state.parent.id : null));
         fetch(
             `/api/logbooks/${this.state.id}/`, {
                 method: "PUT",
@@ -356,7 +359,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
                 },                                            
                 body: JSON.stringify({
                     id: this.state.id,
-                    parent_id: this.state.parent? this.state.parent.id : null,
+                    parent_id: parentId !== 0? parentId : null,
                     name: this.state.name,
                     description: this.state.description,
                     attributes: this.state.attributes,
@@ -365,16 +368,16 @@ class LogbookEditorEdit extends LogbookEditorBase {
                 })
             })
             .then(response => {
-                    if (response.ok) {
-                        return response.json()
-                    }
-                    response.json().then(
-                        error => {this.setState({error: error})},
-                        error => {this.setState({error: {message: response.statusText,
-                                                         code: response.status}})}
-                    )
-                    throw new Error("submit failed");
-                })
+                if (response.ok) {
+                    return response.json()
+                }
+                response.json().then(
+                    error => {this.setState({error: error})},
+                    error => {this.setState({error: {message: response.statusText,
+                                                     code: response.status}})}
+                )
+                throw new Error("submit failed");
+            })
             .then(
                 result => {
                     history.push({
@@ -386,7 +389,14 @@ class LogbookEditorEdit extends LogbookEditorBase {
             );
     }
 
+    onParentChange (parentId) {
+        console.log("onParentChange", parentId);
+        this.setState({parentId: parentId});
+    }
+    
     innerRender ({history}) {
+
+        const parentId = this.state.parentId || (this.state.parent? this.state.parent.id : 0);
         
         return (
             <div id="logbookeditor">
@@ -394,7 +404,10 @@ class LogbookEditorEdit extends LogbookEditorBase {
                 <Prompt message={this.getPromptMessage.bind(this)}/>
                 
                 <header>
-                    Editing logbook "{this.state.logbook.name}"
+                    Editing logbook "{this.state.logbook.name}" in
+                    <LogbookSelector logbookId={parentId}
+                                     excludeId={this.state.id}
+                                     onLogbookChange={this.onParentChange.bind(this)}/>
                 </header>
                 
                 <form>

@@ -19,12 +19,11 @@ function flattenLogbook (logbook, ancestors) {
 const LogbookOption = ({ logbook, current, ancestors }) => {
     const logbookPath = (ancestors.join(" / ") 
                        + (ancestors.length > 0? " / " : ""));
+    const title = logbookPath + ((logbook && logbook.name)? logbook.name : "[Top]");
     return (
-        <option value={ logbook.id }>
-        {
-            (current? "" : "→ ") +
-                  (logbookPath + ((logbook && logbook.name)? logbook.name : "[Top]"))
-        }
+        <option value={ logbook.id }
+                title={!current? (logbook && logbook.name? `Move to logbook ${title}` : "Move to top level") : ""}>
+            { (current? "" : "→ ") + title }
         </option>
     );
 }
