@@ -93,11 +93,13 @@ class EntryAttributeEditor extends React.Component {
         switch(this.props.config.type) {
             case "text":
                 return <input type="text" value={ this.state.value }
+                              name={ this.props.config.name }
                               ref="attr" required={ required }
                               onChange={ this.onChange.bind(this) }
                               onBlur={ this.onBlur.bind(this) }/>;
             case "number":
                 return <input type="number" step="any" inputmode="numeric"
+                              name={ this.props.config.name }
                               value={ this.state.value }
                               ref="attr" required={ required }
                               onKeyPress={ this.onKeypressNumber }
@@ -105,23 +107,26 @@ class EntryAttributeEditor extends React.Component {
                               onBlur={ this.onBlur.bind(this) }/>;
             case "boolean":
                 return <input type="checkbox" checked={ this.state.value }
+                              name={ this.props.config.name }
                               ref="attr" required={ required }
                               onChange={ this.onChangeBoolean.bind(this) }
                               onBlur={ this.onBlur.bind(this) }/>;
             case "option":
                 return <Select value={ this.state.value }
+                               name={ this.props.config.name }
                                required={ required }
                                options={ this.getOptions() }
                                ignoreCase={ true }
                                onChange={ this.onChangeSelect.bind(this) }
-                               onBlur={ this.onBlur.bind(this) }/>
+                               onBlur={ this.onBlur.bind(this) }/>;
             case "multioption":
                 return <Creatable value={ this.state.value } multi={ true }
+                                  name={ this.props.config.name }
                                   required={ required }
                                   options={ this.getOptions() }
                                   ignoreCase={ true }
                                   onChange={ this.onChangeMultiSelect.bind(this) }
-                                  onBlur={ this.onBlur.bind(this) }/>
+                                  onBlur={ this.onBlur.bind(this) }/>;
             default:
                 return <div>?</div>
         }
