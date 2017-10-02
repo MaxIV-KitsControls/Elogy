@@ -897,13 +897,13 @@ class EntryEditorEdit extends EntryEditorBase {
 
                 <table>
                     <tr>
-                        <th className="title">
+                        <th className="header">
                             Editing entry #{this.state.id} in logbook {
                                 this.state.follows ?
-                                                                       this.state.logbook.name :
-                                                                       <LogbookSelector logbookId={this.state.logbookId ||
-                                                                                                   this.state.logbook.id}
-                                                                                        onLogbookChange={this.onLogbookChange.bind(this)} />
+                                this.state.logbook.name :
+                                <LogbookSelector logbookId={this.state.logbookId ||
+                                                            this.state.logbook.id}
+                                                 onLogbookChange={this.onLogbookChange.bind(this)} />
                             }
                         </th>                        
                     </tr>

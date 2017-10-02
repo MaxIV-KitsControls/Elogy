@@ -24,11 +24,12 @@
     border-bottom: 1px solid black;
 }
 
-#entryeditor header {
+#entryeditor .header {
     padding: 5px;
     background: #ddd;
     font-size: 90%;
     font-weight: none;
+    text-align: left;
 }
 
 #entryeditor input[type=text].title {
@@ -111,10 +112,9 @@
     padding: 5px;
 }
 
-#entryeditor select {
-    width: 200px;
+#entryeditor .header select {
+    max-width: 400px;
 }
-
 
 .mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
      min-height: 100%;
