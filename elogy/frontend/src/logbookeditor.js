@@ -196,7 +196,12 @@ class LogbookEditorBase extends React.Component {
 
     getErrors () {
         if (this.state.error) {
-            return <div className="error">{JSON.stringify(this.state.error.messages)}</div>
+            return (
+                <div className="error"
+                     title="Error received from the server">
+                    {JSON.stringify(this.state.error.messages)}
+                </div>
+            );
         }
     }
 
@@ -300,14 +305,18 @@ class LogbookEditorNew extends LogbookEditorBase {
                                   onChange={this.changeDescription.bind(this)}/>
                     </fieldset>
                     <fieldset className="template">
-                        <legend>Template</legend>
+                        <legend title="This will be the default content of entries created in this logbook.">
+                            Template
+                        </legend>
                         <TinyMCEInput
                             value={this.state.template || ""}
                             tinymceConfig={ TINYMCE_CONFIG }
                             onChange={this.onTemplateChange.bind(this)}/>
                     </fieldset>
                     <fieldset className="attributes">
-                        <legend>Attributes</legend>
+                        <legend title="Name/value pairs that can be attached to entries in the logbook">
+                            Attributes
+                        </legend>
                         <div className="attributes">
                             { this.getAttributes() }
                         </div>
@@ -315,7 +324,6 @@ class LogbookEditorNew extends LogbookEditorBase {
                     </fieldset>
                 </form>
 
-                "error"
                 { this.getErrors() }
                 
                 <footer>
