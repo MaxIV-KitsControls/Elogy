@@ -340,7 +340,6 @@ def create_entry(session, url, logbook_id, entry, entries):
 
 def update_entry(session, url, logbook_id, entry, entries, revision_n):
     "helper to update an entry"
-    print("update_entry", mid, revision_n)
     data = {
         "title": entry.get("title"),
         "authors": entry["authors"],
@@ -547,17 +546,22 @@ if __name__ == "__main__":
             logbook_result = imported_logbooks[logbook_uuid]
         else:
             logbook_result = existing_logbooks[logbook["name"]]
+        # First check if the entry has been imported already.
+        # for this we make use of the "metadata" inserted
+        # with entries imported with this script.
         metadata_filter = ("original_elog_url:{}"
                            .format(entry["metadata"]["original_elog_url"]))
         get_url = ENTRY_URL.format(logbook_id=logbook_result["id"])
         results = s.get(get_url,
                         params={"metadata": metadata_filter}).json()["entries"]
         if results:
+            # This means the entry has already been imported
             short_entry = results[0]
             existing_entry = s.get(get_url +
                                    str(short_entry["id"]) + "/").json()["entry"]
             if (parse_time(get_modification_time(existing_entry))
                     >= get_modification_time(entry)):
+                # entry has not been edited since import, ignore
                 continue
             logging.info("updating entry %s/%d -> %d",
                          logbook_result["name"], mid, existing_entry["id"])
@@ -568,7 +572,6 @@ if __name__ == "__main__":
             if result.status_code != 200:
                 logging.info("failed to update entry {}/{} {}",
                              logbook_result["name"], mid, result.json())
-            # TODO: update attachments?
         else:
             logging.info("creating entry %s/%d", logbook["name"], mid)
             result = create_entry(s, ENTRY_URL, logbook_result["id"],
@@ -588,4 +591,6 @@ if __name__ == "__main__":
                 imported_entries[(logbook_uuid, mid)] = result
             else:
                 logging.error("failed to create entry %s/%d %r",
-                              logbook_result["name"], mid, result.json())
+                              logbook_result["name"], mid, result)
+
+    # TODO: what about attachments?
