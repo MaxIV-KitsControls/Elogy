@@ -91,7 +91,7 @@
     line-height: 2em;
 }
 
-.Select--multi .Select-value {
+#entryeditor .Select--multi .Select-value {
     background: #666;
     color: white;
     font-size: 100%;
@@ -116,42 +116,42 @@
     max-width: 400px;
 }
 
-.mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
-     min-height: 100%;
- }
- /*Container body*/
- .mce-container-body {
-     position: absolute;
-     bottom: 0;
-     left: 0;
-     right: 0;
- }
- /*Editing area*/
- .mce-container-body .mce-edit-area {
-     position: absolute;
-     top: 37px;
-     bottom: 0;
-     left: 0;
-     right: 0;
-     overflow-y:scroll;
- }
- /*Footer*/
- .mce-tinymce .mce-statusbar {
-     position: absolute;
-     bottom: 0;
-     left: 0;
-     right: 0;
- }
+#entryeditor .mce-tinymce:not(.mce-floatpanel), .mce-container-body:not(.mce-abs-layout), #code_ifr {
+    min-height: 100%;
+}
+/*Container body*/
+#entryeditor .mce-container-body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+/*Editing area*/
+#entryeditor .mce-container-body .mce-edit-area {
+    position: absolute;
+    top: 37px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow-y:scroll;
+}
+/*Footer*/
+#entryeditor .mce-tinymce .mce-statusbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
 
 
- #entryeditor .attachments-drop {
-     /* min-height: 30px; */
-     max-height: 100px;
-     overflow-y: auto;
-     border: 3px dashed grey;
-     padding: 5px;
-     text-align: center;
- }
+#entryeditor .attachments-drop {
+    /* min-height: 30px; */
+    max-height: 100px;
+    overflow-y: auto;
+    border: 3px dashed grey;
+    padding: 5px;
+    text-align: center;
+}
 
 #entryeditor .attachments-drop .attachment {
     margin-right: 5px;
@@ -160,7 +160,7 @@
 }
 
 
-.commands button {
+#entryeditor .commands button {
     font-size: 100%;
     border: 0;
     border-radius: 3px;
@@ -168,25 +168,25 @@
     padding: 5px 10px;
 }    
 
-button.submit {
+#entryeditor button.submit {
     background: green;
     color: white;
 }
 
 
-button.cancel {
+#entryeditor button.cancel {
     background: red;
     color: white;
 }
 
-span.error {
+#entryeditor span.error {
     width: 100%;
     text-align: center;
     background: red;
     color: white;
 }
 
-span.locked-by-someone-else {
+#entryeditor span.locked-by-someone-else {
     background: red;
     color: white;
 }
