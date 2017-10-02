@@ -203,8 +203,8 @@
     top: 0;
     position: sticky;    
     font-size: 80%;
-    color: white;
-    background: #777;
+    color: black;
+    background: #bbb;
     text-align: center;
     z-index: 1;
 }
