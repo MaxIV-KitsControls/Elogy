@@ -682,11 +682,12 @@ class Entry(Model):
         # Here we're getting into deep water...
         # If we just want the total count of results, we can't group
         # because then the count would be per group. So that makes sense.
-        # However, when we're searching, we also don't want the grouping
-        # because it means we won't find individual followups
         if not count:
             query += " GROUP BY entry.id"
-            if not any([title_filter, content_filter, author_filter]):
+            # However, when we're searching, we also don't want the grouping
+            # because it means we won't find individual followups
+            if not any([title_filter, content_filter, author_filter,
+                        metadata_filter, attribute_filter, attachment_filter]):
                 query += " HAVING entry.follows_id IS NULL"
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
