@@ -66,7 +66,7 @@ export class InnerEntry extends React.Component {
                           : null;
         const followupNumber = this.props.followupNumber !== undefined ?
                                <span className="followup-number">
-                                   <span className="fa fa-reply"/>
+                                   <span className="fa fa-comment"/>
                                    &nbsp;                                   
                                    {this.props.followupNumber + 1}
                                    &nbsp;&nbsp;
@@ -235,8 +235,8 @@ class Entry extends React.Component {
                                 pathname: `/logbooks/${logbook.id}/entries/${this.state.id}/new`,
                                 search: window.location.search
                             }}
-                                  title="Create a new entry as a 'followup' to this one.">
-                                <i className="fa fa-reply"/> Followup
+                                  title="Create a new entry that follows this one.">
+                                <i className="fa fa-comment"/> New Follow-up
                             </Link>                        
                         &nbsp;|&nbsp;
                         <Link to={{
