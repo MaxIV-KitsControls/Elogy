@@ -123,21 +123,6 @@ class Followup(fields.Raw):
         return marshal(value, followup)
 
 
-# followups don't need to contain e.g. logbook information since we
-# can assume that they belong to the same logbook as their parent
-followup = {
-    "id": fields.Integer,
-    "title": fields.String,
-    "created_at": fields.DateTime,
-    "authors": fields.List(fields.Nested(authors)),
-    "attachments": fields.List(fields.Nested(attachment)),
-    "attributes": fields.Raw,
-    "content": fields.String,
-    "content_type": fields.String,
-    "followups": NonArchivedList(Followup),
-}
-
-
 class EntryId(fields.Raw):
     def format(self, value):
         return value.id if value else None
@@ -150,6 +135,26 @@ entry_lock = {
     "owned_by_ip": fields.String,
     "cancelled_at": fields.DateTime,
     "cancelled_by_ip": fields.String
+}
+
+
+# followups don't need to contain e.g. logbook information since we
+# can assume that they belong to the same logbook as their parent
+followup = {
+    "id": fields.Integer,
+    "title": fields.String,
+    "created_at": fields.DateTime,
+    "last_changed_at": fields.DateTime,
+    "authors": fields.List(fields.Nested(authors)),
+    "attachments": fields.List(fields.Nested(attachment)),
+    "attributes": fields.Raw,
+    "content": fields.String,
+    "content_type": fields.String,
+    "n_followups": NumberOf(attribute="followups"),
+    "followups": NonArchivedList(Followup),
+    "metadata": fields.Raw,
+    "revision_n": fields.Integer,
+    "lock": fields.Nested(entry_lock, allow_null=True),
 }
 
 entry_full = {
