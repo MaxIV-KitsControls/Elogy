@@ -74,7 +74,7 @@
     border-left: 10px solid #bbb;
 }
 
-#entry .info .authors span:not(:last-child):after {
+#entry .info .authors span.author:not(:last-child):after {
     content: ", ";
 }
 
