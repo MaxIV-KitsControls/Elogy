@@ -186,5 +186,5 @@
 }
 
 #entry article .info.current {
-    background: white;    
+    /*border-left: 3px solid orange;*/
 }
