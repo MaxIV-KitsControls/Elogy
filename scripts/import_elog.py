@@ -214,16 +214,22 @@ def get_entries(logbook, accumulator):
                         # but the last change is missing the timezone.
                         # We'll just assume that the timezone is the
                         # same as the local one when this script runs.
+                        # Also, sometimes the "last edited" field is just
+                        # a time, without a date. I don't know if this
+                        # is a bug or not, but default to using the
+                        # creation date in this case (what else?) :(
                         data["last_changed_at"] = (
-                            parse_time(entry["last edited"])
+                            parse_time(entry["last edited"], default=timestamp)
                             .replace(tzinfo=tzlocal()))
 
                     except ValueError as e:
-                        # Sometimes the "last_edited" field is just
+                        # Sometimes the "last edited" field is just
                         # not a date at all, but a name or something,
-                        # and sometimes it's a weird timestam In those
+                        # and sometimes it's a weird timestamp. In those
                         # cases we'll just ignore it, nothing else to
-                        # do.
+                        # do. This seems a little dangerous, as it's
+                        # possible that the parser gets fooled and produces
+                        # a nonsense timestamp, but I haven't seen it so far.
                         logging.warning("Could not parse change date '%s' in %s/%s: %s",
                                         entry["last edited"], logbook["name"], entry["mid"], e)
 
@@ -271,8 +277,7 @@ def load_elog_file(filename):
         try:
             header, body = entry_text.split("=" * 40, 1)
         except ValueError as e:
-            print("Malformed entry!?", e)
-            print(entry)
+            logging.warning("Malformed entry!? %s: %r", filename, e)
             continue
         header_lines = header.split("\n")
         mid = int(header_lines[0].strip())
@@ -352,7 +357,6 @@ def update_entry(session, url, logbook_id, entry, entries, revision_n):
     }
     if "last_changed_at" in entry:
         data["last_changed_at"] = entry["last_changed_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z')
-        print(data["last_changed_at"])
     if "in_reply_to" in entry:
         try:
             follows = entries[entry["in_reply_to"]]
@@ -563,8 +567,9 @@ if __name__ == "__main__":
                     >= get_modification_time(entry)):
                 # entry has not been edited since import, ignore
                 continue
-            logging.info("updating entry %s/%d -> %d",
-                         logbook_result["name"], mid, existing_entry["id"])
+            logging.info("updating entry %s/%d -> /logbooks/%d/entries/%d",
+                         logbook_result["name"], mid,
+                         logbook_result["id"], existing_entry["id"])
             update_url = "{}{}/".format(ENTRY_URL, existing_entry["id"])
             result = update_entry(s, update_url, logbook_result["id"],
                                   entry, imported_entries,
@@ -578,8 +583,9 @@ if __name__ == "__main__":
                                   entry, imported_entries)
             if result.status_code == 200:
                 result = result.json()["entry"]
-                logging.info("successfully created entry %s/%d -> %d",
-                             logbook_result["name"], mid, result["id"])
+                logging.info("successfully created entry %s/%d -> /logbooks/%d/entries/%d",
+                             logbook_result["name"], mid,
+                             logbook_result["id"], result["id"])
                 for attachment in entry.get("attachments", []):
                     filename = os.path.join(logbook["path"], attachment)
                     create_attachment(
