@@ -78,23 +78,33 @@
     content: ", ";
 }
 
+#entry .timestamp {
+    padding-right: 5px;
+    white-space: nowrap;
+}
+
 #entry .info .attributes .attribute {
     display: inline-block;
     white-space: nowrap;
     font-size: 90%;
     padding-right: 4px;
     margin: 0 2px;
+    line-height: 2em;
 }
 
-#entry .info .attributes .attribute .name:after {
-    content: ": ";
+
+#entry .info .attributes .attribute .name {
+    background: #ccc;
+    color: black;
+    padding: 1px 4px;
+    border-radius: 5px 0 0 5px;
 }
 
 #entry .info .attributes .attribute .value {
     background: #666;
     color: white;
-    padding: 2px 6px;
-    border-radius: 10px;
+    padding: 1px 4px;
+    border-radius: 0 5px 5px 0;
 }
 
 #entry .info .attributes .attribute .value span.option:not(:last-child):after {
@@ -176,6 +186,5 @@
 }
 
 #entry article .info.current {
-    background: #FFFF88;
-    
+    background: white;    
 }

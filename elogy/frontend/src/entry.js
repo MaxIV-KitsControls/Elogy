@@ -73,7 +73,7 @@ export class InnerEntry extends React.Component {
                                </span> :
                                null;
         const lastChangedAt = this.props.last_changed_at?
-                              <span className="last-changed-at"
+                              <span className="timestamp last-changed-at"
                                     title="The entry was last edited at this time">
                                   &nbsp;&nbsp;
                                   <i className="fa fa-pencil"/>&nbsp;
@@ -129,7 +129,7 @@ export class InnerEntry extends React.Component {
                         </div>
                         <div>
                             { followupNumber }
-                            <span className="created-at"
+                            <span className="timestamp created-at"
                                   title="The entry was created at this time">
                                 <i className="fa fa-clock-o"/> {formatDateTimeString(this.props.created_at)}
                             </span>
