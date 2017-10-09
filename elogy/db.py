@@ -41,15 +41,17 @@ def setup_database(db_name, close=True):
 
 def db_dependencies_installed(type='SQLite'):
     if type == 'SQLite':
-        #Check that version is high enough to have JSON1
-        if sqlite3.sqlite_version_info[:3] < (3,9,0):
+        # Check that version is high enough to have JSON1
+        if sqlite3.sqlite_version_info[:3] < (3, 9, 0):
             sys.exit('Sqlite version too low, 3.9.0 or later required')
         tmp_db = sqlite3.connect(':memory:')
         setup_test_table = 'create table temp(attrib1,attrib2)'
         tmp_db.execute(setup_test_table)
-        test_json_ext = 'insert into temp (attrib1, attrib2) values("first", json(\'{"A":"12345", "B":"54321"}\'))'
+        test_json_ext = (
+            'insert into temp (attrib1, attrib2)'
+            ' values("first", json(\'{"A":"12345", "B":"54321"}\'))')
         try:
-            #Test if query with function using JSON1 works
+            # Test if query with function using JSON1 works
             tmp_db.execute(test_json_ext)
         except:
             tmp_db.close()
