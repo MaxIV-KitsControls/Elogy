@@ -9,7 +9,10 @@ The script assumes that the entries have been imported using
 for entries and attachments. It can't fix entries that have been
 created in other ways.
 
-Operates directly on the sqlite DB file, so back it up before trying.
+Operates directly on the sqlite DB file, back it up before testing
+
+The script should be safe to run multiple times; it will only act on
+old links.
 
 Usage:
 
@@ -19,9 +22,9 @@ $ python fix_elog_links.py elogy.db host.of.old.elog other.address.to/elog
 
 import os
 import re
+from urllib.parse import unquote_plus, quote
 
 from lxml import html, etree
-from urllib.parse import unquote_plus, quote
 
 
 def update_bad_links(db, url):
@@ -35,7 +38,7 @@ def update_bad_links(db, url):
         print("entry ID:", entry_id)
         doc = html.document_fromstring(content)
         for element in doc.xpath("//*[@href]"):
-            print(element.attrib["href"])
+            # print(element.attrib["href"])
             results = re.search(os.path.join(url, '(.*)'),
                                 element.attrib["href"])
             if results:
@@ -45,10 +48,10 @@ def update_bad_links(db, url):
                 result = rows.fetchone()
                 if result:
                     linked_entry_id, logbook_id = result
-                    old_url = str(element.attrib["href"])
-                    new_url = "/logbooks/{}/entries/{}/".format(logbook_id,
-                                                                linked_entry_id)
-                    print("\t", old_url, new_url)
+                    old_url = 'href="{}"'.format(str(element.attrib["href"]))
+                    new_url = 'href="/logbooks/{}/entries/{}/"'.format(logbook_id,
+                                                                       linked_entry_id)
+                    print("\tReplacing: ", old_url, new_url)
                     db.execute_sql(
                         "UPDATE entry SET content = replace(content, ?, ?) WHERE id = ?",
                         [old_url, new_url, entry_id])
@@ -101,18 +104,30 @@ def update_attachment_links(db):
                        [new_content, entry_id])
 
 
+
+
 if __name__ == "__main__":
 
-    import sys
+    import argparse
+
     from playhouse.sqlite_ext import SqliteExtDatabase
 
+    parser = argparse.ArgumentParser(
+        description='Fix internal links in imported Elog entries.')
+
+    parser.add_argument("elogy_database", metavar="DB",
+                        type=str, help="The elogy database file")
+    parser.add_argument("elog_urls", metavar="URL_PREFIX",
+                        type=str, nargs="+", default=[],
+                        help="URL prefix to the old Elog installation")
+
     # List of base URLs to look for, should be the base address(es) that
-    # the imported ELOG installation was running under.
-    OLD_URLS = sys.argv[2:]
+    # the imported ELOG installation was running under. It's t
+    args = parser.parse_args()
 
-    db = SqliteExtDatabase(sys.argv[1])
+    db = SqliteExtDatabase(args.elogy_database)
 
-    for url in OLD_URLS:
+    for url in args.elog_urls:
         update_bad_links(db, url)
 
     update_attachment_links(db)
