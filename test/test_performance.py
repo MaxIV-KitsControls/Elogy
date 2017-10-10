@@ -74,5 +74,4 @@ def test_search_content(client):
     for entry in search["entries"]:
         assert entry["id"] in hits
         hits.remove(entry["id"])
-        assert term in entry["content"]
     assert not hits
