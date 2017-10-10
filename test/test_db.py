@@ -376,6 +376,11 @@ def test_entry_attribute_filter(db):
 
 def test_entry_attribute_multioption_filter(db):
 
+    """
+    All the values given for each attribute must be
+    present in the options selected.
+    """
+
     lb = Logbook.create(name="Logbook1")
 
     entries = [
@@ -389,7 +394,7 @@ def test_entry_attribute_multioption_filter(db):
             "logbook": lb,
             "title": "Second entry",
             "content": "Some very neat content.",
-            "attributes": {"a": ["2"]}
+            "attributes": {"a": ["2"], "b": ["7"]}
         },
         {
             "logbook": lb,
@@ -408,7 +413,119 @@ def test_entry_attribute_multioption_filter(db):
     result, = list(Entry.search(logbook=lb, attribute_filter=[("a", "1")]))
     assert result.title == "First entry"
 
+    # one value matching several entries
     results = list(Entry.search(logbook=lb, attribute_filter=[("a", "2")]))
     assert len(results) == 2
     set([results[0].title, results[0].title]) == set(["First entry",
                                                       "Second entry"])
+
+    # two values for one attribute
+    results = list(Entry.search(logbook=lb, attribute_filter=[("a", "2"),
+                                                              ("a", "3")]))
+    assert len(results) == 1
+    set([results[0].title, results[0].title]) == set(["First entry"])
+
+    # two different attributes
+    results = list(Entry.search(logbook=lb, attribute_filter=[("a", "2"),
+                                                              ("b", "7")]))
+    assert len(results) == 1
+    set([results[0].title, results[0].title]) == set(["Second entry"])
+
+
+def test_entry_metadata_filter(db):
+
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "First entry",
+            "content": "This content is great!",
+            "metadata": {"message": "hello"}
+        },
+        {
+            "logbook": lb,
+            "title": "Second entry",
+            "content": "Some very neat content.",
+            "metadata": {"message": "yellow"}
+        },
+        {
+            "logbook": lb,
+            "title": "Third entry",
+            "content": "Not so bad content either.",
+            "metadata": {}
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # filter attributes
+    result, = list(Entry.search(logbook=lb, metadata_filter=[("message", "hello")]))
+    assert result.title == "First entry"
+
+    results = list(Entry.search(logbook=lb, metadata_filter=[("message", "%ello%")]))
+    assert len(results) == 2
+    set([results[0].title, results[0].title]) == set(["First entry",
+                                                      "Second entry"])
+
+
+def test_entry_content_search_child_logbooks(db):
+
+    """Searching a logbook with 'child_logbooks' should also return
+    hits from all descendant logbooks"""
+
+    parent_lb = Logbook.create(name="Logbook1")
+    child_lb = Logbook.create(name="Logbook2", parent=parent_lb)
+    grandchild_lb = Logbook.create(name="Logbook2", parent=child_lb)
+
+    entries = [
+        {
+            "logbook": parent_lb,
+            "title": "entry1",
+            "content": "This content is great!",
+        },
+        {
+            "logbook": child_lb,
+            "title": "entry2",
+            "content": "Some very neat content.",
+        },
+        {
+            "logbook": grandchild_lb,
+            "title": "entry3",
+            "content": "Other stuff.",
+        },
+        {
+            "logbook": grandchild_lb,
+            "title": "entry4",
+            "content": "Not so bad content either.",
+        },
+        {
+            "logbook": grandchild_lb,
+            "title": "entry5",
+            "content": "Other stuff.",
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # filter attributes
+    results = list(Entry.search(logbook=parent_lb, child_logbooks=False,
+                                content_filter="content"))
+    assert len(results) == 1
+    set([results[0].title]) == "entry1"
+
+    results = list(Entry.search(logbook=parent_lb, child_logbooks=True,
+                                content_filter="content"))
+    assert len(results) == 3
+
+    results = list(Entry.search(logbook=parent_lb, child_logbooks=True,
+                                content_filter="neat content"))
+
+    assert len(results) == 1
+    set([results[0].title]) == "entry2"
