@@ -56,7 +56,7 @@ from uuid import uuid4
 try:
     import bbcode
 except ImportError:
-    print("No bbcode module installed; won't try to convert ELCode entries!")
+    logging.warning("No bbcode module installed; won't try to convert ELCode entries!")
     bbcode = None
 from dateutil.parser import parse as parse_time
 from dateutil.tz import tzlocal
@@ -78,7 +78,7 @@ def get_logbook(config, name, parent=None,
         return
 
     # get configuration properties for the logbook
-    logging.info("parsing logbook '%s' in '%s'", name, parent)
+    logging.debug("parsing logbook '%s' in '%s'", name, parent)
     if to_import and name not in to_import:
         return
     try:
@@ -178,14 +178,14 @@ def get_logbook(config, name, parent=None,
 def get_entries(logbook, accumulator):
     "Parse all entries belonging to a given logbook"
     logbook_path = logbook["path"]
-    logging.info("parsing entries for logbook '%s'", logbook["name"])
+    logging.debug("parsing entries for logbook '%s'", logbook["name"])
     for logfile in sorted(glob(os.path.join(logbook_path, "**/*.log"),
                                recursive=True),
                           key=os.path.getmtime):
         try:
             entries = load_elog_file(logfile)
             for entry in entries:
-                logging.info("parsing entry %d in %s", entry["mid"], logbook["name"])
+                logging.debug("parsing entry %d in %s", entry["mid"], logbook["name"])
                 timestamp = parse_time(entry["date"]).replace(tzinfo=tzlocal())
                 data = {
                     "mid": entry["mid"],
@@ -375,13 +375,6 @@ def update_entry(session, url, logbook_id, entry, entries, revision_n):
     }
     if "last_changed_at" in entry:
         data["last_changed_at"] = entry["last_changed_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z')
-    if "in_reply_to" in entry:
-        try:
-            follows = entries[entry["in_reply_to"]]
-            url += "{}/".format(follows["id"])
-        except KeyError:
-            logging.warning("could not find entry {} which {} is replying to!"
-                            .format(entry["in_reply_to"], entry["mid"]))
     entry_result = session.put(url.format(logbook_id=logbook_id), json=data)
     return entry_result
 
@@ -405,9 +398,9 @@ def create_attachment(session, url, filename, embedded=False):
             if response.status_code == 200:
                 return response.json()["location"]
             else:
-                print("failed to upload", filename)
+                logging.error("failed to upload attachment '%s'", filename)
     except FileNotFoundError:
-        print("Could not find attachment", filename)
+        logging.error("Could not find attachment '%s'", filename)
 
 
 if __name__ == "__main__":
@@ -429,10 +422,14 @@ if __name__ == "__main__":
                         help="Only consider entries added/modified after this time")
     parser.add_argument("-i", "--ignore", action="store_false",
                         dest="check",  help="Don't care if logbooks and entries already exist")
-
-    logging.basicConfig(level=logging.INFO)
+    parser.add_argument("-v", "--verbose", action="store_true", default=False,
+                        help="Print out debug information about what's going on")
 
     args = parser.parse_args()
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     host_port = args.elogy_host
     elogd_config = args.elogd_config
@@ -463,9 +460,9 @@ if __name__ == "__main__":
     # I think logbook names are unique but to be sure
     # i assign them uuids.
     logbooks = {}
-    print(logbooks_to_import)
+    logging.info("Importing logbooks %s", logbooks_to_import)
+
     for logbook in top_logbooks:
-        print(logbook)
         if logbooks_to_import and logbook not in logbooks_to_import:
             continue
         get_logbook(config, logbook,
@@ -505,7 +502,7 @@ if __name__ == "__main__":
         # unique in Elog) we don't create it
         # TODO but maybe update?
         if lb["name"] in existing_logbooks:
-            logging.info("Skipping existing logbook %s", lb["name"])
+            logging.debug("Skipping existing logbook %s", lb["name"])
             imported_logbooks[lb["uuid"]] = existing[lb["name"]]
             return
 
@@ -517,10 +514,10 @@ if __name__ == "__main__":
 
         # skip child logbooks whose parents have not yet been imported
         # (they will be imported after the parent is done)
-        logging.info("parent %r", lb.get("parent"))
+        logging.debug("parent %r", lb.get("parent"))
         if (lb["parent"] is not None
                 and lb["parent"] not in imported_logbooks):
-            logging.info("Deferring child logbook '%s'", lb["name"])
+            logging.debug("Deferring child logbook '%s'", lb["name"])
             return
 
         if parent is not None:
@@ -537,7 +534,7 @@ if __name__ == "__main__":
             logging.info("create %s", lid)
             create_logbooks(logbooks[lid], existing, parent=result["id"])
 
-    logging.info("importing logbooks")
+    logging.info("* importing logbooks *")
     # import all the toplevel logbooks
     for lid, logbook in logbooks.items():
         create_logbooks(logbook, existing_logbooks)
@@ -551,6 +548,8 @@ if __name__ == "__main__":
         since = args.since.replace(tzinfo=tzlocal())
         entries = dict((k, e) for k, e in entries.items()
                        if get_modification_time(e) > since)
+
+    logging.info("Number of entries to check: %d", len(entries))
 
     # sort entries by creation time. By inserting them in chronological order,
     # hopefully we can be sure that replies will work properly
