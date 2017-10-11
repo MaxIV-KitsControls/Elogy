@@ -336,9 +336,27 @@ def create_entry(session, url, logbook_id, entry, entries):
             follows = entries[entry["in_reply_to"]]
             url += "{}/".format(follows["id"])
         except KeyError:
-            logging.warning("could not find entry {} which {} is replying to!"
-                            .format(entry["in_reply_to"], entry["mid"]))
-
+            # We have to assume that the parent has been previouly imported
+            # so we should be able to find it in elogy.
+            # We construct an elog URL for the parent, which we can search
+            # for in the elogy entry metadata.
+            _, parent_mid = entry["in_reply_to"]
+            logbook_name, mid = entry["metadata"]["original_elog_url"].split("/")
+            parent_url = "{}/{}".format(logbook_name, parent_mid)
+            metadata_filter = ("original_elog_url:{}"
+                               .format(parent_url))
+            get_url = url.format(logbook_id=logbook_id)
+            results = s.get(get_url,
+                            params={"metadata": metadata_filter}).json()["entries"]
+            if len(results):
+                url += "{}/".format(results[0]["id"])
+            else:
+                logging.error("could not find entry {} which {} is replying to!"
+                              .format(entry["in_reply_to"], entry["mid"]))
+                # Here there's not much we can do. Would it make more sense
+                # to create the entry anyway, but not as a followup? I think
+                # not, and this case should never really happen anyway.
+                return
     entry_result = session.post(url.format(logbook_id=logbook_id), json=data)
     return entry_result
 
@@ -544,6 +562,7 @@ if __name__ == "__main__":
 
     logging.info("* importing entries *")
     for (logbook_uuid, mid), entry in sorted_entries.items():
+
         logbook = logbooks[logbook_uuid]
 
         if logbook_uuid in imported_logbooks:
@@ -581,7 +600,10 @@ if __name__ == "__main__":
             logging.info("creating entry %s/%d", logbook["name"], mid)
             result = create_entry(s, ENTRY_URL, logbook_result["id"],
                                   entry, imported_entries)
-            if result.status_code == 200:
+            if not result:
+                logging.error("unable to create entry %s/%d!",
+                              logbook_result["name"], mid)
+            elif result.status_code == 200:
                 result = result.json()["entry"]
                 logging.info("successfully created entry %s/%d -> /logbooks/%d/entries/%d",
                              logbook_result["name"], mid,
