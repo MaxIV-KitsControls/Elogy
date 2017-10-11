@@ -20,6 +20,7 @@ $ python fix_elog_links.py elogy.db host.of.old.elog other.address.to/elog
 
 """
 
+import logging
 import os
 import re
 from urllib.parse import unquote_plus, quote
@@ -34,8 +35,7 @@ def update_bad_links(db, url):
     """
     QUERY = "SELECT id, content FROM entry WHERE content LIKE ?"
     for entry_id, content in db.execute_sql(QUERY, ["%{}%".format(url)]):
-        print("=" * 40)
-        print("entry ID:", entry_id)
+        logging.debug(" *** check entry ID %r for old links", entry_id)
         doc = html.document_fromstring(content)
         for element in doc.xpath("//*[@href]"):
             # print(element.attrib["href"])
@@ -43,7 +43,8 @@ def update_bad_links(db, url):
                                 element.attrib["href"])
             if results:
                 elog_url, = results.groups()
-                print("elog_url", elog_url)
+                logging.debug("elog_url %s", elog_url)
+                elog_url = elog_url.split("?")[0]  # remove any query part
                 rows = db.execute_sql("SELECT id, logbook_id FROM entry WHERE json_extract(entry.metadata, '$.original_elog_url') = ?", [elog_url])
                 result = rows.fetchone()
                 if result:
@@ -51,12 +52,12 @@ def update_bad_links(db, url):
                     old_url = 'href="{}"'.format(str(element.attrib["href"]))
                     new_url = 'href="/logbooks/{}/entries/{}/"'.format(logbook_id,
                                                                        linked_entry_id)
-                    print("\tReplacing: ", old_url, new_url)
+                    logging.info("Replacing: %s -> %s", old_url, new_url)
                     db.execute_sql(
                         "UPDATE entry SET content = replace(content, ?, ?) WHERE id = ?",
                         [old_url, new_url, entry_id])
                 else:
-                    print("Sorry, could not find new url!")
+                    logging.error("Sorry, could not find new url for link in %r (%s)", entry_id, elog_url)
 
 
 def update_attachment_links(db):
@@ -69,10 +70,9 @@ def update_attachment_links(db):
     # Find all entries that contain at least one "old style" attachment link
     ATTACHMENT_LINK_URL = '(\d{6}_\d{6}/[^\?]*)\?lb=([^"&]+)'
     QUERY = "SELECT id, content FROM entry WHERE content REGEXP ?"
-    print(QUERY, ATTACHMENT_LINK_URL)
+    logging.debug("%s %s", QUERY, ATTACHMENT_LINK_URL)
     for entry_id, content in db.execute_sql(QUERY, ['src="'+ATTACHMENT_LINK_URL]):
-        print("=" * 40)
-        print("entry ID:", entry_id)
+        logging.info(" === check entry ID %r for attachment links", entry_id)
         path, logbook = re.search(ATTACHMENT_LINK_URL, content).groups()
         # OK, now go through the content and locate all problematic src fields
         doc = html.document_fromstring(content)
@@ -83,15 +83,15 @@ def update_attachment_links(db):
                 filename = path.replace("/", "_")  # no idea why elog does this
                 filename = unquote_plus(filename)  # links are URL quoted
                 logbook_name = unquote_plus(logbook)  # names with spaces need decoding
-                print("Found:", filename, logbook_name)
+                logging.debug("Found: %s %s", filename, logbook_name)
                 attachment_id = db.execute_sql("SELECT id, path FROM attachment where json_extract(metadata, '$.original_elog_filename') = ?", [filename])
                 if not attachment_id:
-                    print("No attachment found; maybe it was not imported properly.")
+                    logging.warning("No attachment found; maybe it was not imported properly.")
                     continue
                 for att_id, att_filename in attachment_id:
                     old = results.group(0)
                     new = "/attachments/{}".format(att_filename)  # new URL
-                    print("\tReplacing:", old, new)
+                    logging.info("Replacing: %s -> %s", old, new)
                     quoted_url = quote(new)
                     element.attrib["src"] = quoted_url  # replace the src attribute
                     if element.getparent().tag == "a":
@@ -102,7 +102,6 @@ def update_attachment_links(db):
         new_content = etree.tostring(doc).decode("utf-8")
         db.execute_sql("UPDATE entry SET content = ? WHERE id = ?",
                        [new_content, entry_id])
-
 
 
 
@@ -120,10 +119,16 @@ if __name__ == "__main__":
     parser.add_argument("elog_urls", metavar="URL_PREFIX",
                         type=str, nargs="+", default=[],
                         help="URL prefix to the old Elog installation")
+    parser.add_argument("-v", "--verbose", action="store_true", default=False,
+                        help="Print debug info")
 
     # List of base URLs to look for, should be the base address(es) that
     # the imported ELOG installation was running under. It's t
     args = parser.parse_args()
+
+    args = parser.parse_args()
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
 
     db = SqliteExtDatabase(args.elogy_database)
 
