@@ -52,6 +52,7 @@ import logging
 import os
 import time
 from uuid import uuid4
+from urllib.parse import quote_plus
 
 try:
     import bbcode
@@ -197,8 +198,8 @@ def get_entries(logbook, accumulator):
                                  "name": a.strip()}
                                 for a in entry.get("author", "").split(",")],
                     "metadata": {
-                        "original_elog_url": os.path.join(
-                            logbook["name"], str(entry["mid"])).replace(" ", "+")
+                        "original_elog_url": os.path.join(quote_plus(logbook["name"]),
+                                                          str(entry["mid"]))
                     },
                     "attributes": {}
                 }
