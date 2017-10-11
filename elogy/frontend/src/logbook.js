@@ -182,7 +182,7 @@ class Logbook extends React.Component {
                               <Link to={{pathname:`/logbooks/${logbook.id}/edit`,
                                          search: window.location.search}}
                                     title={`Edit the settings of the logbook '${logbook.name}'`}>
-                                  Edit
+                                  Configure
                               </Link> |&nbsp;
                           </span> 
                           : null
