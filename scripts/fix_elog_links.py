@@ -28,36 +28,58 @@ from urllib.parse import unquote_plus, quote
 from lxml import html, etree
 
 
+def replace_link(db, entry_id, old_url, new_url):
+    "Change matching href attributes in the given entry."
+    logging.info("Replacing: %s -> %s", old_url, new_url)
+    old_href = 'href="{}"'.format(old_url)
+    new_href = 'href="{}"'.format(new_url)
+    db.execute_sql(
+        "UPDATE entry SET content = replace(content, ?, ?) WHERE id = ?",
+        [old_href, new_href, entry_id])
+
+
 def update_bad_links(db, url):
     """
-    Update links to other entries in the old ELOG installation to point to the
-    correct entry in the new database
+    Update links to other entries or attachments in the old ELOG installation
+    to point to the correct place in the Elogy installation. This is needed
+    because the ids used in the old system are not the same as in the new.
     """
     QUERY = "SELECT id, content FROM entry WHERE content LIKE ?"
     for entry_id, content in db.execute_sql(QUERY, ["%{}%".format(url)]):
         logging.debug(" *** check entry ID %r for old links", entry_id)
         doc = html.document_fromstring(content)
         for element in doc.xpath("//*[@href]"):
-            # print(element.attrib["href"])
             results = re.search(os.path.join(url, '(.*)'),
                                 element.attrib["href"])
             if results:
                 elog_url, = results.groups()
                 logging.debug("elog_url %s", elog_url)
                 elog_url = elog_url.split("?")[0]  # remove any query part
-                rows = db.execute_sql("SELECT id, logbook_id FROM entry WHERE json_extract(entry.metadata, '$.original_elog_url') = ?", [elog_url])
-                result = rows.fetchone()
-                if result:
-                    linked_entry_id, logbook_id = result
-                    old_url = 'href="{}"'.format(str(element.attrib["href"]))
-                    new_url = 'href="/logbooks/{}/entries/{}/"'.format(logbook_id,
-                                                                       linked_entry_id)
-                    logging.info("Replacing: %s -> %s", old_url, new_url)
-                    db.execute_sql(
-                        "UPDATE entry SET content = replace(content, ?, ?) WHERE id = ?",
-                        [old_url, new_url, entry_id])
+                if len(elog_url.split("/")) == 3:
+                    logbook, timestamp, name = elog_url.split("/")
+                    filename = "{}_{}".format(timestamp, name)
+                    rows = db.execute_sql("SELECT path FROM attachment WHERE json_extract(attachment.metadata, '$.original_elog_filename') = ?", [filename])
+                    result = rows.fetchone()
+                    if result:
+                        path, = result
+                        old_url = str(element.attrib["href"])
+                        new_url = "/attachments/{}".format(path)
+                        logging.info("Replacing: %s -> %s", old_url, new_url)
+                        replace_link(db, entry_id, old_url, new_url)
+                    else:
+                        logging.error("Sorry, could not find new url for attachment link in %r (%s)", entry_id, elog_url)
                 else:
-                    logging.error("Sorry, could not find new url for link in %r (%s)", entry_id, elog_url)
+                    rows = db.execute_sql("SELECT id, logbook_id FROM entry WHERE json_extract(entry.metadata, '$.original_elog_url') = ?", [elog_url])
+                    result = rows.fetchone()
+                    if result:
+                        linked_entry_id, logbook_id = result
+                        old_url = str(element.attrib["href"])
+                        new_url = "/logbooks/{}/entries/{}/".format(logbook_id,
+                                                                    linked_entry_id)
+                        logging.info("Replacing: %s -> %s", old_url, new_url)
+                        replace_link(db, entry_id, old_url, new_url)
+                    else:
+                        logging.error("Sorry, could not find new url for link in %r (%s)", entry_id, elog_url)
 
 
 def update_attachment_links(db):
@@ -129,6 +151,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     db = SqliteExtDatabase(args.elogy_database)
 
