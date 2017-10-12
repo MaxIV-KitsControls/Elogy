@@ -2,12 +2,12 @@
    creating a new entry, making a followup to another entry or
    modifying an existing entry.  */
 
-/* 
-   TODO: there's quite a lot of repeated functionality here, that
-   should probably be refactored to be re-used more. Also, maybe
-   all the little "get*" helpers should be moved into separate
-   components.
-*/
+/* TODO: there's quite a lot of repeated functionality here, that
+   should probably be refactored to be re-used more. Also, maybe all
+   the little "get*" helpers should be moved into separate components.
+
+   TODO: proper validation, right now we depend on the server to
+   provide reasonable error messages that the user can understand.  */
 
 import React from 'react';
 import {Link, Route, Prompt, Switch} from 'react-router-dom';
@@ -80,7 +80,8 @@ class EntryAttributeEditor extends React.Component {
     }
 
     onBlur () {
-        this.props.onChange(this.props.config.name, this.state.value);
+        this.props.onChange(this.props.config.name,
+                            this.state.value || undefined);
     }
 
     getOptions () {
@@ -115,7 +116,7 @@ class EntryAttributeEditor extends React.Component {
             case "option":
                 return <Select value={ this.state.value }
                                name={ this.props.config.name }
-                               required={ required }
+                               required={ required /* has no effect! */ }
                                options={ this.getOptions() }
                                ignoreCase={ true }
                                onChange={ this.onChangeSelect.bind(this) }
@@ -123,7 +124,7 @@ class EntryAttributeEditor extends React.Component {
             case "multioption":
                 return <Creatable value={ this.state.value } multi={ true }
                                   name={ this.props.config.name }
-                                  required={ required }
+                                  required={ required /* has no effect! */ }
                                   options={ this.getOptions() }
                                   ignoreCase={ true }
                                   onChange={ this.onChangeMultiSelect.bind(this) }
@@ -327,6 +328,12 @@ class EntryEditorBase extends React.Component {
         );
     }
 
+    isSubmitAllowed() {
+        return (this.state.authors.length > 0 &&
+                this.state.content &&
+                this.checkRequiredAttributes());
+    }
+        
     getSubmitButton (history) {
         return (
             <button className="submit"
@@ -410,6 +417,7 @@ class EntryEditorBase extends React.Component {
     }
 
     getError () {
+        // TODO: some nicer formatting of the errors, this is terrible...
         if (this.state.error) {
             return (
                 <span className="error">
@@ -419,7 +427,16 @@ class EntryEditorBase extends React.Component {
         } else {
             return null;
         }
-    }    
+    }
+
+    checkRequiredAttributes () {
+        return this.state.logbook.attributes.every(attr => {
+            if (attr.required)
+                return (this.state.attributes[attr.name] !== undefined &&
+                        this.state.attributes[attr.name] !== "")
+            return true;
+        });
+    }
 
     submitAttachments (entryId) {
         return this.state.attachments.map(attachment => {
@@ -456,6 +473,10 @@ class EntryEditorNew extends EntryEditorBase {
     
     onSubmit({history}) {
         this.submitted = true;
+
+        /* TODO: here we might do some checking of the input; e.g.
+           verify that any required attributes are filled in etc. */
+        
         // we're creating a new entry
         fetch(
             `/api/logbooks/${this.state.logbook.id}/entries/`, {
@@ -482,9 +503,15 @@ class EntryEditorNew extends EntryEditorBase {
                 // something went wrong!
                 // TODO: error handling probably needs some work.
                 response.json().then(
-                    error => {this.setState({error: error})},
-                    error => {this.setState({error: {message: response.statusText,
-                                                     code: response.status}})}
+                    error => {
+                        console.log("error", error);
+                        this.setState({error: error})
+                    },
+                    error => {
+                        console.log("error", error);
+                        this.setState({error: {message: response.statusText,
+                                               code: response.status}})
+                    }
                 )
                 throw new Error("submit failed");
             })
@@ -598,6 +625,10 @@ class EntryEditorFollowup extends EntryEditorBase {
     }
     
     onSubmit({history}) {
+        
+        /* TODO: here we might do some checking of the input; e.g.
+           verify that any required attributes are filled in etc. */
+        
         this.submitted = true;
         const attributes = {};
         // we want to default to the attributes of the original entry, but
@@ -717,7 +748,7 @@ class EntryEditorFollowup extends EntryEditorBase {
             </div>
         );        
 
-                
+        
     }
 }
 
@@ -780,6 +811,10 @@ class EntryEditorEdit extends EntryEditorBase {
     }
     
     onSubmit({history}) {
+        
+        /* TODO: here we might do some checking of the input; e.g.
+           verify that any required attributes are filled in etc. */
+        
         this.submitted = true;
         // we're creating a new entry
         fetch(

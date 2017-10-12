@@ -173,6 +173,10 @@
     color: white;
 }
 
+#entryeditor button.submit[disabled] {
+    background: grey;
+    color: white;
+}
 
 #entryeditor button.cancel {
     background: red;
