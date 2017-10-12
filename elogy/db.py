@@ -162,6 +162,27 @@ class Logbook(Model):
                 .order_by(fn.date(Entry.created_at)))
         return [(e.date.timestamp(), e.id, e.count) for e in data]
 
+    def check_attributes(self, attributes):
+        required_attributes = set(info["name"]
+                                  for info in self.attributes
+                                  if info.get("required"))
+
+        if not required_attributes.issubset(set(attributes)):
+            raise ValueError("missing required attributes {}"
+                             .format(required_attributes - set(attributes)))
+        converted_attributes = {}
+        for name, value in attributes.items():
+            try:
+                converted_value = self.convert_attribute(name,
+                                                         value)
+                converted_attributes[name] = converted_value
+            except ValueError as e:
+                logging.warning(
+                    "Discarding attribute %s with value %r; %s",
+                    name, value, e)
+                # TODO: return a helpful error if this fails?
+        return converted_attributes
+
     def convert_attribute(self, name, value):
         "Try to convert an attribute value to the format the logbook expects"
         # Also useful when the logbook configuration may have changed, and

@@ -71,19 +71,10 @@ class EntryResource(Resource):
             inline_attachments = []
         args["logbook"] = logbook
         # make sure the attributes are of proper types
-        if "attributes" in args:
-            attributes = {}
-            for attr_name, attr_value in args["attributes"].items():
-                try:
-                    converted_value = logbook.convert_attribute(attr_name,
-                                                                attr_value)
-                    attributes[attr_name] = converted_value
-                except ValueError as e:
-                    logging.warning(
-                        "Discarding attribute %s with value %r; %s",
-                        attr_name, attr_value, e)
-                    # TODO: return a helpful error if this fails?
-            args["attributes"] = attributes
+        try:
+            args["attributes"] = logbook.check_attributes(args.get("attributes", {}))
+        except ValueError as e:
+            abort(422, messages={"attributes": [str(e)]})
         if args.get("follows_id"):
             # don't allow pinning followups, that makes no sense
             args["pinned"] = False
