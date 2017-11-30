@@ -1,31 +1,29 @@
-import React from 'react';
-import {Link} from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 
-import {EntryPreviews} from './logbook.js';
-
+import { EntryPreviews } from "./logbook.js";
 
 class SearchResults extends React.Component {
-
-    constructor () {
+    constructor() {
         super();
-        this.state = {entries: []};
+        this.state = { entries: [] };
     }
 
-    fetchSearchResults (params, logbook) {
+    fetchSearchResults(params, logbook) {
+        const query = params.search + (logbook ? `&logbook=${logbook}` : "");
 
-        const query = params.search + (logbook? `&logbook=${logbook}` : "");
-        
-        fetch(`/search/${query}`,
-              {headers: {"Accept": "application/json"}})
+        fetch(`/search/${query}`, { headers: { Accept: "application/json" } })
             .then(response => response.json())
             .then(json => this.setState(json));
     }
 
-    componentWillUpdate (newProps) {
+    componentWillUpdate(newProps) {
         if (newProps.location.search != this.state.search) {
-            this.fetchSearchResults(newProps.location,
-                                    newProps.match.params.logbook);
-            this.setState({search: newProps.location.search});
+            this.fetchSearchResults(
+                newProps.location,
+                newProps.match.params.logbook
+            );
+            this.setState({ search: newProps.location.search });
         }
     }
 
@@ -33,29 +31,32 @@ class SearchResults extends React.Component {
      *     console.log("shouldCompup", newState.search, this.state.search);
      *     return newState.search != this.state.search;
      * }*/
-    
-    render () {
 
+    render() {
         const results = this.state.entries.map(entry => (
             <li key={entry.id}>
-                <Link to={`/search/logbooks/${entry.logbook}/entries/${entry.id}${this.state.search || ""}`}>
+                <Link
+                    to={`/search/logbooks/${entry.logbook}/entries/${entry.id}${this
+                        .state.search || ""}`}
+                >
                     {entry.title}
                 </Link>
-                </li>
+            </li>
         ));
-        
+
         return (
             <div>
-                <header>
-                    Search
-                </header>
+                <header>Search</header>
                 <div>
-                    <EntryPreviews logbook={this.props.logbook} entries={this.state.entries} linkPrefix="/search"/>
+                    <EntryPreviews
+                        logbook={this.props.logbook}
+                        entries={this.state.entries}
+                        linkPrefix="/search"
+                    />
                 </div>
             </div>
         );
     }
 }
-
 
 export default SearchResults;

@@ -54,7 +54,10 @@
 }
 
 #logbook .load-more {
-    background: #ccc;
+    padding: 5px;
+    border-top: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
+    background: #eee;
     text-align: center;
 }
 

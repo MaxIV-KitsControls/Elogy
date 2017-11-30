@@ -10,12 +10,11 @@
  */
 
 class EventBus {
-
-    constructor () {
+    constructor() {
         this.store = {};
     }
 
-    subscribe (topic, callback) {
+    subscribe(topic, callback) {
         if (this.store[topic]) {
             this.store[topic].push(callback);
         } else {
@@ -23,22 +22,21 @@ class EventBus {
         }
     }
 
-    unsubscribe (topic, callback) {
+    unsubscribe(topic, callback) {
         if (this.store[topic]) {
             const callbacks = this.store[topic];
             const index = callbacks.indexOf(callback);
             if (index !== -1) {
                 this.store[topic] = this.store[topic].splice(index, 1);
             }
-        }        
+        }
     }
-    
-    publish (topic, data) {
-        const callbacks = this.store[topic] || []; 
+
+    publish(topic, data) {
+        const callbacks = this.store[topic] || [];
         callbacks.forEach(callback => callback(data));
-        return callbacks.length > 0;        
+        return callbacks.length > 0;
     }
 }
-
 
 export default EventBus;

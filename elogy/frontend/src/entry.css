@@ -1,5 +1,5 @@
 #entry {
-    background: #bbb;
+    background: #ccc;
 }
 
 #entry .empty {
@@ -71,7 +71,7 @@
 }
 
 #entry .followups {
-    border-left: 10px solid #bbb;
+    border-left: 10px solid #ccc;
 }
 
 #entry .info .authors span.author:not(:last-child):after {
@@ -140,7 +140,8 @@
 }
 
 #entry article .attachments {
-    background: #ddd;
+    background: white;
+    border-top: 1px dashed #ccc;
     padding: 5px;
 }
 
