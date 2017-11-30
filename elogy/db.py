@@ -5,10 +5,10 @@ import logging
 import sys
 
 from flask import url_for
-from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
+from playhouse.sqlite_ext import SqliteExtDatabase, JSONField, fn
 from peewee import (IntegerField, CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField, sqlite3)
-from peewee import Model, DoesNotExist, DeferredRelation, fn
+from peewee import Model, DoesNotExist, DeferredRelation, Entity
 
 from .utils import CustomJSONEncoder
 
@@ -119,6 +119,41 @@ class Logbook(Model):
                 except DoesNotExist:
                     break
         return list(reversed(parents))
+
+    @property
+    def ancestors(self):
+        "Return parent, grandparent, ..."
+        query = "\n".join([
+            "WITH RECURSIVE child(id,parent_id) AS (",
+            "    SELECT id, parent_id from logbook WHERE id = ?",
+            "    UNION ALL",
+            "    SELECT logbook.id, logbook.parent_id FROM logbook,child",
+            "    WHERE child.parent_id=logbook.id",
+            ")",
+            "SELECT child_logbook.*",
+            "FROM child",
+            "JOIN logbook as child_logbook ON child_logbook.id = child.id",
+            "WHERE child_logbook.id != ?"
+        ])
+        return self.raw(query, self.id, self.id)
+
+    @property
+    def descendants(self):
+        "Return all children, grandchildren, etc of the logbook"
+        query = "\n".join([
+            "WITH RECURSIVE parent(id,parent_id) AS (",
+            "    values(?, NULL)",
+            "    UNION ALL",
+            "    SELECT logbook.id, logbook.parent_id FROM logbook,parent",
+            "    WHERE logbook.parent_id=parent.id",
+            ")",
+            "SELECT parent_logbook.*",
+            "FROM parent",
+            "JOIN logbook as parent_logbook ON parent_logbook.id = parent.id",
+            "GROUP BY parent.id",
+            "HAVING parent_logbook.id != ?"
+        ])
+        return self.raw(query, self.id, self.id)
 
     def make_change(self, **values):
         "Change the logbook, storing the old values as a revision"
@@ -709,9 +744,10 @@ class Entry(Model):
             query += " GROUP BY entry.id"
             # However, when we're searching, we also don't want the grouping
             # because it means we won't find individual followups
-            if not any([title_filter, content_filter, author_filter,
-                        metadata_filter, attribute_filter, attachment_filter]):
+            if not followups and not any([title_filter, content_filter, author_filter,
+                                          metadata_filter, attachment_filter]):
                 query += " HAVING entry.follows_id IS NULL"
+
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
         query += " ORDER BY entry.priority DESC, timestamp DESC"
@@ -721,6 +757,81 @@ class Entry(Model):
                 query += " OFFSET {}".format(offset)
         logging.debug("query=%r, variables=%r" % (query, variables))
         return Entry.raw(query, *variables)
+
+    @classmethod
+    def search_(cls, logbook=None, followups=False,
+                child_logbooks=False, parent_logbooks=True,
+                archived=False,
+                n=None, offset=0, count=False,
+                attribute_filter=None, content_filter=None,
+                title_filter=None, author_filter=None,
+                attachment_filter=None, metadata_filter=None):
+
+        """
+        Incomplete experimental implementation of search(), not in use.
+        Much cleaner, but I'm not sure it will be possible to get it to
+        work exactly like the old one. Also it may be slower.
+        """
+
+        result = Entry.select()
+
+        if logbook:
+            logbooks = set([logbook])
+            if child_logbooks:
+                logbooks.update(logbook.descendants)
+            result = result.where(Entry.logbook_id << [lb.id for lb in logbooks])
+
+        if content_filter:
+            result = result.where(Entry.content.regexp(content_filter))
+
+        if title_filter:
+            result = result.where(Entry.title.regexp(title_filter))
+
+        if author_filter:
+            # Using the JSON1 extension to iterate over the list of authors and
+            # extract the name of each author.
+            # TODO: perhaps also match against the login/email?
+            authors = fn.json_each(Entry.authors).alias("authors")
+            result = result.from_(Entry, authors)
+            authors_ref = Entity("authors")
+            name = fn.json_extract(authors_ref.value, "$.name")
+            result = result.where(name.regexp(author_filter))
+
+        if attachment_filter:
+            result = (result.join(Attachment)
+                      .where(Attachment.entry == Entry))
+
+        if attribute_filter:
+            for name, value in attribute_filter:
+                # We're using the SQLite JSON1 extension to pick the
+                # attribute value out of the JSON encoded field.
+                # TODO: regexp?
+                attr = Entry.attributes.extract(name)
+                # Note: The reason we're just using 'contains' here
+                # (it's a substring match) is to support "multioption"
+                # attributes. They are represented as a JSON array and
+                # the simplest way to check if a value is present is to
+                # substring match against the JSON string. But this is
+                # pretty crude and should probably be improved.
+                result = result.where(attr.contains(value))
+
+        if metadata_filter:
+            for name, value in metadata_filter:
+                field = Entry.metadata.extract(name)
+                result = result.where(field.contains(value))
+
+        # TODO: how to group the results properly? If searching, we
+        # want the individual entries but otherwise we want the "parent"
+        # entries only (right?). If we allow arbitrary depth replies,
+        # this is tricky because it requires recursion.
+
+        result = result.group_by(Entry.id)
+        if not any([title_filter, content_filter, author_filter,
+                    metadata_filter, attachment_filter]):
+            # If there are no search filters, we'll group
+            result = result.having(Entry.follows == None)
+
+        return result
 
 
 DeferredEntry.set_model(Entry)
