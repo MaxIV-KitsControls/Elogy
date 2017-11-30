@@ -35,11 +35,13 @@ def setup_database(db_name, close=True):
     EntryChange.create_table(fail_silently=True)
     EntryLock.create_table(fail_silently=True)
     Attachment.create_table(fail_silently=True)
+    # print("\n".join(line[0] for line in db.execute_sql("pragma compile_options;")))
     if close:
         db.close()  # important
 
 
 def db_dependencies_installed(type='SQLite'):
+    "Check that the sqlite library has the necessary features."
     if type == 'SQLite':
         # Check that version is high enough to have JSON1
         if sqlite3.sqlite_version_info[:3] < (3, 9, 0):
