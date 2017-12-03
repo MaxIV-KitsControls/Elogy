@@ -170,8 +170,8 @@ class EntriesResource(Resource):
                                n=args["n"], offset=args.get("offset"))
             entries = logbook.get_entries(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
-            count = logbook.get_entries(count=True, **search_args).tuples()
-            count = list(count)[0][0] if list(count) else 0
+            # count = logbook.get_entries(count=True, **search_args).tuples()
+            # count = list(count)[0][0] if list(count) else 0
 
         else:
             # global search (all logbooks)
@@ -186,8 +186,8 @@ class EntriesResource(Resource):
                                n=args["n"], offset=args.get("offset"))
             entries = Entry.search(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
-            count = Entry.search(count=True, **search_args).tuples()
-            count = list(count)[0][0] if list(count) else 0
+            # count = Entry.search(count=True, **search_args).tuples()
+            # count = list(count)[0][0] if list(count) else 0
 
         if args.get("download") == "pdf":
             # return a PDF version
@@ -201,7 +201,7 @@ class EntriesResource(Resource):
                                                   .format(logbook=logbook)))
 
         return marshal(dict(logbook=logbook,
-                            entries=list(entries), count=count), fields.entries)
+                            entries=list(entries)), fields.entries)
 
 
 class EntryLockResource(Resource):

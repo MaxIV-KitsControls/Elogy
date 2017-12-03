@@ -9,6 +9,18 @@ import { parseQuery } from "./util.js";
 import EntryPreviews from "./entrypreviews.js";
 import "./logbook.css";
 
+function LoadMore({ loading, moreEntries, onLoadMore }) {
+    return (
+        <div className="load-more">
+            {loading ? (
+                <i className="fa fa-refresh fa-spin" />
+            ) : moreEntries ? (
+                <div onClick={onLoadMore.bind(this)}>Load more</div>
+            ) : null}
+        </div>
+    );
+}
+
 class Logbook extends React.Component {
     constructor() {
         super();
@@ -16,7 +28,8 @@ class Logbook extends React.Component {
             logbook: {},
             entries: [],
             attributeFilters: {},
-            loading: false
+            loading: false,
+            moreEntries: true
         };
         this._reload = this.reload.bind(this);
     }
@@ -27,7 +40,7 @@ class Logbook extends React.Component {
         // we'll start with the parameters in the browser URL
         const query = search ? parseQuery(search) : {};
         query["n"] = n || query["n"] || 50;
-        query["offset"] = offset || 0; // || query["offset"] || 0;
+        query["offset"] = offset || 0;
         const attributes = Object.keys(attributeFilters)
             .filter(key => attributeFilters[key])
             .map(key => `attribute=${key}:${attributeFilters[key]}`)
@@ -53,6 +66,15 @@ class Logbook extends React.Component {
                 } else {
                     // replace entries
                     this.setState(json);
+                }
+                if (json.entries.length < query["n"]) {
+                    // If we get fewer than the maximum page size, we
+                    // know the server does not have any more
+                    // entries. This is a little primitive, but it
+                    // turns out it's not so easy to just get the
+                    // total number of entries from the db. Something
+                    // to look further into sometime.
+                    this.setState({ moreEntries: false });
                 }
             });
     }
@@ -181,13 +203,13 @@ class Logbook extends React.Component {
                               ))}
                           </select>
                       ))
-                : null;
-        const loadMore =
-            this.state.count > this.state.entries.length ? (
-                <div onClick={this.onLoadMore.bind(this)}>
-                    Load more (showing {this.state.entries.length} of{" "}
-                    {this.state.count})
-                </div>
+                : null,
+            loadMore = this.state.moreEntries ? (
+                <LoadMore
+                    loading={this.state.loading}
+                    moreEntries={this.state.moreEntries}
+                    onLoadMore={this.onLoadMore.bind(this)}
+                />
             ) : null;
 
         return (
@@ -249,13 +271,7 @@ class Logbook extends React.Component {
                             search={this.props.location.search}
                             selectedEntryId={entryId}
                         />
-                        <div className="load-more">
-                            {this.state.loading ? (
-                                <i className="fa fa-refresh fa-spin" />
-                            ) : (
-                                loadMore
-                            )}
-                        </div>
+                        {loadMore}
                     </div>
                 </div>
             </div>

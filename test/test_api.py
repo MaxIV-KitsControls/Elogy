@@ -15,8 +15,8 @@ def decode_response(response):
     return json.loads(response.get_data().decode("utf-8"))
 
 
-def make_logbook(client):
-    in_logbook = dict(
+def make_logbook(client, data=None):
+    in_logbook = data or dict(
         name="Test logbook",
         description="Test description")
     response = client.post("/api/logbooks/", data=in_logbook)
@@ -24,8 +24,8 @@ def make_logbook(client):
     return in_logbook, decode_response(response)["logbook"]
 
 
-def make_entry(client, logbook):
-    in_entry = dict(
+def make_entry(client, logbook, data=None):
+    in_entry = data or dict(
         title="Test entry",
         content="This is some test content!",
         content_type="text/plain")
@@ -459,3 +459,17 @@ def test_create_attachment_with_single_quotes(elogy_client):
             content_type='multipart/form-data',
             data={"attachment": [(BytesIO(DATA), FILENAME)]}))
     assert att["filename"] == FILENAME
+
+
+def test_entry_search(elogy_client):
+    in_logbook, logbook = make_logbook(elogy_client)
+    in_entry1, entry1 = make_entry(elogy_client, logbook, {"title": "A",
+                                                           "content": "Some content"})
+    in_entry2, entry2 = make_entry(elogy_client, logbook, {"title": "B",
+                                                           "content": "Some more content"})
+    in_entry3, entry3 = make_entry(elogy_client, logbook, {"title": "C", "follows_id": entry2["id"],
+                                                           "content": "More different content"})
+
+    URL = ("/api/logbooks/{logbook[id]}/entries/?content=more".format(logbook=logbook))
+    result = decode_response(elogy_client.get(URL))
+    assert len(result["entries"]) == 2

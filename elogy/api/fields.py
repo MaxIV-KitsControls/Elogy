@@ -269,7 +269,6 @@ short_entry = {
 entries = {
     "logbook": fields.Nested(logbook),
     "entries": fields.List(fields.Nested(short_entry)),
-    "count": fields.Integer
 }
 
 
