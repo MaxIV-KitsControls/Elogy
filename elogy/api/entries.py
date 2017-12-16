@@ -169,10 +169,6 @@ class EntriesResource(Resource):
                                metadata_filter=metadata,
                                n=args["n"], offset=args.get("offset"))
             entries = logbook.get_entries(**search_args)
-            # TODO: figure out a nicer way to get the total number of hits
-            # count = logbook.get_entries(count=True, **search_args).tuples()
-            # count = list(count)[0][0] if list(count) else 0
-
         else:
             # global search (all logbooks)
             logbook = None
@@ -185,9 +181,6 @@ class EntriesResource(Resource):
                                metadata_filter=metadata,
                                n=args["n"], offset=args.get("offset"))
             entries = Entry.search(**search_args)
-            # TODO: figure out a nicer way to get the total number of hits
-            # count = Entry.search(count=True, **search_args).tuples()
-            # count = list(count)[0][0] if list(count) else 0
 
         if args.get("download") == "pdf":
             # return a PDF version

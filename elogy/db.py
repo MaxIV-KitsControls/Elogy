@@ -566,7 +566,7 @@ class Entry(Model):
     @classmethod
     def search(cls, logbook=None, followups=False,
                child_logbooks=False, archived=False,
-               n=None, offset=0, count=False,
+               n=None, offset=0,
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None, metadata_filter=None):
@@ -627,7 +627,7 @@ class Entry(Model):
                     SELECT logbook.id, logbook.parent_id FROM logbook,logbook2
                     WHERE logbook2.parent_id=logbook.id
                 )
-                SELECT {what}{attributes}{metadata},
+                SELECT entry.*{attributes}{metadata},
                     {attachment}
                     -- 'thread' is the id of the main entry, ignoring followups
                     coalesce(followup.follows_id, entry.id) AS thread,
@@ -646,9 +646,7 @@ class Entry(Model):
                 WHERE ((entry.logbook_id=logbook1.id)
                        OR (entry.priority>100 AND entry.logbook_id=logbook2.id))
                       AND NOT logbook.archived
-                """.format(what=("COUNT(distinct(coalesce(followup.follows_id, entry.id))) AS count"
-                                 if count else "entry.*"),
-                           attachment=("attachment.path as attachment_path,"
+                """.format(attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                            authors=authors, logbook=logbook.id,
                            attributes=attributes,
@@ -659,7 +657,7 @@ class Entry(Model):
                 # In this case we're not searching recursively
                 query = (
                     """
-                    SELECT {what}{attributes}{metadata},
+                    SELECT entry.*{attributes}{metadata},
                       {attachment}
                       coalesce(followup.follows_id, entry.id) AS thread,
                       count(followup.id) AS n_followups,
@@ -671,8 +669,7 @@ class Entry(Model):
                     JOIN logbook on logbook.id = entry.logbook_id
                     LEFT JOIN entry AS followup ON entry.id == followup.follows_id
                     WHERE entry.logbook_id = {logbook} AND NOT logbook.archived"""
-                    .format(what="count()" if count else "entry.*",
-                            attachment=("attachment.path as attachment_path,"
+                    .format(attachment=("attachment.path as attachment_path,"
                                        if attachment_filter else ""),
                             authors=authors,
                             attributes=attributes,
@@ -686,7 +683,7 @@ class Entry(Model):
             # the recursive logbook filtering. This always includes
             # child logbooks.
             query = """
-            SELECT {what}{attributes}{metadata},
+            SELECT entry.*{attributes}{metadata},
                 {attachment}
                 coalesce(followup.follows_id, entry.id) AS thread,
                 count(followup.id) AS n_followups,
@@ -698,8 +695,7 @@ class Entry(Model):
             JOIN logbook on logbook.id = entry.logbook_id
             LEFT JOIN entry AS followup ON entry.id == followup.follows_id
             WHERE NOT logbook.archived
-            """.format(what="count()" if count else "entry.*",
-                       attributes=attributes,
+            """.format(attributes=attributes,
                        metadata=metadata,
                        attachment=("path as attachment_path,"
                                    if attachment_filter else ""),
@@ -739,16 +735,13 @@ class Entry(Model):
                 query += " AND meta{} LIKE ?".format(i)
                 variables.append('{}'.format(value))
 
-        # Here we're getting into deep water...
-        # If we just want the total count of results, we can't group
-        # because then the count would be per group. So that makes sense.
-        if not count:
-            query += " GROUP BY entry.id"
-            # However, when we're searching, we also don't want the grouping
-            # because it means we won't find individual followups
-            if not followups and not any([title_filter, content_filter, author_filter,
-                                          metadata_filter, attachment_filter]):
-                query += " HAVING entry.follows_id IS NULL"
+        # Check if we're searching, in that case we want to show all entries.
+        if followups or any([title_filter, content_filter, author_filter,
+                             metadata_filter, attribute_filter, attachment_filter]):
+            query += " GROUP BY thread"
+        else:
+            # We're not searching. In this case we'll only show
+            query += " GROUP BY thread HAVING entry.follows_id IS NULL"
 
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
@@ -845,7 +838,7 @@ class EntryChange(Model):
     Represents a change of an entry.
 
     The nomenclature here is that a *revision* is what an entry looked
-    like at at a given point in time, while a change happens at a
+    like at at a given point in time, while a *change* happens at a
     specific time and takes us from one revision to the next.
 
     Counter-intuitively, what's stored here is the *old* entry
