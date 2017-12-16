@@ -65,10 +65,8 @@ export class InnerEntry extends React.Component {
             ) : null;
         const followupNumber =
             this.props.followupNumber !== undefined ? (
-                <span className="followup-number">
+                <span className="followup" title="This is a follow-up">
                     <span className="fa fa-comment" />
-                    &nbsp;
-                    {this.props.followupNumber + 1}
                     &nbsp;&nbsp;
                 </span>
             ) : null;
@@ -157,7 +155,7 @@ export class InnerEntry extends React.Component {
                                 className="timestamp created-at"
                                 title="The entry was created at this time"
                             >
-                                <i className="fa fa-clock-o" />{" "}
+                                {" "}
                                 {formatDateTimeString(this.props.created_at)}
                             </span>
                             {lastChangedAt}

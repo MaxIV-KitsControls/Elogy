@@ -85,7 +85,7 @@ const EntryPreview = ({ logbook, entry, selected, search = "" }) => {
             </span>
         ) : (
             <span className="timestamp">
-                <i className="fa fa-clock-o" /> {edited} {timestamp}
+                {edited} {timestamp}
             </span>
         );
 
