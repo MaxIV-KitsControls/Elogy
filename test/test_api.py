@@ -462,14 +462,38 @@ def test_create_attachment_with_single_quotes(elogy_client):
 
 
 def test_entry_search(elogy_client):
-    in_logbook, logbook = make_logbook(elogy_client)
-    in_entry1, entry1 = make_entry(elogy_client, logbook, {"title": "A",
-                                                           "content": "Some content"})
-    in_entry2, entry2 = make_entry(elogy_client, logbook, {"title": "B",
-                                                           "content": "Some more content"})
-    in_entry3, entry3 = make_entry(elogy_client, logbook, {"title": "C", "follows_id": entry2["id"],
-                                                           "content": "More different content"})
 
-    URL = ("/api/logbooks/{logbook[id]}/entries/?content=more".format(logbook=logbook))
+    # TODO: expand to cover all ways to search
+
+    # create a bunch of logbooks and entries
+    in_logbook1, logbook1 = make_logbook(elogy_client)
+    in_entry11, entry11 = make_entry(elogy_client, logbook1,
+                                     {"title": "A1",
+                                      "content": "Some content"})
+    in_entry12, entry12 = make_entry(elogy_client, logbook1,
+                                     {"title": "B1",
+                                      "content": "Some more content"})
+    in_entry13, entry13 = make_entry(elogy_client, logbook1,
+                                     {"title": "C1", "follows_id": entry12["id"],
+                                      "content": "More different content"})
+    in_logbook2, logbook2 = make_logbook(elogy_client)
+    in_entry21, entry21 = make_entry(elogy_client, logbook2,
+                                     {"title": "A2",
+                                      "content": "Some content"})
+    in_entry22, entry22 = make_entry(elogy_client, logbook2,
+                                     {"title": "B2",
+                                      "content": "Some more content",
+                                      "follows_id": entry21["id"]})
+    in_entry23, entry23 = make_entry(elogy_client, logbook2,
+                                     {"title": "C2", "follows_id": entry22["id"],
+                                      "content": "Further different content"})
+
+    # search logbook
+    URL = ("/api/logbooks/{logbook[id]}/entries/?content=more".format(logbook=logbook1))
     result = decode_response(elogy_client.get(URL))
-    assert len(result["entries"]) == 2
+    assert set([entry12["id"], entry13["id"]]) == set(e["id"] for e in result["entries"])
+
+    # search all logbooks
+    URL = ("/api/logbooks/0/entries/?content=more")
+    result = decode_response(elogy_client.get(URL))
+    assert set([entry12["id"], entry13["id"], entry22["id"]]) == set(e["id"] for e in result["entries"])
