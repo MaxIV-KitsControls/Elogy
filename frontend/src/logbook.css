@@ -1,0 +1,253 @@
+#logbook {
+    background: #ccc;    
+}
+
+#logbook .container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;     
+}
+
+#logbook .empty {
+    width: 100%;
+    padding-top: 10px;
+    text-align: center;
+}
+
+#logbook header {
+    padding: 5px;
+    position: relative;
+    background: #ddd;
+    border-bottom: 1px solid #aaa;
+}
+
+#logbook header .name {
+    font-size: 120%;
+    font-weight: bold;
+}
+
+#logbook header .entry {
+    float: right;
+}
+
+#logbook .entries-container {
+     flex: 1;
+     background: #ddd;
+     max-height: 100%;
+     overflow-y: auto;    
+}
+
+#logbook dl {
+    padding: 0;
+    margin: 0;
+    background: #ccc;        
+        
+}
+
+#logbook .entries {
+    position: relative;
+}
+
+#logbook .entries .no-entries {
+    padding-top: 20px;
+    text-align: center;
+}
+
+#logbook .load-more {
+    background: #ccc;
+    text-align: center;
+}
+
+#logbook dd {
+    padding: 0;
+    margin: 0;
+    background: #eee;    
+}
+
+#logbook dd.entry {
+    opacity: 0.5;    
+    list-style: none;
+    padding: 5px 5px 0 5px;
+    height: 5em;
+    overflow: hidden;
+}
+
+#logbook div.entry {
+    position: relative;
+    height: 100%;
+}
+
+#logbook div.entry .inner {
+    height: 100%;
+    /* Since the entry height is fixed, the gradient is an attempt to make
+       the contents "fade out" at the bottom. Not sure it's a great
+       idea but it took some time to figure out! */
+    mask-image: linear-gradient(rgba(0, 0, 0, 1.0), rgba(0, 0, 0, 1.0) 80%, transparent);
+}
+
+#logbook dd.entry.native {
+    opacity: 1;
+}
+
+#logbook dd.entry.pinned {
+    background-color: #ffb;
+}
+
+#logbook dd.entry.important {
+    background-color: #fdd;
+}
+
+#logbook .entries-container .entry a {
+    text-decoration: none;
+    color: black;
+}
+
+#logbook .entry .info {
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+
+#logbook .entry .logbook {
+    font-size: 90%;
+}
+
+#logbook .entry .authors {
+
+}
+
+#logbook .entry .authors .author:not(:last-child):after {
+    content: ", ";
+}
+
+#logbook .entry .author {
+    white-space: nowrap;
+}
+
+#logbook .entry .timestamp {
+    padding-right: 10px;
+    white-space: nowrap;
+}
+
+#logbook .entry .title {
+    white-space: nowrap;
+    overflow-x: hidden;
+}
+
+#logbook .entry .title > span {
+    text-decoration: underline;
+}
+
+#logbook .entry .content {
+    font-size: 80%;
+    white-space: normal;
+    height: 100%;
+}
+
+#logbook .entry img {
+    border: 1px solid grey;
+}
+
+#logbook .entry .followups {
+    float: right;
+    right: 0;
+    top: 0;
+}
+
+#logbook .entry .attachments {
+    position: relative;
+    float: right;
+}
+
+#logbook .entry .attachments span {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    background:white;
+    border: 1px solid black;
+    padding: 0 3px;
+}
+
+
+#logbook .entry .tags {
+    position: absolute;
+    right: 0;
+    bottom: 5px;
+    z-index: 10;
+}
+
+#logbook .entry .tags .tag {
+    background: green;
+    color: white;
+    border: 2px solid white;
+    border-radius: 5px;
+    padding: 0 3px;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+#logbook dd.entry:not(:last-child) {
+    border-bottom: 1px solid #aaa;
+}
+
+#logbook dd.entry.selected {
+    opacity: 1;
+    background: white;
+}
+
+#logbook dl.date-group {
+    position: relative;
+    padding: 0;
+    margin: 0;
+    border-bottom: none
+}
+
+#logbook dt.group {
+    top: 0;
+    position: sticky;    
+    font-size: 80%;
+    color: black;
+    background: #bbb;
+    text-align: center;
+    z-index: 1;
+}
+
+
+#logbook dt.pinned {
+    background: yellow;
+    color: black;
+    border-color: black;
+}
+
+#logbook dt.important {
+    background: red;
+    color: white;
+    border-color: black;
+}
+
+#logbook .attributes {
+    
+}
+
+#logbook .attributes select {
+    font-size: 70%;
+    margin: 1px;
+}
+
+#logbook .filters {
+}
+
+#logbook .filter {
+    display: inline-block;  /* prevent line breaks */
+    margin: 3px;
+    padding: 2px 5px;
+    background: #999;
+    color: white;
+}
+
+#logbook .filter .delete {
+    padding: 0;
+    padding-left: 5px;
+    border: 0;
+    background: transparent;
+    color: white;
+}

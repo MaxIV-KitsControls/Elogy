@@ -1,0 +1,6 @@
+.DS_Store
+**/__pycache__
+frontend/node_modules
+frontend/build
+backend/env
+logs

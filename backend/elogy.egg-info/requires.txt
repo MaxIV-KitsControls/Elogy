@@ -1,0 +1,11 @@
+flask
+webargs
+peewee
+blinker
+lxml
+pillow
+dateutils
+flask-restful
+pyldap
+flask-admin
+wtf-peewee

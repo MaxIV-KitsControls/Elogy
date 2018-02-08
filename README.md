@@ -1,13 +1,39 @@
+This repository contains an adaption of Johan Forsberg's https://github.com/johanfforsberg/elogy.
+
+Installation
+============
+1. `git clone git@gitlab.maxiv.lu.se:kits-ims/elogy.git`
+2. Modify `docker-compose.yml`.
+3. Run `docker-compose up`
+
+Structure
+=========
+This deployment uses three docker containers: frontend, backend and balancer.
+
+                       __________[frontend:80]
+                      /    /*
+                     /
+    --->[balancer:80]
+                     \
+                      \__________[backend:80]
+                         /api/*
+
+Todo
+====
+* Verify that docker-less local development and testing is easy
+
+# Original README.md
+
 Elogy
 =====
 
-*Warning: This project is still in development. It's mostly complete feature-wise, but has received very limited testing and should not be considered production quality. Any form of feedback is appreciated!*
+*Under development, not suitable for actual use*.
 
 This is a web-based electronic lab logbook application. It allows users to write down notes about what they are doing, organize them and access them later. Intended for use on an internal network; no security features.
 
 Quite inspired by "elog" from PSI, in terms of features. Includes some (unreliable) scripts that can be used to import data from an elog installation.
 
-The back-end is based on Python and Flask, using SQLite to store data. The front-end is based on React.
+The backen is based on Python and Flask, using SQLite to store data. The frontend is written in React.
 
 
 Building
@@ -29,7 +55,7 @@ It assumes that you've started the server on port 8000 (see below).
 Installation
 ============
 
-Requires Python 3.x (currently only tested with >=3.5).
+Requires Python 3.x (currently only tested with 3.5, 3.4 should work.) 
 
 Also required is the `JSON1` extension to sqlite, which is an optional compile time option that is fairly new, and may or may not be enabled in your installation. It's available by default in recent Ubuntu versions, at least. If not, one way to get a compatible version is to use the "Anaconda" python distribution and installing `sqlite` from the `conda-forge` channel. If you don't want the whole distribution you can install "miniconda".
 
