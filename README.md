@@ -2,7 +2,7 @@ This repository contains an adaption of Johan Forsberg's https://github.com/joha
 
 Installation
 ============
-1. `https://github.com/hannes-petri-maxiv-lu-se/elogy.git`
+1. `git clone https://github.com/hannes-petri-maxiv-lu-se/elogy.git`
 2. Modify `docker-compose.yml` (as noted by comments in the file)
 3. Run `docker-compose up -d`
 
