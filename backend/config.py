@@ -13,8 +13,8 @@ UPLOAD_FOLDER = os.getenv('ELOGY_UPLOAD_FOLDER', '/tmp/elogy')  # !!!Again, /tmp
 # Optional LDAP config. Used to autocomplete author names.
 # Requires the "pyldap" package. If not set, elogy will try
 # to fall back to looking up users through the local system.
-LDAP_SERVER = "srv-ldap-2.maxiv.lu.se"
-LDAP_BASEDN = "dc=maxlab,dc=lu,dc=se"
+LDAP_SERVER = os.getenv("ELOGY_LDAP_SERVER", "")
+LDAP_BASEDN = os.getenv("ELOGY_LDAP_BASEDN", "")
 
 
 # Callbacks for various events
