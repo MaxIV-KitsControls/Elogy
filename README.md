@@ -18,6 +18,11 @@ This deployment uses three docker containers: frontend, backend and balancer.
                       \__________[backend:80]
                          /api/*
 
+Users
+=====
+
+If you don't enter a proper LDAP config in `docker-compose.yml`, you're restricted to using the UNIX users of the container (including `root`, `nginx` etc.) as authors of entries. For simple testing, that might be acceptable.
+
 Todo
 ====
 * Verify that docker-less local development is easy
