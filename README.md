@@ -2,9 +2,9 @@ This repository contains an adaption of Johan Forsberg's https://github.com/joha
 
 Installation
 ============
-1. `git clone git@gitlab.maxiv.lu.se:kits-ims/elogy.git`
-2. Modify `docker-compose.yml`.
-3. Run `docker-compose up`
+1. `https://github.com/hannes-petri-maxiv-lu-se/elogy.git`
+2. Modify `docker-compose.yml` (as noted by comments in the file)
+3. Run `docker-compose up -d`
 
 Structure
 =========
@@ -20,7 +20,9 @@ This deployment uses three docker containers: frontend, backend and balancer.
 
 Todo
 ====
-* Verify that docker-less local development and testing is easy
+* Verify that docker-less local development is easy
+* Tests don't work anymore after changing the file structure
+
 
 # Original README.md
 
