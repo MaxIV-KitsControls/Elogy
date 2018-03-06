@@ -170,6 +170,14 @@ class EntryEditorBase extends React.Component {
         this.slowFetchUserSuggestions = debounce(this.fetchUserSuggestions.bind(this), 500);
     }
 
+    componentWillMount() {
+        window.onbeforeunload = e => this.getPromptMessage();
+    }
+
+    componentWillUnmount() {
+        window.onbeforeunload = null;
+    }
+
     fetchEntry (logbookId, entryId, fill) {
         // get all data for the given entry from the backend
         fetch(`/api/logbooks/${logbookId}/entries/${entryId}/`,
@@ -249,8 +257,7 @@ class EntryEditorBase extends React.Component {
     getPromptMessage () {
         /* This is a little confusing, but the <Prompt> component will
            only show a prompt if this function returns a message. */        
-        if (this.hasEdits())
-            return "Looks like you are making edits to an entry. If you leave, you will lose those.";
+        return this.hasEdits() === false ? null : "Looks like you are making edits to an entry. If you leave, you will lose those.";
     }
 
     getTitleEditor (title) {
@@ -468,6 +475,7 @@ class EntryEditorNew extends EntryEditorBase {
     /* editor for creating a brand new entry */
 
     componentWillMount () {
+        super.componentWillMount();
         this.fetchLogbook(this.props.match.params.logbookId);
     }
     
@@ -611,6 +619,7 @@ class EntryEditorFollowup extends EntryEditorBase {
     /* editor for creating a followup to an existing entry */
 
     componentWillMount () {
+        super.componentWillMount();
         this.fetchEntry(this.props.match.params.logbookId,
                         this.props.match.params.entryId);
         this.fetchLogbook(this.props.match.params.logbookId);        
@@ -794,6 +803,7 @@ class EntryEditorEdit extends EntryEditorBase {
     }
 
     componentWillMount () {
+        super.componentWillMount();
         this.fetchLogbook(this.props.match.params.logbookId);
         this.fetchEntry(this.props.match.params.logbookId,
                         this.props.match.params.entryId, true);
