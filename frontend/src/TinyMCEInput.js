@@ -24,12 +24,13 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var React = require('react'),
     uuid = require('uuid'),
-    PropTypes = require('prop-types');
+    PropTypes = require('prop-types'),
+    createClass = require('create-react-class');
 
 var DIRECT_PASSTHROUGH_EVENTS = ['Activate', 'Deactivate', 'Focus', 'Hide', 'Init', 'Remove', 'Reset', 'Show', 'Submit', 'Click'];
 var PSEUDO_HIDDEN = { position: 'absolute', left: -200, top: -200, height: 0 };
 
-var TinyMCEInput = React.createClass({
+var TinyMCEInput = createClass({
     displayName: 'TinyMCEInput',
 
     getDefaultProps: function getDefaultProps() {
