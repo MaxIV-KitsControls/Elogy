@@ -1,10 +1,10 @@
 // configuration for the editor
 const TINYMCE_CONFIG = {
-    plugins: "link image textcolor paste table lists advlist code",
+    plugins: "link image textcolor paste table lists advlist code insertdatetime",
     toolbar: (
         "undo redo | removeformat | styleselect |"
         + " bold italic forecolor backcolor |"
-        + " bullist numlist outdent indent | link image table | code"
+        + " bullist numlist outdent indent | link image table insertdatetime | code"
     ),
     menubar: false,
     statusbar: false,
@@ -26,8 +26,8 @@ const TINYMCE_CONFIG = {
     entities: '160,nbsp,38,amp,60,lt,62,gt',
     resize: true,
     theme: "modern",
-    branding: false
-}    
-
+    branding: false,
+    insertdatetime_formats: ["%A %Y-%m-%d %H:%M:%S"],
+};
 
 export default TINYMCE_CONFIG;
