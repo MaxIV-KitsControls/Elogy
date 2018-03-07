@@ -19,13 +19,13 @@ class Logbook extends React.Component {
             entries: [],
             attributeFilters: {},
             loading: false,
-            sortByCreated: false,
+            sortBy: "timestamp", /* or "created" */
         };
         this._reload = this.reload.bind(this);
     }
 
     // Fetch entries
-    fetch (logbookId, search, attributeFilters, sortByCreated, offset, n) {
+    fetch (logbookId, search, attributeFilters, sortBy, offset, n) {
         this.setState({loading: true});
 
         // build a nice query string with the query
@@ -41,7 +41,7 @@ class Logbook extends React.Component {
                                 .map(key => `${key}=${query[key]}`)
                                 .join("&") + "&" + attributes;
 
-        const sortByTimestamp = sortByCreated === undefined ? 1 : Number(!sortByCreated);
+        const sortByTimestamp = sortBy === "timestamp";
         const url = `/api/logbooks/${logbookId || 0}/entries/?${newSearch || ""}&sort_by_timestamp=${sortByTimestamp}`;
 
         fetch(url, {headers: {"Accept": "application/json"}})
@@ -63,7 +63,7 @@ class Logbook extends React.Component {
         this.fetch(this.props.match.params.logbookId,
                    this.props.location.search,
                    this.state.attributeFilters,
-                   this.state.sortByCreated);
+                   this.state.sortBy);
     }
     
     componentWillUpdate (newProps, newState) {
@@ -72,11 +72,11 @@ class Logbook extends React.Component {
             this.props.match.params.logbookId ||
             newProps.location.search !== this.props.location.search) ||
             (newState.attributeFilters !== this.state.attributeFilters) ||
-            newState.sortByCreated !== this.state.sortByCreated) {
+            newState.sortBy !== this.state.sortBy) {
             this.fetch(newProps.match.params.logbookId,
                        newProps.location.search,
                        newState.attributeFilters,
-                       newState.sortByCreated);
+                       newState.sortBy);
         }
         // reset the filters if we've moved to another logbook
         if (newProps.match.params.logbookId !==
@@ -100,7 +100,7 @@ class Logbook extends React.Component {
         this.fetch(this.props.match.params.logbookId,
                    this.props.location.search,
                    this.state.attributeFilters,
-                   this.state.sortByCreated);              
+                   this.state.sortBy);              
     }
     
     componentDidUpdate({match}) {
@@ -134,14 +134,14 @@ class Logbook extends React.Component {
         this.fetch(this.props.match.params.logbookId,
                    this.props.location.search,
                    this.state.attributeFilters,
-                   this.state.sortByCreated,
+                   this.state.sortBy,
                    this.state.entries.length);
         
         /*         this.fetchMoreEntries();*/
     }
 
-    onSetSortByCreated(sortByCreated)  {
-        this.setState({sortByCreated});
+    onSetSortBy(sortBy)  {
+        this.setState({sortBy});
     }
     
     render() {
@@ -217,8 +217,8 @@ class Logbook extends React.Component {
                     { this.state.entries.length === 0 ? null : 
                         <div className="date-sorting">
                             Sort by: <select
-                              value={this.state.sortByCreated ? "created" : "modified"}
-                              onChange={e => this.onSetSortByCreated(e.target.value === "created")}>
+                              value={this.state.sortBy}
+                              onChange={e => this.onSetSortBy(e.target.value)}>
                                 <option value="created">Date created</option>
                                 <option value="modified">Last modified</option>
                             </select>
@@ -231,7 +231,7 @@ class Logbook extends React.Component {
                                        entries={this.state.entries}
                                        search={this.props.location.search}
                                        selectedEntryId={entryId}
-                                       sortByCreated={this.state.sortByCreated}/>
+                                       sortBy={this.state.sortBy}/>
                         <div className="load-more">
                             {
                                 this.state.loading?
