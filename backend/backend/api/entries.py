@@ -169,7 +169,7 @@ class EntriesResource(Resource):
                                attribute_filter=attributes,
                                metadata_filter=metadata,
                                n=args["n"], offset=args.get("offset"),
-                               order_by_timestamp=args.get("sort_by_timestamp"))
+                               sort_by_timestamp=args.get("sort_by_timestamp"))
 
             entries = logbook.get_entries(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
@@ -187,7 +187,7 @@ class EntriesResource(Resource):
                                attribute_filter=attributes,
                                metadata_filter=metadata,
                                n=args["n"], offset=args.get("offset"),
-                               order_by_timestamp=args.get("sort_by_timestamp"))
+                               sort_by_timestamp=args.get("sort_by_timestamp"))
             entries = Entry.search(**search_args)
             # TODO: figure out a nicer way to get the total number of hits
             count = Entry.search(count=True, **search_args).tuples()

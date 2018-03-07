@@ -533,7 +533,7 @@ class Entry(Model):
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None, metadata_filter=None,
-               order_by_timestamp=True):
+               sort_by_timestamp=True):
 
         # Note: this is all pretty messy. The reason we're building
         # the query as a raw string is that peewee does not (currently)
@@ -715,7 +715,7 @@ class Entry(Model):
                 query += " HAVING entry.follows_id IS NULL"
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
-        order_by = order_by_timestamp and "timestamp" or "entry.created_at"
+        order_by = sort_by_timestamp and "timestamp" or "entry.created_at"
         query += " ORDER BY entry.priority DESC, {} DESC".format(order_by)
         if n:
             query += " LIMIT {}".format(n)
