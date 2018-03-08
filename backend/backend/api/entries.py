@@ -31,7 +31,8 @@ entry_args = {
     "archived": Boolean(),
     "metadata": Dict(),
     "priority": Integer(missing=0),
-    "revision_n": Integer()
+    "revision_n": Integer(),
+    "sort_by_timestamp": Boolean(missing=True),
 }
 
 
@@ -167,7 +168,8 @@ class EntriesResource(Resource):
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                metadata_filter=metadata,
-                               n=args["n"], offset=args.get("offset"))
+                               n=args["n"], offset=args.get("offset"),
+                               sort_by_timestamp=args.get("sort_by_timestamp"))
             entries = logbook.get_entries(**search_args)
         else:
             # global search (all logbooks)
@@ -179,7 +181,8 @@ class EntriesResource(Resource):
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                metadata_filter=metadata,
-                               n=args["n"], offset=args.get("offset"))
+                               n=args["n"], offset=args.get("offset"),
+                               sort_by_timestamp=args.get("sort_by_timestamp"))
             entries = Entry.search(**search_args)
 
         if args.get("download") == "pdf":
