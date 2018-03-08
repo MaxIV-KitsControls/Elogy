@@ -172,7 +172,11 @@ class LogbookTree extends React.Component {
                         ) : null}
                     </div>
                 </header>
-                <div className="tree">{nodes}</div>
+                <div className="tree">
+                    <ul>
+                        {nodes}
+                    </ul>
+                </div>
             </div>
         );
     }
