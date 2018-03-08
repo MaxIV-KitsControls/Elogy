@@ -30,13 +30,14 @@ class Logbook extends React.Component {
             attributeFilters: {},
             loading: false,
             moreEntries: true,
-            sortBy: 'timestamp',
+            sortBy: 'created',
         };
         this._reload = this.reload.bind(this);
     }
 
     // Fetch entries
     fetch(logbookId, search, attributeFilters, sortBy, offset, n) {
+        debugger;
         // build a nice query string with the query
         // we'll start with the parameters in the browser URL
         const query = search ? parseQuery(search) : {};
@@ -53,7 +54,7 @@ class Logbook extends React.Component {
             "&" +
             attributes;
 
-        const sortByTimestamp = sortBy === 'timestamp';
+        const sortByTimestamp = sortBy === 'modified';
         const url = `/api/logbooks/${logbookId || 0}/entries/?${newSearch || ""}&sort_by_timestamp=${sortByTimestamp}`;
 
         this.setState({ loading: true });
@@ -170,6 +171,7 @@ class Logbook extends React.Component {
             this.props.match.params.logbookId,
             this.props.location.search,
             this.state.attributeFilters,
+            this.state.sortBy,
             this.state.entries.length
         );
 
@@ -276,8 +278,8 @@ class Logbook extends React.Component {
                     { this.state.entries.length === 0 ? null : 
                         <div className="date-sorting">
                             Sort by: <select
-                              value={this.state.sortBy}
-                              onChange={e => this.onSetSortBy(e.target.value)}>
+                            value={this.state.sortBy}
+                            onChange={e => this.onSetSortBy(e.target.value)}>
                                 <option value="created">Date created</option>
                                 <option value="modified">Last modified</option>
                             </select>

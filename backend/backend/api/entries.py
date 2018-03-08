@@ -32,7 +32,6 @@ entry_args = {
     "metadata": Dict(),
     "priority": Integer(missing=0),
     "revision_n": Integer(),
-    "sort_by_timestamp": Boolean(missing=True),
 }
 
 
@@ -142,7 +141,8 @@ entries_args = {
     "ignore_children": Boolean(),
     "n": Integer(missing=50),
     "offset": Integer(),
-    "download": Boolean()
+    "download": Boolean(),
+    "sort_by_timestamp": Boolean(missing=True),
 }
 
 
