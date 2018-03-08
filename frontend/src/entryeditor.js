@@ -197,6 +197,14 @@ class EntryEditorBase extends React.Component {
         );
     }
 
+    componentWillMount() {
+        window.onbeforeunload = e => this.getPromptMessage();
+    }
+
+    componentWillUnmount() {
+        window.onbeforeunload = null;
+    }
+
     fetchEntry(logbookId, entryId, fill) {
         // get all data for the given entry from the backend
         fetch(`/api/logbooks/${logbookId}/entries/${entryId}/`, {
@@ -534,6 +542,7 @@ class EntryEditorNew extends EntryEditorBase {
     /* editor for creating a brand new entry */
 
     componentWillMount() {
+        super.componentWillMount();
         this.fetchLogbook(this.props.match.params.logbookId);
     }
 
@@ -677,6 +686,7 @@ class EntryEditorFollowup extends EntryEditorBase {
     /* editor for creating a followup to an existing entry */
 
     componentWillMount() {
+        super.componentWillMount();
         this.fetchEntry(
             this.props.match.params.logbookId,
             this.props.match.params.entryId
@@ -884,6 +894,7 @@ class EntryEditorEdit extends EntryEditorBase {
     }
 
     componentWillMount() {
+        super.componentWillMount();
         this.fetchLogbook(this.props.match.params.logbookId);
         this.fetchEntry(
             this.props.match.params.logbookId,
