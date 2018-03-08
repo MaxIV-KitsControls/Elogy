@@ -18,8 +18,6 @@
 //     If you are trying to write a control that need per-character eventing, ex. a component that allows
 //     multiple editors to work on the input at the same time, tinymce may not be right for you.
 
-"use strict";
-
 var _extends =
   Object.assign ||
   function(target) {
@@ -35,7 +33,8 @@ var _extends =
   };
 
 var React = require("react"),
-  uuid = require("uuid");
+  uuid = require("uuid"),
+  createClass = require("create-react-class");
 
 var DIRECT_PASSTHROUGH_EVENTS = [
   "Activate",
@@ -51,7 +50,7 @@ var DIRECT_PASSTHROUGH_EVENTS = [
 ];
 var PSEUDO_HIDDEN = { position: "absolute", left: -200, top: -200, height: 0 };
 
-var TinyMCEInput = React.createClass({
+var TinyMCEInput = createClass({
   displayName: "TinyMCEInput",
   propTypes: {
     className: React.PropTypes.string,
