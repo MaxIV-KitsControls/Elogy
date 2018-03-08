@@ -1,3 +1,37 @@
+This repository contains an adaption of Johan Forsberg's https://github.com/johanfforsberg/elogy.
+
+Installation
+============
+1. `git clone https://github.com/hannes-petri-maxiv-lu-se/elogy.git`
+2. Modify `docker-compose.yml` (as noted by comments in the file)
+3. Run `docker-compose up -d`
+
+Structure
+=========
+This deployment uses three docker containers: frontend, backend and balancer.
+
+                       __________[frontend:80]
+                      /    /*
+                     /
+    --->[balancer:80]
+                     \
+                      \__________[backend:80]
+                         /api/*
+
+Users
+=====
+
+If you don't enter a proper LDAP config in `docker-compose.yml`, you're restricted to using the UNIX users of the container (including `root`, `nginx` etc.) as authors of entries. For simple testing, that might be acceptable.
+
+Todo
+====
+* Verify that docker-less local development is easy
+* Tests don't work anymore after changing the file structure
+
+----
+
+# Original README.md
+
 Elogy
 =====
 
