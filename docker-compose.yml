@@ -6,7 +6,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - /tmp/elogy/log/balancer:/var/log/nginx # Change this!
+      # Change the part to the left of : to select
+      # where files end up in the host filesystem.
+      - /tmp/elogy/log/balancer:/var/log/nginx
   backend:
     build: backend
     restart: always
@@ -18,10 +20,14 @@ services:
       - 'ELOGY_LDAP_SERVER=srv-ldap-2.maxiv.lu.se'
       - 'ELOGY_LDAP_BASEDN=dc=maxlab,dc=lu,dc=se'
     volumes:
-      - /tmp/elogy/db:/var/elogy/db # Change this!
-      - /tmp/elogy/attachments:/var/elogy/attachments # Change this!
+      # Change the part to the left of : to select
+      # where files end up in the host filesystem.
+      - /tmp/elogy/db:/var/elogy/db
+      - /tmp/elogy/attachments:/var/elogy/attachments
   frontend:
     build: frontend
     restart: always
     volumes:
-      - /tmp/elogy/log/frontend:/var/log/nginx # Change this!
+      # Change the part to the left of : to select
+      # where files end up in the host filesystem.
+      - /tmp/elogy/log/frontend:/var/log/nginx
