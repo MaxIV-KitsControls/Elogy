@@ -29,13 +29,14 @@ class Logbook extends React.Component {
             entries: [],
             attributeFilters: {},
             loading: false,
-            moreEntries: true
+            moreEntries: true,
+            sortBy: 'timestamp',
         };
         this._reload = this.reload.bind(this);
     }
 
     // Fetch entries
-    fetch(logbookId, search, attributeFilters, offset, n) {
+    fetch(logbookId, search, attributeFilters, sortBy, offset, n) {
         // build a nice query string with the query
         // we'll start with the parameters in the browser URL
         const query = search ? parseQuery(search) : {};
@@ -51,8 +52,12 @@ class Logbook extends React.Component {
                 .join("&") +
             "&" +
             attributes;
+
+        const sortByTimestamp = sortBy === 'timestamp';
+        const url = `/api/logbooks/${logbookId || 0}/entries/?${newSearch || ""}&sort_by_timestamp=${sortByTimestamp}`;
+
         this.setState({ loading: true });
-        fetch(`/api/logbooks/${logbookId || 0}/entries/?${newSearch || ""}`, {
+        fetch(url, {
             headers: { Accept: "application/json" }
         })
             .then(response => response.json())
@@ -83,7 +88,8 @@ class Logbook extends React.Component {
         this.fetch(
             this.props.match.params.logbookId,
             this.props.location.search,
-            this.state.attributeFilters
+            this.state.attributeFilters,
+            this.state.sortBy
         );
     }
 
@@ -93,13 +99,14 @@ class Logbook extends React.Component {
             newProps.match.params.logbookId !==
                 this.props.match.params.logbookId ||
             newProps.location.search !== this.props.location.search ||
-            newState.attributeFilters !== this.state.attributeFilters
-        ) {
+            newState.attributeFilters !== this.state.attributeFilters ||
+            newState.sortBy !== this.state.sortBy)
+        {
             this.fetch(
                 newProps.match.params.logbookId,
                 newProps.location.search,
-                newState.attributeFilters
-            );
+                newState.attributeFilters,
+                newState.sortBy);
         }
         // reset the filters if we've moved to another logbook
         if (
@@ -127,8 +134,8 @@ class Logbook extends React.Component {
         this.fetch(
             this.props.match.params.logbookId,
             this.props.location.search,
-            this.state.attributeFilters
-        );
+            this.state.attributeFilters,
+            this.state.sortBy);
     }
 
     componentDidUpdate({ match }) {
@@ -167,6 +174,10 @@ class Logbook extends React.Component {
         );
 
         /*         this.fetchMoreEntries();*/
+    }
+
+    onSetSortBy(sortBy) {
+        this.setState({sortBy});
     }
 
     render() {
@@ -262,6 +273,16 @@ class Logbook extends React.Component {
                     </div>
                     <div className="filters"> {filter} </div>
                     <div className="attributes">{attributes}</div>
+                    { this.state.entries.length === 0 ? null : 
+                        <div className="date-sorting">
+                            Sort by: <select
+                              value={this.state.sortBy}
+                              onChange={e => this.onSetSortBy(e.target.value)}>
+                                <option value="created">Date created</option>
+                                <option value="modified">Last modified</option>
+                            </select>
+                        </div>
+                    }
                 </header>
                 <div className="entries-container">
                     <div ref="entries">
@@ -270,6 +291,7 @@ class Logbook extends React.Component {
                             entries={this.state.entries}
                             search={this.props.location.search}
                             selectedEntryId={entryId}
+                            sortBy={this.state.sortBy}
                         />
                         {loadMore}
                     </div>

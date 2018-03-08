@@ -115,7 +115,7 @@ const EntryPreview = ({ logbook, entry, selected, search = "" }) => {
     );
 };
 
-const EntryPreviews = ({ logbook, entries, selectedEntryId, search }) => {
+const EntryPreviews = ({ logbook, entries, selectedEntryId, search, sortByCreated = false }) => {
     /* First, we'll group the entries according to priority if set,
        otherwise date of creation */
 
@@ -129,7 +129,7 @@ const EntryPreviews = ({ logbook, entries, selectedEntryId, search }) => {
         entry =>
             entry.priority !== 0
                 ? -entry.priority
-                : -entry.priority + "@" + formatDateString(entry.timestamp)
+                : (-entry.priority + "@" + formatDateString(entry[sortByCreated ? "created_at" : "timestamp"]))
     );
 
     function getPriorityGroup(priority) {
