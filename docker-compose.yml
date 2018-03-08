@@ -15,8 +15,8 @@ services:
       - 'ELOGY_DATABASE=/var/elogy/db/elogy.db'
       - 'ELOGY_CONFIG_FILE=/app/elogy/config.py'
       - 'ELOGY_UPLOAD_FOLDER=/var/elogy/attachments'
-      # - 'ELOGY_LDAP_SERVER=srv-ldap-2.maxiv.lu.se'
-      # - 'ELOGY_LDAP_BASEDN=dc=maxlab,dc=lu,dc=se'
+      - 'ELOGY_LDAP_SERVER=srv-ldap-2.maxiv.lu.se'
+      - 'ELOGY_LDAP_BASEDN=dc=maxlab,dc=lu,dc=se'
     volumes:
       - /tmp/elogy/db:/var/elogy/db # Change this!
       - /tmp/elogy/attachments:/var/elogy/attachments # Change this!
