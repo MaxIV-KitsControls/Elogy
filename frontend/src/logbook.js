@@ -22,8 +22,8 @@ function LoadMore({ loading, moreEntries, onLoadMore }) {
 }
 
 class Logbook extends React.Component {
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             logbook: {},
             entries: [],
@@ -37,7 +37,6 @@ class Logbook extends React.Component {
 
     // Fetch entries
     fetch(logbookId, search, attributeFilters, sortBy, offset, n) {
-        debugger;
         // build a nice query string with the query
         // we'll start with the parameters in the browser URL
         const query = search ? parseQuery(search) : {};
@@ -83,6 +82,12 @@ class Logbook extends React.Component {
                     this.setState({ moreEntries: false });
                 }
             });
+    }
+
+    componentWillReceiveProps(props) {
+        const params = new URLSearchParams(props.location.search);
+        const sortBy = params.get('sort_by');
+        this.setState({sortBy});
     }
 
     componentWillMount() {
@@ -179,7 +184,7 @@ class Logbook extends React.Component {
     }
 
     onSetSortBy(sortBy) {
-        this.setState({sortBy});
+        this.props.history.push(`?sort_by=${sortBy}`);
     }
 
     render() {
