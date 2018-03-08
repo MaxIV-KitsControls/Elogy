@@ -1,20 +1,20 @@
-TITLE = "elogy"
+import os
 
-SECRET_KEY = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'  # !!!Change this!!!
+TITLE = os.getenv('ELOGY_TITLE', 'elogy')
 
-DEBUG = True  # !!!Change this to False for production use!!!
+DEBUG = bool(os.getenv('ELOGY_DEBUG', 1))  # !!!Change this to False for production use!!!
 
 # The name of the database file
-DATABASE = "elogy.db"  # !!!Do not use /tmp for anything beyond testing!!!
+DATABASE = os.getenv('ELOGY_DATABASE', 'elogy.db')  # !!!Do not use /tmp for anything beyond testing!!!
 
 # The folder where all uploaded files will be stored.
-UPLOAD_FOLDER = '/tmp/elogy'  # !!!Again, /tmp is a bad choice!!!
+UPLOAD_FOLDER = os.getenv('ELOGY_UPLOAD_FOLDER', '/tmp/elogy')  # !!!Again, /tmp is a bad choice!!!
 
 # Optional LDAP config. Used to autocomplete author names.
 # Requires the "pyldap" package. If not set, elogy will try
 # to fall back to looking up users through the local system.
-#LDAP_SERVER = "srv-ldap-2.maxiv.lu.se"
-#LDAP_BASEDN = "dc=maxlab,dc=lu,dc=se"
+LDAP_SERVER = os.getenv("ELOGY_LDAP_SERVER", "")
+LDAP_BASEDN = os.getenv("ELOGY_LDAP_BASEDN", "")
 
 
 # Callbacks for various events
