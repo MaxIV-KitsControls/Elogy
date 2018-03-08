@@ -118,6 +118,8 @@
 #entry article .content {
     background: white;
     padding: 5px 20px;
+    overflow: auto;
+    word-break: break-all;
 }
 
 #entry article .content.plain {
@@ -188,4 +190,23 @@
 
 #entry article .info.current {
     /*border-left: 3px solid orange;*/
+}
+
+@media print {
+    #entry .body {
+        overflow: unset;
+    }
+
+    .commands {
+        display: none;
+    }
+
+    #entry header a {
+        text-decoration: none;
+        color: black;
+    }
+
+    #entry .container {
+        display: unset;
+    }
 }

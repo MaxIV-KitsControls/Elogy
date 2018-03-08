@@ -22,6 +22,10 @@
     padding-left: 20px;
 }
 
+#logbooktree .tree > ul {
+    padding-left: 0;
+}
+
 #logbooktree li a {
     text-decoration: none;    
 }
@@ -53,4 +57,10 @@
 
 #logbooktree input[type='checkbox']:checked + label:before {
     content: "▼";
+}
+
+#logbooktree li label {
+    display: inline-block;
+    min-width: 1.1em;
+    user-select: none;
 }
