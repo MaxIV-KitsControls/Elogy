@@ -68,7 +68,7 @@ def edit_logbook(data):
 
 
 ACTIONS = {
-    "new_entry": None,  # new_entry,
+    "new_entry": new_entry,
     "edit_entry": None,
     "new_logbook": None,
     "edit_logbook": None  # edit_logbook
