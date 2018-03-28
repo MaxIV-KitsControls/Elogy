@@ -439,9 +439,9 @@ if __name__ == "__main__":
 
     s = Session()
 
-    LOGBOOK_URL = "http://%s/api/logbooks/" % host_port
-    ENTRY_URL = "http://%s/api/logbooks/{logbook_id}/entries/" % host_port
-    ATTACHMENT_URL = "http://%s/api/logbooks/{logbook[id]}/entries/{entry[id]}/attachments/" % host_port
+    LOGBOOK_URL = "%s/api/logbooks/" % host_port
+    ENTRY_URL = "%s/api/logbooks/{logbook_id}/entries/" % host_port
+    ATTACHMENT_URL = "%s/api/logbooks/{logbook[id]}/entries/{entry[id]}/attachments/" % host_port
 
     config = configparser.RawConfigParser(strict=False)
     config.optionxform = str  # preserve key case
