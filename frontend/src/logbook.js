@@ -72,15 +72,15 @@ class Logbook extends React.Component {
                     // replace entries
                     this.setState(json);
                 }
-                if (json.entries.length < query["n"]) {
-                    // If we get fewer than the maximum page size, we
-                    // know the server does not have any more
-                    // entries. This is a little primitive, but it
-                    // turns out it's not so easy to just get the
-                    // total number of entries from the db. Something
-                    // to look further into sometime.
-                    this.setState({ moreEntries: false });
-                }
+
+                // If we get fewer than the maximum page size, we
+                // know the server does not have any more
+                // entries. This is a little primitive, but it
+                // turns out it's not so easy to just get the
+                // total number of entries from the db. Something
+                // to look further into sometime.                
+                const moreEntries = json.entries.length >= query["n"];
+                this.setState({ moreEntries });
             });
     }
 
