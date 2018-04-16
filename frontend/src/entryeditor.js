@@ -256,8 +256,8 @@ class EntryEditorBase extends React.Component {
          *     this.setState(update(this.state, {attributes: {$unset: [name]}}));*/
     }
 
-    onContentChange(event) {
-        this.setState({ content: event.target.getContent() });
+    onContentChange(newValue) {
+        this.setState({ content: newValue });
     }
 
     onAddAttachment(acceptedFiles, rejectedFiles) {
@@ -333,7 +333,7 @@ class EntryEditorBase extends React.Component {
             <TinyMCEInput
                 value={content || ""}
                 tinymceConfig={TINYMCE_CONFIG}
-                onBlur={this.onContentChange.bind(this)}
+                onChange={this.onContentChange.bind(this)}
             />
         );
     }
