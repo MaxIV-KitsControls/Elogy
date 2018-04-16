@@ -243,6 +243,7 @@ var TinyMCEInput = createClass({
         this.props.onChange(newValue);
       }
       this.setState({ value: newValue });
+      this.props.onChange(newValue);
     }
   },
   triggerEventHandler: function triggerEventHandler(handler, event) {
@@ -263,7 +264,6 @@ var TinyMCEInput = createClass({
     this.syncChange(tinyMCEEvent.target.getContent());
   },
   onTinyMCEBlur: function onTinyMCEBlur(tinyMCEEvent) {
-    this.triggerEventHandler(this.props.onBlur, tinyMCEEvent);
     if (this.props.ignoreUpdatesWhenFocused) {
       // if we have been ignoring updates while focused (to preserve cursor position)
       // sync them now that we no longer have focus.
