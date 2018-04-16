@@ -264,6 +264,7 @@ var TinyMCEInput = createClass({
     this.syncChange(tinyMCEEvent.target.getContent());
   },
   onTinyMCEBlur: function onTinyMCEBlur(tinyMCEEvent) {
+    this.props.onChange(tinyMCEEvent.target.getContent());
     if (this.props.ignoreUpdatesWhenFocused) {
       // if we have been ignoring updates while focused (to preserve cursor position)
       // sync them now that we no longer have focus.
