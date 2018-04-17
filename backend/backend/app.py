@@ -23,7 +23,8 @@ app = Flask(__name__,
             static_folder="frontend/build/static",
             static_url_path="/static")
 app.config.from_envvar('ELOGY_CONFIG_FILE')
-app.secret_key = "MW3sr3ctkmRvagBE"
+
+app.secret_key = app.config["SECRET"]
 
 # add some hooks for debugging purposes
 @app.before_request

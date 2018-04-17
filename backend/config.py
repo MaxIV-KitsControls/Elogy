@@ -7,6 +7,10 @@ DEBUG = bool(os.getenv('ELOGY_DEBUG', 1))  # !!!Change this to False for product
 # The name of the database file
 DATABASE = os.getenv('ELOGY_DATABASE', 'elogy.db')  # !!!Do not use /tmp for anything beyond testing!!!
 
+
+# The secret used by python in sessions
+SECRET = os.getenv('ELOGY_SECRET', 'MW3sr3ctkmRvagBE')  
+
 # The folder where all uploaded files will be stored.
 UPLOAD_FOLDER = os.getenv('ELOGY_UPLOAD_FOLDER', '/tmp/elogy')  # !!!Again, /tmp is a bad choice!!!
 
