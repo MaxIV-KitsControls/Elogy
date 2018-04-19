@@ -1,0 +1,17 @@
+{
+    "plugins": [
+      "react"
+    ],
+    "parserOptions": {
+      "sourceType": "module",
+      "ecmaFeatures": {
+        "jsx": true,
+        "modules": true,
+        "experimentalObjectRestSpread": true
+      }
+    },
+    "env": {
+      "es6": true
+    }
+}
+  
