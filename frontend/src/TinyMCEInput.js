@@ -247,7 +247,7 @@ var TinyMCEInput = createReactClass({
         this.syncChange(tinyMCEEvent.target.getContent());
     },
     onTinyMCEBlur: function(tinyMCEEvent) {
-        this.triggerEventHandler(this.props.onBlur, tinyMCEEvent);
+        this.props.onChange(tinyMCEEvent.target.getContent());
         if (this.props.ignoreUpdatesWhenFocused) {
             // if we have been ignoring updates while focused (to preserve cursor position)
             // sync them now that we no longer have focus.
