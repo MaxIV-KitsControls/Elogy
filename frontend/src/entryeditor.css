@@ -183,6 +183,12 @@
     color: white;
 }
 
+#entryeditor button.delete {
+    background: red;
+    color: white;
+    position: absolute;
+}
+
 #entryeditor span.error {
     width: 100%;
     text-align: center;
