@@ -119,7 +119,6 @@
     background: white;
     padding: 5px 20px;
     overflow: auto;
-    word-break: break-all;
 }
 
 #entry article .content.plain {
