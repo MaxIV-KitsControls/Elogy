@@ -4,6 +4,7 @@ import json
 from flask import jsonify, url_for
 from flask_restful import Resource, reqparse
 from werkzeug import FileStorage
+from ..db import Attachment
 
 from ..attachments import save_attachment
 from ..utils import get_utc_datetime
@@ -44,3 +45,9 @@ class AttachmentsResource(Resource):
                        content_type=attachment.content_type,
                        filename=attachment.filename,
                        metadata=attachment.metadata)
+
+    def delete(self, logbook_id, entry_id, attachment_id):
+        "Delete attachments to an entry"
+        attachment = Attachment.get(Attachment.id == attachment_id)
+        res = attachment.delete_instance()
+        return res

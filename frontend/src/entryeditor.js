@@ -183,6 +183,7 @@ class EntryEditorBase extends React.Component {
             authors: [],
             attributes: {},
             attachments: [],
+            deleteAttachments:[],
             metadata: {},
             content: null,
             priority: 0,
@@ -258,6 +259,16 @@ class EntryEditorBase extends React.Component {
 
     onContentChange(newValue) {
         this.setState({ content: newValue });
+    }
+
+    onRemoveAttachment(attachmentIndex) {
+        var id = this.state.attachments[attachmentIndex].id
+        if(id){
+            this.setState({ deleteAttachments: [...this.state.deleteAttachments, id ] });
+        }
+        var attachments = this.state.attachments;
+        attachments.splice(attachmentIndex, 1);
+        this.setState({ attachments: attachments });
     }
 
     onAddAttachment(acceptedFiles, rejectedFiles) {
@@ -366,17 +377,19 @@ class EntryEditorBase extends React.Component {
 
     getAttachments(attachments) {
         return (
+            <div>
             <Dropzone
                 onDrop={this.onAddAttachment.bind(this)}
                 title="Click (or drag-and-drop) to add attachments."
                 className="attachments-drop"
             >
-                {attachments.length > 0 ? (
-                    <EntryAttachments attachments={attachments} />
-                ) : (
-                    "Drop attachments here (or click)!"
-                )}
+                Drop attachments here (or click)!
             </Dropzone>
+                {attachments.length > 0 ? (
+                    <EntryAttachments attachments={attachments} onRemove={this.onRemoveAttachment.bind(this)} />
+                ) : null
+                }
+            </div>
         );
     }
 
@@ -510,6 +523,17 @@ class EntryEditorBase extends React.Component {
             return true;
         });
     }
+
+    removeAttachments(entryId) {
+        return this.state.deleteAttachments.map(attachmentID => {
+            return fetch(
+                `/api/logbooks/${this.state.logbook
+                    .id}/entries/${entryId}/attachments/${attachmentID}`,
+                { method: "DELETE" }
+            );
+        });
+    }
+
 
     submitAttachments(entryId) {
         return this.state.attachments.map(attachment => {
@@ -970,6 +994,7 @@ class EntryEditorEdit extends EntryEditorBase {
                 response => {
                     const entryId = response.entry.id;
                     Promise.all(
+                        this.removeAttachments(response.entry.id),
                         this.submitAttachments(response.entry.id)
                     ).then(response => {
                         // signal other parts of the app that the logbook needs refreshing
