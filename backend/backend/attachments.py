@@ -161,6 +161,17 @@ def handle_img_tags(text, entry_id=None, timestamp=None):
                                                   path=attachment.path)
             if element.getparent().tag == "a":
                 element.getparent().attrib["href"] = src
+            else:
+                parent = element.getparent()
+
+                wrapper = etree.Element('a')
+                wrapper.attrib['href'] = src
+
+                loc = parent.index(element)
+                parent.insert(loc, wrapper)
+
+                parent.remove(element)
+                wrapper.append(element)
 
             attachments.append(attachment)
 
