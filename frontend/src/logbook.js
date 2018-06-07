@@ -146,7 +146,7 @@ class Logbook extends React.Component {
 
     componentDidUpdate({ match }) {
         // set the browser title
-        document.title = `${this.state.logbook.name}`;
+        document.title = this.state.logbook.name ? `${this.state.logbook.name}` : 'Elogy';
         // make sure the entry list is scrolled to the top
         if (match.params.logbookId !== this.props.match.params.logbookId)
             findDOMNode(this.refs.entries).scrollIntoView();
