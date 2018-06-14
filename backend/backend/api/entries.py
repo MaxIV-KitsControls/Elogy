@@ -29,6 +29,7 @@ entry_args = {
     "follows_id": Integer(allow_none=True),
     "attributes": Dict(),
     "archived": Boolean(),
+    "no_change_time": Boolean(),
     "metadata": Dict(),
     "priority": Integer(missing=0),
     "revision_n": Integer(),

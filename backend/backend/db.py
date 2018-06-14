@@ -493,7 +493,8 @@ class Entry(Model):
         # the only thing that changed, we don't bump the timestamp.
         # TODO: allow explicitly marking an edit as "minor", not bumping
         # the timestamp.
-        if set(original_values.keys()) != set(["priority"]):
+
+        if set(original_values.keys()) != set(["priority"]) and not 'no_change_time' in data:
             # This is a little tricky; in order to make it possible for e.g.
             # a script to sync changes from another system, it's important to
             # be able to set the "last_changed_at" timestamp to whatever.
