@@ -372,7 +372,8 @@ def update_entry(session, url, logbook_id, entry, entries, revision_n):
         "content_type": entry["content_type"],
         "attributes": entry.get("attributes"),
         "metadata": entry.get("metadata"),
-        "revision_n": revision_n
+        "revision_n": revision_n,
+        "no_change_time": True
     }
     if "last_changed_at" in entry:
         data["last_changed_at"] = entry["last_changed_at"].strftime('%Y-%m-%dT%H:%M:%S.%f%z')
@@ -583,13 +584,14 @@ if __name__ == "__main__":
             existing_entry = s.get(get_url +
                                    str(short_entry["id"]) + "/").json()["entry"]
             if (parse_time(get_modification_time(existing_entry))
-                    >= get_modification_time(entry)):
+                    > get_modification_time(entry)):
                 # entry has not been edited since import, ignore
                 continue
             logging.info("updating entry %s/%d -> /logbooks/%d/entries/%d",
                          logbook_result["name"], mid,
                          logbook_result["id"], existing_entry["id"])
             update_url = "{}{}/".format(ENTRY_URL, existing_entry["id"])
+
             result = update_entry(s, update_url, logbook_result["id"],
                                   entry, imported_entries,
                                   revision_n=existing_entry["revision_n"])
