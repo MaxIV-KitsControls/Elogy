@@ -98,11 +98,12 @@ export const EntryAttachments = ({ attachments, onRemove }) => (
         <table>
             {attachments.map((att, i) => (
                 <tbody className="attachment" key={i} title={att.filename}>
-                    {onRemove ? <button
+                    {onRemove ? 
+                        <div className="attachment-delete"><button
                         className="delete"
                         title="Delete the attachment"
                         onClick={onRemove.bind(this, i)}
-                    > x </button> : null}
+                    > x </button> </div>: null}
                     <AttachmentPreview attachment={att} />
                 </tbody>
             ))}

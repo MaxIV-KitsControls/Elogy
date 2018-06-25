@@ -183,6 +183,15 @@
     color: white;
 }
 
+#entryeditor .attachments {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+#entryeditor .attachment-delete {
+    position: relative;
+}
+
 #entryeditor button.delete {
     background: red;
     color: white;
