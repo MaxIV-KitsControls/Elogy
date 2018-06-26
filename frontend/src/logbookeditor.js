@@ -481,6 +481,9 @@ class LogbookEditorEdit extends LogbookEditorBase {
             this.state.parentId ||
             (this.state.parent ? this.state.parent.id : 0);
 
+        if (!this.state.id)
+            return <div>Loading...</div>;
+
         return (
             <div id="logbookeditor">
                 <Prompt message={this.getPromptMessage.bind(this)} />
