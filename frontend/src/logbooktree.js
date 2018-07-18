@@ -130,7 +130,7 @@ class LogbookTree extends React.Component {
         };
 
         return (
-            <div id="logbooktree">
+            <div id="logbooktree" className={logbookId !== null ? "logbook-selected" : "logbook-not-selected"}>
                 <header>
                     <span
                         className={

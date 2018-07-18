@@ -4,6 +4,7 @@ import React from "react";
 import { findDOMNode } from "react-dom";
 import { Link } from "react-router-dom";
 import Mark from "mark.js";
+import { withRouter } from 'react-router-dom';
 
 import "./entry.css";
 import { formatDateTimeString } from "./util.js";
@@ -248,6 +249,7 @@ class Entry extends React.Component {
 
         return (
             <div className="container" ref="container">
+            <button className="mobile-back-button" onClick={() => this.props.history.goBack()}> Back </button>
                 {/* The header will always stay at the top */}
                 <header>
                     {this.state.logbook ? (

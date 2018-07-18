@@ -2,7 +2,7 @@
   "name": "elogy",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:80/",
+  "proxy": "http://localhost:8888/",
   "dependencies": {
     "create-react-class": "^15.5.3",
     "date-fns": "1.28.3",
