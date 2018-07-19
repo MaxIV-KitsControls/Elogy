@@ -70,6 +70,7 @@ class QuickSearch extends React.Component {
                     <form
                         id="search"
                         onSubmit={this.onSubmit.bind(this, history)}
+                        className={this.props.match.params.logbookId ? "logbook-selected" : "logbook-not-selected"}
                     >
                         <span title="Filters which can be used to limit the entries that are displayed.">
                             Search
