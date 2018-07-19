@@ -230,10 +230,10 @@ class Logbook extends React.Component {
                     onLoadMore={this.onLoadMore.bind(this)}
                 />
             ) : null;
-        console.log(entryId);
+
         return (
             <div className={"container " + (entryId !== null ? "entry-selected" : "")}>
-                <button className="mobile-back-button" onClick={() => this.props.history.goBack()}> Back </button>
+                <button className="mobile-back-button" onClick={() => this.props.history.push('/')}> Back </button>
                 <header>
                     <span className="name">
                         <i className="fa fa-book" />
