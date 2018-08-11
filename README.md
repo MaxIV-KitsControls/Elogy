@@ -69,15 +69,16 @@ Also required is the `JSON1` extension to sqlite, which is an optional compile t
 
 To run elogy with flask's built-in development server, on port 8000:
 ```
+$ cd backend
 $ python -m venv env
 $ env/bin/pip install -r requirements.txt
 $ env/bin/pip install -e .
-$ FLASK_APP=elogy.app ELOGY_CONFIG_FILE=$(pwd)/config.py env/bin/flask run -p 8000
+$ FLASK_APP=backend.app ELOGY_CONFIG_FILE=$(pwd)/config.py env/bin/flask run -p 8000
 ```
 
 For actual deployment you probably want to run it with something else, such as:
 ```
-$ gunicorn -k gevent --threads 3 elogy.app:app
+$ gunicorn -k gevent --threads 3 backend.app:app
 ```
 
 Or possibly using uWSGI+nginx or something. There is lots of documentation out there on how to deploy Flask applications in different scenarios.
