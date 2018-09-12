@@ -1,17 +1,18 @@
-FROM smebberson/alpine-nginx-nodejs:4.4.0
+FROM node:9.11.2-alpine AS build
 
-EXPOSE 80
+WORKDIR /home/node/app
 
-RUN mkdir /elogy
-WORKDIR /elogy
-
-COPY package.json .
-RUN npm i
+COPY package.json package-lock.json ./
+RUN npm install --no-cache
 
 COPY public public
 COPY src src
 
 RUN npm run build
-RUN mv build/* /usr/html
 
-COPY default.conf /etc/nginx/conf.d/default.conf
+FROM nginx:1.15.0-alpine
+
+EXPOSE 80
+
+COPY --from=build /home/node/app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/
