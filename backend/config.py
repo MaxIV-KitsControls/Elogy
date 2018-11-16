@@ -1,4 +1,5 @@
 import os
+import re
 
 TITLE = os.getenv('ELOGY_TITLE', 'elogy')
 
@@ -62,6 +63,8 @@ def new_entry(data):
         linkToText = 'Sent from Elogy, original post can be found at:'
         linkToEntry = BASEURL + '/logbooks/' + str(entry["logbook"]["id"]) + '/entries/' + str(entry["id"])
         content = "<html> {} <br> {} </html>".format(entry["content"], linkToText + linkToEntry)
+        content = re.sub('src="', 'src="' + BASEURL, content)
+        content = re.sub('href="', 'href="' + BASEURL, content)
         message = MIMEText(content, "html")
         message["Subject"] = entry["title"]
         message["From"] = fromaddr
