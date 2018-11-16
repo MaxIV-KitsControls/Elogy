@@ -27,7 +27,7 @@ LDAP_BASEDN = os.getenv("ELOGY_LDAP_BASEDN", "")
 
 def new_entry(data):
     "Gets run whenever a new entry has been created"
-    print(data)
+
     entry = data["entry"]
 
     # 'entry' is the entry we just created, so it contains all the
