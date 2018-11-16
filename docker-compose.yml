@@ -15,6 +15,7 @@ services:
     environment:
       - 'ELOGY_DEBUG=0'
       - 'ELOGY_DATABASE=/var/elogy/db/elogy.db'
+      - 'ELOGY_URL=http://localhost'
       - 'ELOGY_SECRET=PQDfjXrwWLWy8C97BYcKV2dteDm76RHXmB'
       - 'ELOGY_CONFIG_FILE=/app/elogy/config.py'
       - 'ELOGY_UPLOAD_FOLDER=/var/elogy/attachments'
