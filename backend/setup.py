@@ -20,4 +20,11 @@ setup(
         'flask-admin',  # maybe also optional?
         'wtf-peewee'
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "faker",
+            "splinter"
+        ]
+    }
 )
