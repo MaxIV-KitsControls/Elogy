@@ -20,4 +20,4 @@ RUN mkdir /var/elogy/attachments
 
 EXPOSE 80
 
-ENTRYPOINT ["uwsgi", "--socket=0.0.0.0:80", "--protocol=http", "--file=run.py", "--processes=1", "--threads=1", "--callable=app"]
+ENTRYPOINT ["uwsgi", "--socket=0.0.0.0:80", "--protocol=http", "--file=run.py", "--callable=app"]

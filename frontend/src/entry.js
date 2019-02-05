@@ -4,6 +4,7 @@ import React from "react";
 import { findDOMNode } from "react-dom";
 import { Link } from "react-router-dom";
 import Mark from "mark.js";
+import { withRouter } from 'react-router-dom';
 
 import "./entry.css";
 import { formatDateTimeString } from "./util.js";
@@ -245,9 +246,9 @@ class Entry extends React.Component {
         );
 
         const query = parseQuery(this.props.location.search);
-
         return (
             <div className="container" ref="container">
+            <button className="mobile-back-button" onClick={() => this.props.history.push('/logbooks/' + logbook.id)}> Back </button>
                 {/* The header will always stay at the top */}
                 <header>
                     {this.state.logbook ? (
