@@ -19,7 +19,7 @@ def elogy(request):
     os.environ["ELOGY_CONFIG_FILE"] = "../test/config.py"
 
     def run_elogy():
-        from elogy.app import app
+        from backend.app import app
         app.run()
 
     proc = Process(target=run_elogy)
@@ -33,7 +33,7 @@ def elogy(request):
 @pytest.fixture(scope="function")
 def db(request):
 
-    from elogy.db import db, setup_database
+    from backend.db import db, setup_database
 
     setup_database(":memory:", close=False)
     return db
@@ -45,7 +45,7 @@ def db(request):
 @pytest.fixture(scope="module")
 def elogy_client(request):
     os.environ["ELOGY_CONFIG_FILE"] = "../test/config.py"
-    from elogy.app import app
+    from backend.app import app
     with app.test_client() as c:
         yield c
     try:

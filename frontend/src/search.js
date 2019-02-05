@@ -11,6 +11,8 @@ class QuickSearch extends React.Component {
             title: null,
             authors: null,
             attachments: null,
+            from_date: null,
+            to_date: null,
             ignore_children: false
         };
     }
@@ -54,6 +56,8 @@ class QuickSearch extends React.Component {
                 title: null,
                 authors: null,
                 attachments: null,
+                from_date: null,
+                to_date: null,
                 ignore_children: false
             },
             this.onSubmit.bind(this, history, event)
@@ -115,6 +119,34 @@ class QuickSearch extends React.Component {
                             placeholder="Attachments"
                             onChange={this.onChange.bind(this)}
                         />
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>From:</td>
+                                    <td>
+                                        <input type="date"
+                                            name="from_date"
+                                            value={this.state.from_date || ""}
+                                            max={this.state.to_date || ""}
+                                            onChange={this.onChange.bind(this)}
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        To:
+                                    </td>
+                                    <td>
+                                        <input type="date"
+                                            name="to_date"
+                                            value={this.state.to_date || ""}
+                                            min={this.state.from_date || ""}
+                                            onChange={this.onChange.bind(this)}
+                                        />
+                                    </td>                                    
+                                </tr>
+                            </tbody>
+                        </table>
                         <label title="Whether to include entries in logbooks contained in the selected logbook.">
                             <input
                                 type="checkbox"

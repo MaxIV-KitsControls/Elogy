@@ -194,7 +194,7 @@ class Logbook extends React.Component {
                 ? parseInt(this.props.match.params.entryId, 10)
                 : null,
             query = parseQuery(this.props.location.search),
-            filter = ["title", "content", "authors", "attachments"]
+            filter = ["title", "content", "authors", "attachments", "from_date", "to_date"]
                 .filter(key => query[key])
                 .map(key => (
                     <span key={key} className="filter">

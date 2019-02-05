@@ -8,13 +8,13 @@ from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField, fn
 from peewee import (IntegerField, CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField, sqlite3)
-from peewee import Model, DoesNotExist, DeferredRelation, Entity
+from peewee import Model, DoesNotExist, Entity
 
 from .utils import CustomJSONEncoder
 
 
 # defer the actual db setup to later, when we have read the config
-db = SqliteExtDatabase(None)
+db = SqliteExtDatabase(None, regexp_function=True)
 
 
 class CustomJSONField(JSONField):
@@ -29,12 +29,12 @@ def setup_database(db_name, close=True):
     # TODO: support further configuration options, see FlaskDB
     db_dependencies_installed()
     db.init(db_name)
-    Logbook.create_table(fail_silently=True)
-    LogbookChange.create_table(fail_silently=True)
-    Entry.create_table(fail_silently=True)
-    EntryChange.create_table(fail_silently=True)
-    EntryLock.create_table(fail_silently=True)
-    Attachment.create_table(fail_silently=True)
+    Logbook.create_table(safe=True)
+    LogbookChange.create_table(safe=True)
+    Entry.create_table(safe=True)
+    EntryChange.create_table(safe=True)
+    EntryLock.create_table(safe=True)
+    Attachment.create_table(safe=True)
     # print("\n".join(line[0] for line in db.execute_sql("pragma compile_options;")))
     if close:
         db.close()  # important
@@ -95,7 +95,7 @@ class Logbook(Model):
     description = TextField(null=True)
     template = TextField(null=True)
     template_content_type = CharField(default="text/html; charset=UTF-8")
-    parent = ForeignKeyField("self", null=True, related_name="children")
+    parent = ForeignKeyField("self", null=True, backref="children")
     attributes = JSONField(default=[])
     metadata = JSONField(default={})
     archived = BooleanField(default=False)
@@ -275,7 +275,7 @@ class LogbookChange(Model):
     class Meta:
         database = db
 
-    logbook = ForeignKeyField(Logbook, related_name="changes")
+    logbook = ForeignKeyField(Logbook, backref="changes")
 
     changed = CustomJSONField()
 
@@ -299,7 +299,7 @@ class LogbookChange(Model):
         try:
             change = (LogbookChange.select()
                       .where((LogbookChange.logbook == self.logbook) &
-                             (LogbookChange.changed.extract(attr) != None) &
+                             (LogbookChange.changed[attr] != None) &
                              (LogbookChange.id > self.id))
                       .order_by(LogbookChange.id)
                       .get())
@@ -320,7 +320,7 @@ class LogbookChange(Model):
         try:
             change = (LogbookChange.select()
                       .where((LogbookChange.logbook == self.logbook) &
-                             (LogbookChange.changed.extract(attr) != None) &
+                             (LogbookChange.changed[attr] != None) &
                              (LogbookChange.id > self.id))
                       .order_by(LogbookChange.id)
                       .get())
@@ -351,7 +351,7 @@ class LogbookRevision:
         return getattr(self.change.logbook, attr)
 
 
-DeferredEntry = DeferredRelation()
+# DeferredEntry = DeferredRelation()
 
 
 # class EntrySearch(FTS5Model):
@@ -400,7 +400,7 @@ class Entry(Model):
     class Meta:
         database = db
 
-    logbook = ForeignKeyField(Logbook, related_name="entries")
+    logbook = ForeignKeyField(Logbook, backref="entries")
     title = CharField(null=True)
     authors = JSONField(default=[])
     content = TextField(null=True)
@@ -416,7 +416,7 @@ class Entry(Model):
     #                    logbooks.
     created_at = UTCDateTimeField(default=datetime.utcnow)
     last_changed_at = UTCDateTimeField(null=True)
-    follows = ForeignKeyField("self", null=True, related_name="followups")
+    follows = ForeignKeyField("self", null=True, backref="followups")
     archived = BooleanField(default=False)
 
     def __str__(self):
@@ -571,6 +571,7 @@ class Entry(Model):
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None, metadata_filter=None,
+               from_date=None, to_date=None,
                sort_by_timestamp=True):
 
         # Note: this is all pretty messy. The reason we're building
@@ -740,10 +741,19 @@ class Entry(Model):
         # Check if we're searching, in that case we want to show all entries.
         if followups or any([title_filter, content_filter, author_filter,
                              metadata_filter, attribute_filter, attachment_filter]):
-            query += " GROUP BY thread"
+            query += " GROUP BY thread HAVING 1"
         else:
             # We're not searching. In this case we'll only show
             query += " GROUP BY thread HAVING entry.follows_id IS NULL"
+
+        # Since we're using timestamp, which is an aggregate, it must be filtered
+        # here instead of in the where clause.
+        if from_date:
+            query += " AND timestamp >= ?\n"
+            variables.append(from_date)
+        if to_date:
+            query += " AND timestamp <= ?\n"
+            variables.append(to_date)
 
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
@@ -753,7 +763,7 @@ class Entry(Model):
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        logging.debug("query=%r, variables=%r" % (query, variables))
+        logging.warning("query=%r, variables=%r" % (query, variables))
         return Entry.raw(query, *variables)
 
     @classmethod
@@ -804,7 +814,7 @@ class Entry(Model):
                 # We're using the SQLite JSON1 extension to pick the
                 # attribute value out of the JSON encoded field.
                 # TODO: regexp?
-                attr = Entry.attributes.extract(name)
+                attr = Entry.attributes[name]
                 # Note: The reason we're just using 'contains' here
                 # (it's a substring match) is to support "multioption"
                 # attributes. They are represented as a JSON array and
@@ -815,7 +825,7 @@ class Entry(Model):
 
         if metadata_filter:
             for name, value in metadata_filter:
-                field = Entry.metadata.extract(name)
+                field = Entry.metadata[name]
                 result = result.where(field.contains(value))
 
         # TODO: how to group the results properly? If searching, we
@@ -832,7 +842,7 @@ class Entry(Model):
         return result
 
 
-DeferredEntry.set_model(Entry)
+#DeferredEntry.set_model(Entry)
 
 
 class EntryChange(Model):
@@ -853,7 +863,7 @@ class EntryChange(Model):
     class Meta:
         database = db
 
-    entry = ForeignKeyField(Entry, related_name="changes")
+    entry = ForeignKeyField(Entry, backref="changes")
 
     changed = CustomJSONField()
 
@@ -877,7 +887,7 @@ class EntryChange(Model):
         try:
             change = (EntryChange.select()
                       .where((EntryChange.entry == self.entry) &
-                             (EntryChange.changed.extract(attr) != None) &
+                             (EntryChange.changed[attr] != None) &
                              (EntryChange.id > self.id))
                       .order_by(EntryChange.id)
                       .get())
@@ -898,7 +908,7 @@ class EntryChange(Model):
         try:
             change = (EntryChange.select()
                         .where((EntryChange.entry == self.entry) &
-                               (EntryChange.changed.extract(attr) != None) &
+                               (EntryChange.changed[attr] != None) &
                                (EntryChange.id > self.id))
                         .order_by(EntryChange.id)
                         .get())
@@ -1002,7 +1012,7 @@ class Attachment(Model):
         database = db
         order_by = ("id",)
 
-    entry = ForeignKeyField(Entry, null=True, related_name="attachments")
+    entry = ForeignKeyField(Entry, null=True, backref="attachments")
     filename = CharField(null=True)
     timestamp = UTCDateTimeField(default=datetime.utcnow)
     path = CharField()  # path within the upload folder

@@ -24,7 +24,7 @@ app = Flask(__name__,
             static_url_path="/static")
 app.config.from_envvar('ELOGY_CONFIG_FILE')
 
-app.secret_key = app.config["SECRET"]
+app.secret_key = app.config.get("SECRET", "not-very-secret")
 
 # add some hooks for debugging purposes
 @app.before_request

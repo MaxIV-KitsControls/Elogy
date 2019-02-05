@@ -1,8 +1,9 @@
+from datetime import datetime
 from operator import attrgetter
 
 from .fixtures import db
-from elogy.db import Entry
-from elogy.db import Logbook, LogbookRevision
+from backend.db import Entry
+from backend.db import Logbook, LogbookRevision
 
 
 # Logbook
@@ -307,6 +308,49 @@ def test_entry_title_search(db):
     # regexp search
     result, = list(Entry.search(logbook=lb, title_filter="Th.*ry"))
     assert result.title == "Third entry"
+
+
+def test_entry_date_search(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "A",
+            "content": "This content is great!",
+            "created_at": datetime(2019, 1, 15, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "B",
+            "content": "Some very neat content.",
+            "created_at": datetime(2019, 1, 17, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "C",
+            "content": "Not so bad content either.",
+            "created_at": datetime(2019, 1, 19, 12, 0, 0)
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # include the from date
+    results = list(Entry.search(logbook=lb, from_date="2019-01-17"))
+    assert {r.title for r in results} == {"B", "C"}
+
+    # exclude the to date
+    # TODO does this make sense or should we include the date?
+    results = list(Entry.search(logbook=lb, to_date="2019-01-17"))
+    assert {r.title for r in results} == {"A"}
+
+    # date interval
+    results = list(Entry.search(logbook=lb, from_date="2019-01-16", to_date="2019-01-18"))
+    assert {r.title for r in results} == {"B"}
 
 
 def test_entry_search_followups(db):
