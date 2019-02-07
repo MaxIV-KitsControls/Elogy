@@ -129,6 +129,7 @@ class QuickSearch extends React.Component {
                                             value={this.state.from_date || ""}
                                             max={this.state.to_date || ""}
                                             onChange={this.onChange.bind(this)}
+                                            title="Only entries from on or after this date."
                                         />
                                     </td>
                                 </tr>
@@ -142,6 +143,7 @@ class QuickSearch extends React.Component {
                                             value={this.state.to_date || ""}
                                             min={this.state.from_date || ""}
                                             onChange={this.onChange.bind(this)}
+                                            title="Only entries from before this date."
                                         />
                                     </td>                                    
                                 </tr>
