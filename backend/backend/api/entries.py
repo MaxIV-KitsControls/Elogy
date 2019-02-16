@@ -142,7 +142,7 @@ entries_args = {
     "ignore_children": Boolean(),
     "n": Integer(missing=50),
     "offset": Integer(),
-    "download": Boolean(),
+    "download": Str(),
     "sort_by_timestamp": Boolean(missing=True),
 }
 
