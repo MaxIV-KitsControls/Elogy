@@ -1,4 +1,5 @@
 import logging
+from slugify import slugify
 
 from flask import request, send_file
 from flask_restful import Resource, marshal, marshal_with, abort
@@ -202,10 +203,12 @@ class EntriesResource(Resource):
             html = export_entries_as_html(logbook, entries)
             if html is None:
                 abort(400, message="Could not create HTML!")
-            return send_file(html, mimetype="text/html",
+            ret = send_file(html.name, mimetype="text/html",
                              as_attachment=True,
-                             attachment_filename=("{logbook.name}.html"
-                                                  .format(logbook=logbook)))
+                             attachment_filename=(slugify("{logbook.name}.html"
+                                                  .format(logbook=logbook))))
+            html.close()
+            return ret
 
         return marshal(dict(logbook=logbook,
                             entries=list(entries)), fields.entries)

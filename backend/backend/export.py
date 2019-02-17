@@ -1,4 +1,5 @@
 from tempfile import NamedTemporaryFile
+from slugify import slugify
 
 try:
     import pdfkit
@@ -62,10 +63,10 @@ def export_entries_as_html(logbook, entries):
 
     entries_html = [
         """
-        <p><b>Created at:</b> {created_at}</p>
-        <p><b>Title:</b> {title}</p>
-        <p><b>Authors:</b> {authors}</p>
-        <p>{content}</p>
+        <div><b>Created at:</b> {created_at}</div>
+        <div><b>Title:</b> {title}</div>
+        <div><b>Authors:</b> {authors}</div>
+        <div>{content}</div>
         <hr/>
         """.format(title=entry.title or "(No title)",
                    authors=", ".join(a["name"] for a in entry.authors),
@@ -73,10 +74,12 @@ def export_entries_as_html(logbook, entries):
                    content=entry.content or "---")
         for entry in entries
     ]
-    with NamedTemporaryFile(prefix=logbook.name,
+    print(entries_html)
+    with NamedTemporaryFile(prefix=slugify(logbook.name),
                             suffix=".html",
-                            delete=False) as f:
-        f.write('<h1>{}</h1><hr/>'.format(logbook.name).encode('utf8'))
+                            delete=True) as f:
+        f.write('<h1>{}</h1>'.format(logbook.name).encode('utf8'))
+        f.write('<div>{}</div><hr/>'.format(logbook.description).encode('utf8'))
         for entry_html in entries_html:
             f.write(entry_html.encode('utf8'))
-    return f.name
+    return f
