@@ -203,12 +203,10 @@ class EntriesResource(Resource):
             html = export_entries_as_html(logbook, entries)
             if html is None:
                 abort(400, message="Could not create HTML!")
-            ret = send_file(html.name, mimetype="text/html",
+            return send_file(html, mimetype="text/html",
                              as_attachment=True,
                              attachment_filename=(slugify("{logbook.name}.html"
                                                   .format(logbook=logbook))))
-            html.close()
-            return ret
 
         return marshal(dict(logbook=logbook,
                             entries=list(entries)), fields.entries)

@@ -77,9 +77,10 @@ def export_entries_as_html(logbook, entries):
     print(entries_html)
     with NamedTemporaryFile(prefix=slugify(logbook.name),
                             suffix=".html",
-                            delete=True) as f:
+                            delete=False) as f:
         f.write('<h1>{}</h1>'.format(logbook.name).encode('utf8'))
         f.write('<div>{}</div><hr/>'.format(logbook.description).encode('utf8'))
         for entry_html in entries_html:
             f.write(entry_html.encode('utf8'))
-    return f
+        f.close()
+    return f.name
