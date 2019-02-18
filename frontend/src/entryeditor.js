@@ -241,6 +241,18 @@ class EntryEditorBase extends React.Component {
             });
     }
 
+    storeSessionAuthors() {
+        window.sessionStorage.newAuthors = JSON.stringify(this.state.authors);
+    }
+
+    loadSessionAuthors() {
+        const sessionNewAuthorsEncoded = window.sessionStorage.newAuthors;
+        if (sessionNewAuthorsEncoded) {
+            const sessionNewAuthors = JSON.parse(sessionNewAuthorsEncoded);
+            this.setState({"authors": sessionNewAuthors});
+        }
+    }
+
     onTitleChange(event) {
         this.setState({ title: event.target.value });
     }
@@ -568,18 +580,14 @@ class EntryEditorNew extends EntryEditorBase {
     componentWillMount() {
         super.componentWillMount();
         // Preload with authors from last new entry during this session, for convenience.
-        const sessionNewAuthorsEncoded = window.sessionStorage.newAuthors;
-        if (sessionNewAuthorsEncoded) {
-            const sessionNewAuthors = JSON.parse(sessionNewAuthorsEncoded);
-            this.setState({"authors": sessionNewAuthors});
-        }
+        this.loadSessionAuthors();
         this.fetchLogbook(this.props.match.params.logbookId);
     }
 
     onSubmit({ history }) {
         this.submitted = true;
 
-        window.sessionStorage.newAuthors = JSON.stringify(this.state.authors);
+        this.storeSessionAuthors();
 
         /* TODO: here we might do some checking of the input; e.g.
            verify that any required attributes are filled in etc. */
@@ -724,6 +732,7 @@ class EntryEditorFollowup extends EntryEditorBase {
             this.props.match.params.entryId
         );
         this.fetchLogbook(this.props.match.params.logbookId);
+        this.loadSessionAuthors()
     }
 
     hasEdits() {
@@ -740,6 +749,7 @@ class EntryEditorFollowup extends EntryEditorBase {
         /* TODO: here we might do some checking of the input; e.g.
            verify that any required attributes are filled in etc. */
 
+        this.storeSessionAuthors();
         this.submitted = true;
         const attributes = {};
         // we want to default to the attributes of the original entry, but
