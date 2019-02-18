@@ -567,11 +567,19 @@ class EntryEditorNew extends EntryEditorBase {
 
     componentWillMount() {
         super.componentWillMount();
+        // Preload with authors from last new entry during this session, for convenience.
+        const sessionNewAuthorsEncoded = window.sessionStorage.newAuthors;
+        if (sessionNewAuthorsEncoded) {
+            const sessionNewAuthors = JSON.parse(sessionNewAuthorsEncoded);
+            this.setState({"authors": sessionNewAuthors});
+        }
         this.fetchLogbook(this.props.match.params.logbookId);
     }
 
     onSubmit({ history }) {
         this.submitted = true;
+
+        window.sessionStorage.newAuthors = JSON.stringify(this.state.authors);
 
         /* TODO: here we might do some checking of the input; e.g.
            verify that any required attributes are filled in etc. */
