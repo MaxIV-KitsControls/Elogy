@@ -14,23 +14,33 @@ from . import fields
 def search_ldap(server, basedn, search, max_results=20):
 
     "Search the ldap server for a user"
+    
 
     l = ldap.initialize("ldap://" + server)
 
+
+    LDAP_BIND_USERNAME = current_app.config.get("LDAP_BIND_USERNAME")
+    LDAP_BIND_PASSWORD = current_app.config.get("LDAP_BIND_PASSWORD")
+
+    # Some ldap connections requires a bind user to search, check if that's the case
+    if LDAP_BIND_USERNAME and LDAP_BIND_PASSWORD:
+        l.set_option(ldap.OPT_REFERRALS, 0)
+        l.bind_s(LDAP_BIND_USERNAME, LDAP_BIND_PASSWORD)
+
     # partial match against full name OR login
     if search:
-        search_user = "(|(cn=*{search}*)(uid=*{search}*))".format(search=search)
+        search_user = "(|(cn=*{search}*)(sAMAccountName=*{search}*))".format(search=search)
     else:
         search_user = "cn=*"
 
-    ldap_attributes = ["uid", "cn", "mail"]
+    ldap_attributes = ["sAMAccountName", "cn", "mail"]
     attributes = ["login", "name", "email"]
     results = l.search_s(basedn, ldap.SCOPE_SUBTREE, filterstr=search_user,
                          attrlist=ldap_attributes)
     final_results = []
     for result in results:
         _, result_data = result
-        if "uid" not in result_data:
+        if "sAMAccountName" not in result_data:
             # users without login probably aren't people
             continue
         final_results.append({
@@ -78,7 +88,8 @@ class UsersResource(Resource):
         # if LDAP is configured, let's check that
         LDAP_SERVER = current_app.config.get("LDAP_SERVER")
         LDAP_BASEDN = current_app.config.get("LDAP_BASEDN")
-        if LDAP_SERVER and LDAP_BASEDN:
+
+        if LDAP_SERVER and LDAP_BASEDN and len(search) > 1:
             return search_ldap(LDAP_SERVER, LDAP_BASEDN, search)
 
         # otherwise check for local users

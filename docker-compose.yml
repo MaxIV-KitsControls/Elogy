@@ -19,8 +19,10 @@ services:
       - 'ELOGY_SECRET=PQDfjXrwWLWy8C97BYcKV2dteDm76RHXmB'
       - 'ELOGY_CONFIG_FILE=/app/elogy/config.py'
       - 'ELOGY_UPLOAD_FOLDER=/var/elogy/attachments'
-      # - 'ELOGY_LDAP_SERVER=srv-ldap-2.maxiv.lu.se'
-      # - 'ELOGY_LDAP_BASEDN=dc=maxlab,dc=lu,dc=se'
+      #- 'ELOGY_LDAP_SERVER=srv-ad-2.maxiv.lu.se'
+      #- 'ELOGY_LDAP_BASEDN=dc=maxlab,dc=lu,dc=se'
+      #- 'ELOGY_LDAP_BIND_USERNAME=nslcd-ad@maxlab.lu.se'
+      #- 'ELOGY_LDAP_BIND_PASSWORD=34suzbUzFqHC'
     volumes:
       # Change the part to the left of : to select
       # where files end up in the host filesystem.
