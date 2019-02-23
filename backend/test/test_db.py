@@ -316,6 +316,12 @@ def test_entry_date_search(db):
     entries = [
         {
             "logbook": lb,
+            "title": "Z",
+            "content": "This content is great!",
+            "created_at": datetime(2019, 1, 14, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
             "title": "A",
             "content": "This content is great!",
             "created_at": datetime(2019, 1, 15, 12, 0, 0)
@@ -330,7 +336,14 @@ def test_entry_date_search(db):
             "logbook": lb,
             "title": "C",
             "content": "Not so bad content either.",
-            "created_at": datetime(2019, 1, 19, 12, 0, 0)
+            "created_at": datetime(2019, 1, 18, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "C",
+            "content": "Not so bad content either.",
+            "created_at": datetime(2019, 1, 19, 12, 0, 0),
+            "last_changed_at": datetime(2019, 2, 6, 12, 0, 0)
         }
     ]
 
@@ -340,17 +353,22 @@ def test_entry_date_search(db):
         entry.save()
 
     # include the from date
-    results = list(Entry.search(logbook=lb, from_date="2019-01-17"))
+    results = list(Entry.search(logbook=lb, from_timestamp="2019-01-17 00:00:00"))
     assert {r.title for r in results} == {"B", "C"}
 
-    # exclude the to date
-    # TODO does this make sense or should we include the date?
-    results = list(Entry.search(logbook=lb, to_date="2019-01-17"))
-    assert {r.title for r in results} == {"A"}
+    # include the until_date
+    results = list(Entry.search(logbook=lb, until_timestamp="2019-01-17 23:59:59"))
+    assert {r.title for r in results} == {"Z", "A", "B"}
 
     # date interval
-    results = list(Entry.search(logbook=lb, from_date="2019-01-16", to_date="2019-01-18"))
-    assert {r.title for r in results} == {"B"}
+    results = list(Entry.search(logbook=lb,
+                                from_timestamp="2019-01-15 00:00:00",
+                                until_timestamp="2019-01-17 23:59:59"))
+    assert {r.title for r in results} == {"A", "B"}
+
+    # also looks at change timestamp
+    results = list(Entry.search(logbook=lb, from_timestamp="2019-02-01"))
+    assert {r.title for r in results} == {"C"}
 
 
 def test_entry_search_followups(db):
