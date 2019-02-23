@@ -14,7 +14,7 @@ from .utils import CustomJSONEncoder
 
 
 # defer the actual db setup to later, when we have read the config
-db = SqliteExtDatabase(None, regexp_function=True)
+db = SqliteExtDatabase(None)
 
 
 class CustomJSONField(JSONField):
@@ -29,12 +29,12 @@ def setup_database(db_name, close=True):
     # TODO: support further configuration options, see FlaskDB
     db_dependencies_installed()
     db.init(db_name)
-    Logbook.create_table(safe=True)
-    LogbookChange.create_table(safe=True)
-    Entry.create_table(safe=True)
-    EntryChange.create_table(safe=True)
-    EntryLock.create_table(safe=True)
-    Attachment.create_table(safe=True)
+    Logbook.create_table(fail_silently=True)
+    LogbookChange.create_table(fail_silently=True)
+    Entry.create_table(fail_silently=True)
+    EntryChange.create_table(fail_silently=True)
+    EntryLock.create_table(fail_silently=True)
+    Attachment.create_table(fail_silently=True)
     # print("\n".join(line[0] for line in db.execute_sql("pragma compile_options;")))
     if close:
         db.close()  # important
@@ -95,7 +95,7 @@ class Logbook(Model):
     description = TextField(null=True)
     template = TextField(null=True)
     template_content_type = CharField(default="text/html; charset=UTF-8")
-    parent = ForeignKeyField("self", null=True, backref="children")
+    parent = ForeignKeyField("self", null=True, related_name="children")
     attributes = JSONField(default=[])
     metadata = JSONField(default={})
     archived = BooleanField(default=False)
@@ -275,7 +275,7 @@ class LogbookChange(Model):
     class Meta:
         database = db
 
-    logbook = ForeignKeyField(Logbook, backref="changes")
+    logbook = ForeignKeyField(Logbook, related_name="changes")
 
     changed = CustomJSONField()
 
@@ -400,7 +400,7 @@ class Entry(Model):
     class Meta:
         database = db
 
-    logbook = ForeignKeyField(Logbook, backref="entries")
+    logbook = ForeignKeyField(Logbook, related_name="entries")
     title = CharField(null=True)
     authors = JSONField(default=[])
     content = TextField(null=True)
@@ -416,7 +416,7 @@ class Entry(Model):
     #                    logbooks.
     created_at = UTCDateTimeField(default=datetime.utcnow)
     last_changed_at = UTCDateTimeField(null=True)
-    follows = ForeignKeyField("self", null=True, backref="followups")
+    follows = ForeignKeyField("self", null=True, related_name="followups")
     archived = BooleanField(default=False)
 
     def __str__(self):
@@ -863,7 +863,7 @@ class EntryChange(Model):
     class Meta:
         database = db
 
-    entry = ForeignKeyField(Entry, backref="changes")
+    entry = ForeignKeyField(Entry, related_name="changes")
 
     changed = CustomJSONField()
 
@@ -1012,7 +1012,7 @@ class Attachment(Model):
         database = db
         order_by = ("id",)
 
-    entry = ForeignKeyField(Entry, null=True, backref="attachments")
+    entry = ForeignKeyField(Entry, null=True, related_name="attachments")
     filename = CharField(null=True)
     timestamp = UTCDateTimeField(default=datetime.utcnow)
     path = CharField()  # path within the upload folder
