@@ -138,8 +138,8 @@ entries_args = {
     "attachments": Str(),
     "attribute": List(Str(validate=lambda s: len(s.split(":")) == 2)),
     "metadata": List(Str(validate=lambda s: len(s.split(":")) == 2)),
-    "from_date": Date(),
-    "to_date": Date(),
+    "from": LocalDateTime(),
+    "until": LocalDateTime(),
     "archived": Boolean(),
     "ignore_children": Boolean(),
     "n": Integer(missing=50),
@@ -171,8 +171,8 @@ class EntriesResource(Resource):
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                metadata_filter=metadata,
-                               from_date=args.get("from_date"),
-                               to_date=args.get("to_date"),
+                               from_timestamp=args.get("from"),
+                               until_timestamp=args.get("until"),
                                n=args["n"], offset=args.get("offset"),
                                sort_by_timestamp=args.get("sort_by_timestamp"))
             entries = logbook.get_entries(**search_args)
@@ -186,8 +186,8 @@ class EntriesResource(Resource):
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                metadata_filter=metadata,
-                               from_date=args.get("from_date"),
-                               to_date=args.get("to_date"),
+                               from_timestamp=args.get("from"),
+                               until_timestamp=args.get("until"),
                                n=args["n"], offset=args.get("offset"),
                                sort_by_timestamp=args.get("sort_by_timestamp"))
             entries = Entry.search(**search_args)

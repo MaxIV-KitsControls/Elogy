@@ -299,7 +299,7 @@ class LogbookChange(Model):
         try:
             change = (LogbookChange.select()
                       .where((LogbookChange.logbook == self.logbook) &
-                             (LogbookChange.changed[attr] != None) &
+                             (LogbookChange.changed.extract(attr) != None) &
                              (LogbookChange.id > self.id))
                       .order_by(LogbookChange.id)
                       .get())
@@ -320,7 +320,7 @@ class LogbookChange(Model):
         try:
             change = (LogbookChange.select()
                       .where((LogbookChange.logbook == self.logbook) &
-                             (LogbookChange.changed[attr] != None) &
+                             (LogbookChange.changed.extract(attr) != None) &
                              (LogbookChange.id > self.id))
                       .order_by(LogbookChange.id)
                       .get())
@@ -571,7 +571,7 @@ class Entry(Model):
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None, metadata_filter=None,
-               from_date=None, to_date=None,
+               from_timestamp=None, until_timestamp=None,
                sort_by_timestamp=True):
 
         # Note: this is all pretty messy. The reason we're building
@@ -747,13 +747,13 @@ class Entry(Model):
             query += " GROUP BY thread HAVING entry.follows_id IS NULL"
 
         # Since we're using timestamp, which is an aggregate, it must be filtered
-        # here instead of in the where clause.
-        if from_date:
-            query += " AND timestamp >= ?\n"
-            variables.append(from_date)
-        if to_date:
-            query += " AND timestamp <= ?\n"
-            variables.append(to_date)
+        # here instead of in the WHERE clause.
+        if from_timestamp:
+            query += " AND (entry.created_at >= datetime(?) OR timestamp >= datetime(?))\n "
+            variables.extend([from_timestamp, from_timestamp])
+        if until_timestamp:
+            query += " AND (entry.created_at <= ? OR timestamp <= ?)\n"
+            variables.extend([until_timestamp, until_timestamp])
 
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
@@ -887,7 +887,7 @@ class EntryChange(Model):
         try:
             change = (EntryChange.select()
                       .where((EntryChange.entry == self.entry) &
-                             (EntryChange.changed[attr] != None) &
+                             (EntryChange.changed.extract(attr) != None) &
                              (EntryChange.id > self.id))
                       .order_by(EntryChange.id)
                       .get())
@@ -908,7 +908,7 @@ class EntryChange(Model):
         try:
             change = (EntryChange.select()
                         .where((EntryChange.entry == self.entry) &
-                               (EntryChange.changed[attr] != None) &
+                               (EntryChange.changed.extract(attr) != None) &
                                (EntryChange.id > self.id))
                         .order_by(EntryChange.id)
                         .get())

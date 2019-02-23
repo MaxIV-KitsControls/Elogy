@@ -11,8 +11,8 @@ class QuickSearch extends React.Component {
             title: null,
             authors: null,
             attachments: null,
-            from_date: null,
-            to_date: null,
+            from: null,
+            until: null,
             ignore_children: false
         };
     }
@@ -56,8 +56,8 @@ class QuickSearch extends React.Component {
                 title: null,
                 authors: null,
                 attachments: null,
-                from_date: null,
-                to_date: null,
+                from: null,
+                to: null,
                 ignore_children: false
             },
             this.onSubmit.bind(this, history, event)
@@ -125,25 +125,25 @@ class QuickSearch extends React.Component {
                                     <td>From:</td>
                                     <td>
                                         <input type="date"
-                                            name="from_date"
-                                            value={this.state.from_date || ""}
-                                            max={this.state.to_date || ""}
+                                            name="from"
+                                            value={this.state.from || ""}
+                                            max={this.state.until || ""}
                                             onChange={this.onChange.bind(this)}
-                                            title="Only entries from on or after this date."
+                                            title="Only entries created/changed on or after this date."
                                         />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        To:
+                                        Until:
                                     </td>
                                     <td>
                                         <input type="date"
-                                            name="to_date"
-                                            value={this.state.to_date || ""}
-                                            min={this.state.from_date || ""}
+                                            name="until"
+                                            value={this.state.until || ""}
+                                            min={this.state.from || ""}
                                             onChange={this.onChange.bind(this)}
-                                            title="Only entries from before this date."
+                                            title="Only entries created/changed before this date."
                                         />
                                     </td>                                    
                                 </tr>
