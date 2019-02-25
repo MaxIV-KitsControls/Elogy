@@ -353,21 +353,21 @@ def test_entry_date_search(db):
         entry.save()
 
     # include the from date
-    results = list(Entry.search(logbook=lb, from_timestamp="2019-01-17 00:00:00"))
+    results = list(Entry.search(logbook=lb, from_timestamp=datetime(2019, 1, 17, 0, 0, 0)))
     assert {r.title for r in results} == {"B", "C"}
 
     # include the until_date
-    results = list(Entry.search(logbook=lb, until_timestamp="2019-01-17 23:59:59"))
+    results = list(Entry.search(logbook=lb, until_timestamp=datetime(2019, 1, 17, 23, 59, 59)))
     assert {r.title for r in results} == {"Z", "A", "B"}
 
     # date interval
     results = list(Entry.search(logbook=lb,
-                                from_timestamp="2019-01-15 00:00:00",
-                                until_timestamp="2019-01-17 23:59:59"))
+                                from_timestamp=datetime(2019, 1, 15, 0, 0, 0),
+                                until_timestamp=datetime(2019, 1, 17, 23, 59, 59)))
     assert {r.title for r in results} == {"A", "B"}
 
     # also looks at change timestamp
-    results = list(Entry.search(logbook=lb, from_timestamp="2019-02-01"))
+    results = list(Entry.search(logbook=lb, from_timestamp=datetime(2019, 2, 1)))
     assert {r.title for r in results} == {"C"}
 
 

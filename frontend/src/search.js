@@ -1,6 +1,6 @@
 import React from "react";
 import { Route } from "react-router-dom";
-import { parseQuery } from "./util.js";
+import { parseQuery, formatISODateString, getLocalTimezoneOffset } from "./util.js";
 import "./search.css";
 
 class QuickSearch extends React.Component {
@@ -126,8 +126,8 @@ class QuickSearch extends React.Component {
                                     <td>
                                         <input type="date"
                                             name="from"
-                                            value={this.state.from || ""}
-                                            max={this.state.until || ""}
+                                            value={ this.state.from }
+                                            max={ this.state.until }
                                             onChange={this.onChange.bind(this)}
                                             title="Only entries created/changed on or after this date."
                                         />
@@ -140,8 +140,8 @@ class QuickSearch extends React.Component {
                                     <td>
                                         <input type="date"
                                             name="until"
-                                            value={this.state.until || ""}
-                                            min={this.state.from || ""}
+                                            value={ this.state.until }
+                                            min={ this.state.from }
                                             onChange={this.onChange.bind(this)}
                                             title="Only entries created/changed before this date."
                                         />

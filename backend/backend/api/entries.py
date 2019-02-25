@@ -1,7 +1,9 @@
+from datetime import datetime
 import logging
 
 from flask import request, send_file
 from flask_restful import Resource, marshal, marshal_with, abort
+import pytz
 from webargs.fields import (Integer, Str, Boolean, Dict, List,
                             Nested, Email, LocalDateTime, Date)
 from webargs.flaskparser import use_args
@@ -131,6 +133,15 @@ class EntryResource(Resource):
         return entry
 
 
+class NaiveDate(Date):
+    """Takes a date, and interprets it as midnight in the local timezone."""
+    def _deserialize(self, *args, **kwargs):
+        date = super()._deserialize(*args, **kwargs)
+        tz = datetime.now().astimezone().tzinfo
+        dt = datetime.combine(date, datetime.min.time())
+        return dt.replace(tzinfo=tz).astimezone(pytz.utc)
+
+
 entries_args = {
     "title": Str(),
     "content": Str(),
@@ -138,8 +149,8 @@ entries_args = {
     "attachments": Str(),
     "attribute": List(Str(validate=lambda s: len(s.split(":")) == 2)),
     "metadata": List(Str(validate=lambda s: len(s.split(":")) == 2)),
-    "from": LocalDateTime(),
-    "until": LocalDateTime(),
+    "from": NaiveDate(),
+    "until": NaiveDate(),
     "archived": Boolean(),
     "ignore_children": Boolean(),
     "n": Integer(missing=50),

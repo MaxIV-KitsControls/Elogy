@@ -55,7 +55,6 @@ class NoEntry extends React.Component {
 
     render() {
         const logbookId = parseInt(this.props.match.params.logbookId);
-        console.log(this.props.match.location);
         return (
             <div className="empty">
                 <i className="fa fa-arrow-left" /> Select an entry to read it
