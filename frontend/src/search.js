@@ -57,7 +57,7 @@ class QuickSearch extends React.Component {
                 authors: null,
                 attachments: null,
                 from: null,
-                to: null,
+                until: null,
                 ignore_children: false
             },
             this.onSubmit.bind(this, history, event)
@@ -126,7 +126,7 @@ class QuickSearch extends React.Component {
                                     <td>
                                         <input type="date"
                                             name="from"
-                                            value={ this.state.from }
+                                            value={ this.state.from || "" }
                                             max={ this.state.until }
                                             onChange={this.onChange.bind(this)}
                                             title="Only entries created/changed on or after this date."
@@ -140,7 +140,7 @@ class QuickSearch extends React.Component {
                                     <td>
                                         <input type="date"
                                             name="until"
-                                            value={ this.state.until }
+                                            value={ this.state.until || "" }
                                             min={ this.state.from }
                                             onChange={this.onChange.bind(this)}
                                             title="Only entries created/changed before this date."
