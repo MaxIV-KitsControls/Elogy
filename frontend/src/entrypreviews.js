@@ -115,9 +115,10 @@ const EntryPreview = ({ logbook, entry, selected, search = "" }) => {
     );
 };
 
-const EntryPreviews = ({ logbook, entries, selectedEntryId, search, sortByCreated = false }) => {
+const EntryPreviews = ({ logbook, entries, selectedEntryId, search, sortBy = "created" }) => {
     /* First, we'll group the entries according to priority if set,
-       otherwise date of creation */
+       otherwise date of creation/edit */
+    const entrySortBy = sortBy === "created" ? "created_at" : "last_changed_at";
 
     const dateGroups = groupBy(
         entries,
@@ -129,7 +130,7 @@ const EntryPreviews = ({ logbook, entries, selectedEntryId, search, sortByCreate
         entry =>
             entry.priority !== 0
                 ? -entry.priority
-                : (-entry.priority + "@" + formatDateString(entry[sortByCreated ? "created_at" : "timestamp"]))
+                : (-entry.priority + "@" + formatDateString(entry[entrySortBy] || entry["created_at"]))
     );
 
     function getPriorityGroup(priority) {
