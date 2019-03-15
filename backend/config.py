@@ -23,6 +23,7 @@ UPLOAD_FOLDER = os.getenv('ELOGY_UPLOAD_FOLDER', '/tmp/elogy')  # !!!Again, /tmp
 LDAP_SERVER = os.getenv("ELOGY_LDAP_SERVER", "")
 LDAP_BASEDN = os.getenv("ELOGY_LDAP_BASEDN", "")
 
+
 # Callbacks for various events
 
 def new_entry(data):

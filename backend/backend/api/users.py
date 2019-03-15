@@ -78,7 +78,6 @@ class UsersResource(Resource):
         # if LDAP is configured, let's check that
         LDAP_SERVER = current_app.config.get("LDAP_SERVER")
         LDAP_BASEDN = current_app.config.get("LDAP_BASEDN")
-
         if LDAP_SERVER and LDAP_BASEDN:
             return search_ldap(LDAP_SERVER, LDAP_BASEDN, search)
 
