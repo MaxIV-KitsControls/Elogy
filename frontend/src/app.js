@@ -58,8 +58,22 @@ class NoEntry extends React.Component {
         console.log(this.props.match.location);
         return (
             <div className="empty">
-                <i className="fa fa-arrow-left" /> Select an entry to read it
-                {logbookId ? (
+                <div>
+                {this.props.hideLogbookTree &&
+                                <span>
+                                    <a href="#" onClick={() => this.props.eventbus.publish("logbooktree.hide", false)}>Show logbooks</a>
+
+                                </span>
+                            }
+                            {this.props.hideLogbookTree && this.props.hideLogbook && <span>&nbsp;|&nbsp;</span> }
+                            {this.props.hideLogbook &&
+                                <span>
+                                    <a href="#" onClick={() => this.props.eventbus.publish("logbook.hide", false)}>Show logbook</a>
+                                </span>
+                            }
+                </div>
+                {!this.props.hideLogbook && <i className="fa fa-arrow-left" > Select an entry to read it </i>}
+                {logbookId && !this.props.hideLogbook ? (
                     <div>
                         {" "}
                         or{" "}
@@ -72,6 +86,7 @@ class NoEntry extends React.Component {
                             click here to make a new entry.
                         </Link>
                     </div>
+                    
                 ) : null}
             </div>
         );
@@ -109,6 +124,7 @@ class Elogy extends React.Component {
 
     render() { 
     const EntryWithEventbus = withProps(Entry, { "eventbus": eventbus, "hideLogbookTree": this.state.hideLogbookTree, "hideLogbook": this.state.hideLogbook });
+    const NoEntryWithEventbus = withProps(NoEntry, { "eventbus": eventbus, "hideLogbookTree": this.state.hideLogbookTree, "hideLogbook": this.state.hideLogbook });
 
     return (
     /* Set up a browser router that will render the correct component
@@ -172,7 +188,7 @@ class Elogy extends React.Component {
                         component={LogbookEditorWithEventbus}
                     />
 
-                    <Route path="/logbooks/:logbookId" component={NoEntry} />
+                    <Route path="/logbooks/:logbookId" component={NoEntryWithEventbus} />
                 </Switch>
             </div>
         </div>
