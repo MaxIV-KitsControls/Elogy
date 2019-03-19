@@ -104,7 +104,6 @@ class Elogy extends React.Component {
     }
 
     _hideLogbook(hide) {
-        console.log("called");
         this.setState({hideLogbook: hide});
     }
 
