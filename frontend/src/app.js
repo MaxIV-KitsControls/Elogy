@@ -77,14 +77,47 @@ class NoEntry extends React.Component {
         );
     }
 }
+class Elogy extends React.Component {
 
-const Elogy = () => (
+    constructor() {
+        super();
+        this.state = {
+            hideLogbookTree: false,
+            hideLogbook: false
+        };
+        this._hideLogbookTree = this._hideLogbookTree.bind(this);
+        this._hideLogbook = this._hideLogbook.bind(this);
+    }
+
+    componentDidMount() {
+        eventbus.subscribe("logbooktree.hide", this._hideLogbookTree);
+        eventbus.subscribe("logbook.hide", this._hideLogbook);
+    }
+
+    componentWillUnmount() {
+        eventbus.unsubscribe("logbooktree.hide", this._hideLogbookTree);
+        eventbus.unsubscribe("logbook.hide", this._hideLogbook);
+    }
+
+    _hideLogbookTree(hide) {
+        this.setState({hideLogbookTree: hide});
+    }
+
+    _hideLogbook(hide) {
+        console.log("called");
+        this.setState({hideLogbook: hide});
+    }
+
+    render() { 
+    const EntryWithEventbus = withProps(Entry, { "eventbus": eventbus, "hideLogbookTree": this.state.hideLogbookTree, "hideLogbook": this.state.hideLogbook });
+
+    return (
     /* Set up a browser router that will render the correct component
        in the right places, all depending on the current URL.  */
 
     <Router>
         <div id="app">
-            <div id="logbooks">
+            {!this.state.hideLogbookTree ? <div id="logbooks">
                 <Switch>
                     <Route
                         path="/logbooks/:logbookId"
@@ -99,9 +132,9 @@ const Elogy = () => (
                     />
                     <Route component={QuickSearch} />
                 </Switch>
-            </div>
+            </div> : null}
 
-            <div id="logbook">
+            {!this.state.hideLogbook ? <div id="logbook">
                 <Switch>
                     <Route
                         path="/logbooks/:logbookId/entries/:entryId"
@@ -113,7 +146,7 @@ const Elogy = () => (
                     />
                     <Route component={NoLogbook} />
                 </Switch>
-            </div>
+            </div> : null}
 
             <div id="entry">
                 <Switch>
@@ -128,7 +161,7 @@ const Elogy = () => (
 
                     <Route
                         path="/logbooks/:logbookId/entries/:entryId"
-                        component={Entry}
+                        component={EntryWithEventbus}
                     />
 
                     <Route
@@ -146,5 +179,6 @@ const Elogy = () => (
         </div>
     </Router>
 );
-
+}
+}
 export default Elogy;

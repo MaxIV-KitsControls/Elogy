@@ -253,6 +253,18 @@ class Entry extends React.Component {
                 <header>
                     {this.state.logbook ? (
                         <span className="commands">
+                            {this.props.hideLogbookTree &&
+                                <span>
+                                    <a href="#" onClick={() => this.props.eventbus.publish("logbooktree.hide", false)}>Show logbooks</a>
+                                    &nbsp;|&nbsp;
+                                </span>
+                            }
+                            {this.props.hideLogbook &&
+                                <span>
+                                    <a href="#" onClick={() => this.props.eventbus.publish("logbook.hide", false)}>Show logbook</a>
+                                    &nbsp;|&nbsp;
+                                </span>
+                            }
                             {this.state.follows ? (
                                 <Link
                                     to={{
