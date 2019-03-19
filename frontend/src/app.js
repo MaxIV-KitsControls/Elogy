@@ -55,25 +55,26 @@ class NoEntry extends React.Component {
 
     render() {
         const logbookId = parseInt(this.props.match.params.logbookId);
+        const {hideLogbook, hideLogbookTree, eventbus} = this.props;
         console.log(this.props.match.location);
         return (
             <div className="empty">
                 <div>
-                {this.props.hideLogbookTree &&
-                                <span>
-                                    <a href="#" onClick={() => this.props.eventbus.publish("logbooktree.hide", false)}>Show logbooks</a>
+                {hideLogbookTree &&
+                    <span>
+                        <a href="#" onClick={() => eventbus.publish("logbooktree.hide", false)}>Show logbooks</a>
 
-                                </span>
-                            }
-                            {this.props.hideLogbookTree && this.props.hideLogbook && <span>&nbsp;|&nbsp;</span> }
-                            {this.props.hideLogbook &&
-                                <span>
-                                    <a href="#" onClick={() => this.props.eventbus.publish("logbook.hide", false)}>Show logbook</a>
-                                </span>
-                            }
+                    </span>
+                }
+                {hideLogbookTree && hideLogbook && <span>&nbsp;|&nbsp;</span> }
+                {hideLogbook &&
+                    <span>
+                        <a href="#" onClick={() => eventbus.publish("logbook.hide", false)}>Show logbook</a>
+                    </span>
+                }
                 </div>
-                {!this.props.hideLogbook && <i className="fa fa-arrow-left" > Select an entry to read it </i>}
-                {logbookId && !this.props.hideLogbook ? (
+                {!hideLogbook && <i className="fa fa-arrow-left" > Select an entry to read it </i>}
+                {logbookId && !hideLogbook ? (
                     <div>
                         {" "}
                         or{" "}
