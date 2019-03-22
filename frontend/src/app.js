@@ -93,6 +93,23 @@ class NoEntry extends React.Component {
         );
     }
 }
+
+class HiddenColumn extends React.Component {
+
+    render() {
+        return (
+            <div className="hiddenColumn">
+                <a href="#">
+                    <i className="fa fa-plus showColumn"  onClick={() => this.props.show()}/>
+                </a>
+                <p className="vertical-text">{this.props.text}</p>
+            </div>
+        );
+    }
+}
+
+
+
 class Elogy extends React.Component {
 
     constructor() {
@@ -148,7 +165,7 @@ class Elogy extends React.Component {
                     />
                     <Route component={QuickSearch} />
                 </Switch>
-            </div> : null}
+            </div> : <HiddenColumn text={"Show LogbookTree"} show={this._hideLogbookTree.bind(this, false)}/>}
 
             {!this.state.hideLogbook ? <div id="logbook">
                 <Switch>
@@ -162,7 +179,7 @@ class Elogy extends React.Component {
                     />
                     <Route component={NoLogbook} />
                 </Switch>
-            </div> : null}
+            </div> : <HiddenColumn text={"Show Logbook"} show={this._hideLogbook.bind(this, false)}/>}
 
             <div id="entry">
                 <Switch>
