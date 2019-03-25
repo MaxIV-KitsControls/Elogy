@@ -117,5 +117,5 @@ a {
 }
 .hiddenColumn{
     background: #eee;
-    border-left: 1px solid #bbb;
+    border-right: 1px solid #bbb;
 }
