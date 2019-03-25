@@ -106,6 +106,10 @@ class LogbookTree extends React.Component {
         this.props.eventbus.unsubscribe("logbook.reload", this._reload);
     }
 
+    hide(){
+        this.props.eventbus.publish("logbooktree.hide", true);
+    }
+
     reload() {
         console.log("reload logbook tree");
         this.fetch(this.props.location.search);
@@ -148,6 +152,10 @@ class LogbookTree extends React.Component {
                         </Link>
                     </span>
                     <div className="commands">
+                        <a href="#">
+                            <i className="fa fa-minus"  onClick={() => this.hide()}/>
+                        </a>
+                        &nbsp;
                         {logbookId !== this.state.id ? (
                             <Link
                                 to={{

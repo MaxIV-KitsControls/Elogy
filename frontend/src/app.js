@@ -58,7 +58,7 @@ class NoEntry extends React.Component {
         console.log(this.props.match.location);
         return (
             <div className="empty">
-                <i className="fa fa-arrow-left" /> Select an entry to read it
+                <i className="fa fa-arrow-left" /> Select an entry to read it 
                 {logbookId ? (
                     <div>
                         {" "}
@@ -78,13 +78,61 @@ class NoEntry extends React.Component {
     }
 }
 
-const Elogy = () => (
+class HiddenColumn extends React.Component {
+
+    render() {
+        return (
+            <div className="hiddenColumn">
+                <a href="#">
+                    <i className="fa fa-plus showColumn"  onClick={() => this.props.show()}/>
+                </a>
+                <p className="vertical-text">{this.props.text}</p>
+            </div>
+        );
+    }
+}
+
+
+
+class Elogy extends React.Component {
+
+    constructor() {
+        super();
+        this.state = {
+            hideLogbookTree: false,
+            hideLogbook: false
+        };
+        this._hideLogbookTree = this._hideLogbookTree.bind(this);
+        this._hideLogbook = this._hideLogbook.bind(this);
+    }
+
+    componentDidMount() {
+        eventbus.subscribe("logbooktree.hide", this._hideLogbookTree);
+        eventbus.subscribe("logbook.hide", this._hideLogbook);
+    }
+
+    componentWillUnmount() {
+        eventbus.unsubscribe("logbooktree.hide", this._hideLogbookTree);
+        eventbus.unsubscribe("logbook.hide", this._hideLogbook);
+    }
+
+    _hideLogbookTree(hide) {
+        this.setState({hideLogbookTree: hide});
+    }
+
+    _hideLogbook(hide) {
+        this.setState({hideLogbook: hide});
+    }
+
+    render() { 
+
+    return (
     /* Set up a browser router that will render the correct component
        in the right places, all depending on the current URL.  */
 
     <Router>
         <div id="app">
-            <div id="logbooks">
+            {!this.state.hideLogbookTree ? <div id="logbooks">
                 <Switch>
                     <Route
                         path="/logbooks/:logbookId"
@@ -99,9 +147,9 @@ const Elogy = () => (
                     />
                     <Route component={QuickSearch} />
                 </Switch>
-            </div>
+            </div> : <HiddenColumn text={"Show LogbookTree"} show={this._hideLogbookTree.bind(this, false)}/>}
 
-            <div id="logbook">
+            {!this.state.hideLogbook ? <div id="logbook">
                 <Switch>
                     <Route
                         path="/logbooks/:logbookId/entries/:entryId"
@@ -113,7 +161,7 @@ const Elogy = () => (
                     />
                     <Route component={NoLogbook} />
                 </Switch>
-            </div>
+            </div> : <HiddenColumn text={"Show Logbook"} show={this._hideLogbook.bind(this, false)}/>}
 
             <div id="entry">
                 <Switch>
@@ -146,5 +194,6 @@ const Elogy = () => (
         </div>
     </Router>
 );
-
+}
+}
 export default Elogy;
