@@ -59,22 +59,8 @@ class NoEntry extends React.Component {
         console.log(this.props.match.location);
         return (
             <div className="empty">
-                <div>
-                {hideLogbookTree &&
-                    <span>
-                        <a href="#" onClick={() => eventbus.publish("logbooktree.hide", false)}>Show logbooks</a>
-
-                    </span>
-                }
-                {hideLogbookTree && hideLogbook && <span>&nbsp;|&nbsp;</span> }
-                {hideLogbook &&
-                    <span>
-                        <a href="#" onClick={() => eventbus.publish("logbook.hide", false)}>Show logbook</a>
-                    </span>
-                }
-                </div>
-                {!hideLogbook && <i className="fa fa-arrow-left" > Select an entry to read it </i>}
-                {logbookId && !hideLogbook ? (
+                <i className="fa fa-arrow-left" > Select an entry to read it </i>
+                {logbookId ? (
                     <div>
                         {" "}
                         or{" "}
@@ -142,7 +128,6 @@ class Elogy extends React.Component {
 
     render() { 
     const EntryWithEventbus = withProps(Entry, { "eventbus": eventbus, "hideLogbookTree": this.state.hideLogbookTree, "hideLogbook": this.state.hideLogbook });
-    const NoEntryWithEventbus = withProps(NoEntry, { "eventbus": eventbus, "hideLogbookTree": this.state.hideLogbookTree, "hideLogbook": this.state.hideLogbook });
 
     return (
     /* Set up a browser router that will render the correct component
@@ -206,7 +191,7 @@ class Elogy extends React.Component {
                         component={LogbookEditorWithEventbus}
                     />
 
-                    <Route path="/logbooks/:logbookId" component={NoEntryWithEventbus} />
+                    <Route path="/logbooks/:logbookId" component={NoEntry} />
                 </Switch>
             </div>
         </div>
