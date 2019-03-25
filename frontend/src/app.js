@@ -55,11 +55,10 @@ class NoEntry extends React.Component {
 
     render() {
         const logbookId = parseInt(this.props.match.params.logbookId);
-        const {hideLogbook, hideLogbookTree, eventbus} = this.props;
         console.log(this.props.match.location);
         return (
             <div className="empty">
-                <i className="fa fa-arrow-left" > Select an entry to read it </i>
+                <i className="fa fa-arrow-left" /> Select an entry to read it 
                 {logbookId ? (
                     <div>
                         {" "}
@@ -73,7 +72,6 @@ class NoEntry extends React.Component {
                             click here to make a new entry.
                         </Link>
                     </div>
-                    
                 ) : null}
             </div>
         );
