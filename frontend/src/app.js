@@ -125,7 +125,6 @@ class Elogy extends React.Component {
     }
 
     render() { 
-    const EntryWithEventbus = withProps(Entry, { "eventbus": eventbus, "hideLogbookTree": this.state.hideLogbookTree, "hideLogbook": this.state.hideLogbook });
 
     return (
     /* Set up a browser router that will render the correct component
@@ -177,7 +176,7 @@ class Elogy extends React.Component {
 
                     <Route
                         path="/logbooks/:logbookId/entries/:entryId"
-                        component={EntryWithEventbus}
+                        component={Entry}
                     />
 
                     <Route
