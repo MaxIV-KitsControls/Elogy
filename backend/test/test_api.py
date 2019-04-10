@@ -135,7 +135,6 @@ def test_update_entry(elogy_client):
         elogy_client.put("/api/logbooks/{logbook[id]}/entries/{entry[id]}/"
                          .format(logbook=logbook, entry=entry),
                          data=new_in_entry))["entry"]
-    print(out_entry)
     assert out_entry["title"] == new_in_entry["title"]
     assert out_entry["content"] == new_in_entry["content"]
     assert out_entry["id"] == entry["id"]
@@ -159,7 +158,7 @@ def test_update_entry(elogy_client):
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
             .format(logbook=logbook, entry=entry)))["entry_changes"]
-
+    assert len(revisions) == 1
 
 def test_move_entry(elogy_client):
     in_logbook1, logbook1 = make_logbook(elogy_client)
@@ -188,7 +187,6 @@ def test_move_entry(elogy_client):
         elogy_client.get(
             "/api/entries/{entry[id]}/revisions/0"
             .format(entry=entry)))["entry"]
-    print(old_entry_version)
     assert old_entry_version["logbook"]["id"] == logbook1["id"]
     assert old_entry_version["revision_n"] == 0
 
@@ -196,6 +194,7 @@ def test_move_entry(elogy_client):
         elogy_client.get(
             "/api/logbooks/{logbook[id]}/entries/{entry[id]}/revisions/"
             .format(logbook=logbook2, entry=entry)))["entry_changes"]
+    assert len(revisions) == 1
 
 
 def test_create_entry_followup(elogy_client):
@@ -463,7 +462,7 @@ def test_create_attachment_with_single_quotes(elogy_client):
 
 def test_entry_search(elogy_client):
 
-    # TODO: expand to cover all ways to search
+    # TODO: expand to cover all ways to search, in various permutations
 
     # create a bunch of logbooks and entries
     in_logbook1, logbook1 = make_logbook(elogy_client)

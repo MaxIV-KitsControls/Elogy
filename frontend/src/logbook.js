@@ -194,7 +194,7 @@ class Logbook extends React.Component {
                 ? parseInt(this.props.match.params.entryId, 10)
                 : null,
             query = parseQuery(this.props.location.search),
-            filter = ["title", "content", "authors", "attachments"]
+            searchFilters = ["title", "content", "authors", "attachments", "from", "until"]
                 .filter(key => query[key])
                 .map(key => (
                     <span key={key} className="filter">
@@ -280,7 +280,7 @@ class Logbook extends React.Component {
                             New logbook
                         </Link>
                     </div>
-                    <div className="filters"> {filter} </div>
+                    <div className="filters"> {searchFilters} </div>
                     <div className="attributes">{attributes}</div>
                     { this.state.entries.length === 0 ? null : 
                         <div className="date-sorting">

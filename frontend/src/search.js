@@ -1,6 +1,6 @@
 import React from "react";
 import { Route } from "react-router-dom";
-import { parseQuery } from "./util.js";
+import { parseQuery, formatISODateString, getLocalTimezoneOffset } from "./util.js";
 import "./search.css";
 
 class QuickSearch extends React.Component {
@@ -11,6 +11,8 @@ class QuickSearch extends React.Component {
             title: null,
             authors: null,
             attachments: null,
+            from: null,
+            until: null,
             ignore_children: false
         };
     }
@@ -54,6 +56,8 @@ class QuickSearch extends React.Component {
                 title: null,
                 authors: null,
                 attachments: null,
+                from: null,
+                until: null,
                 ignore_children: false
             },
             this.onSubmit.bind(this, history, event)
@@ -115,6 +119,36 @@ class QuickSearch extends React.Component {
                             placeholder="Attachments"
                             onChange={this.onChange.bind(this)}
                         />
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>From:</td>
+                                    <td>
+                                        <input type="date"
+                                            name="from"
+                                            value={ this.state.from || "" }
+                                            max={ this.state.until }
+                                            onChange={this.onChange.bind(this)}
+                                            title="Only entries created/changed on or after this date."
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        Until:
+                                    </td>
+                                    <td>
+                                        <input type="date"
+                                            name="until"
+                                            value={ this.state.until || "" }
+                                            min={ this.state.from }
+                                            onChange={this.onChange.bind(this)}
+                                            title="Only entries created/changed before this date."
+                                        />
+                                    </td>                                    
+                                </tr>
+                            </tbody>
+                        </table>
                         <label title="Whether to include entries in logbooks contained in the selected logbook.">
                             <input
                                 type="checkbox"

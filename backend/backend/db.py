@@ -571,6 +571,7 @@ class Entry(Model):
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None, metadata_filter=None,
+               from_timestamp=None, until_timestamp=None,
                sort_by_timestamp=True):
 
         # Note: this is all pretty messy. The reason we're building
@@ -740,10 +741,19 @@ class Entry(Model):
         # Check if we're searching, in that case we want to show all entries.
         if followups or any([title_filter, content_filter, author_filter,
                              metadata_filter, attribute_filter, attachment_filter]):
-            query += " GROUP BY thread"
+            query += " GROUP BY thread HAVING 1"
         else:
             # We're not searching. In this case we'll only show
             query += " GROUP BY thread HAVING entry.follows_id IS NULL"
+
+        # Since we're using timestamp, which is an aggregate, it must be filtered
+        # here instead of in the WHERE clause.
+        if from_timestamp:
+            query += " AND (entry.created_at >= datetime(?) OR timestamp >= datetime(?))\n "
+            variables.extend([from_timestamp, from_timestamp])
+        if until_timestamp:
+            query += " AND (entry.created_at <= ? OR timestamp <= ?)\n"
+            variables.extend([until_timestamp, until_timestamp])
 
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
@@ -753,7 +763,7 @@ class Entry(Model):
             query += " LIMIT {}".format(n)
             if offset:
                 query += " OFFSET {}".format(offset)
-        logging.debug("query=%r, variables=%r" % (query, variables))
+        logging.warning("query=%r, variables=%r" % (query, variables))
         return Entry.raw(query, *variables)
 
     @classmethod
@@ -804,7 +814,7 @@ class Entry(Model):
                 # We're using the SQLite JSON1 extension to pick the
                 # attribute value out of the JSON encoded field.
                 # TODO: regexp?
-                attr = Entry.attributes.extract(name)
+                attr = Entry.attributes[name]
                 # Note: The reason we're just using 'contains' here
                 # (it's a substring match) is to support "multioption"
                 # attributes. They are represented as a JSON array and
@@ -815,7 +825,7 @@ class Entry(Model):
 
         if metadata_filter:
             for name, value in metadata_filter:
-                field = Entry.metadata.extract(name)
+                field = Entry.metadata[name]
                 result = result.where(field.contains(value))
 
         # TODO: how to group the results properly? If searching, we

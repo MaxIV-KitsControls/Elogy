@@ -1,8 +1,9 @@
+from datetime import datetime
 from operator import attrgetter
 
 from .fixtures import db
-from elogy.db import Entry
-from elogy.db import Logbook, LogbookRevision
+from backend.db import Entry
+from backend.db import Logbook, LogbookRevision
 
 
 # Logbook
@@ -307,6 +308,67 @@ def test_entry_title_search(db):
     # regexp search
     result, = list(Entry.search(logbook=lb, title_filter="Th.*ry"))
     assert result.title == "Third entry"
+
+
+def test_entry_date_search(db):
+    lb = Logbook.create(name="Logbook1")
+
+    entries = [
+        {
+            "logbook": lb,
+            "title": "Z",
+            "content": "This content is great!",
+            "created_at": datetime(2019, 1, 14, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "A",
+            "content": "This content is great!",
+            "created_at": datetime(2019, 1, 15, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "B",
+            "content": "Some very neat content.",
+            "created_at": datetime(2019, 1, 17, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "C",
+            "content": "Not so bad content either.",
+            "created_at": datetime(2019, 1, 18, 12, 0, 0)
+        },
+        {
+            "logbook": lb,
+            "title": "C",
+            "content": "Not so bad content either.",
+            "created_at": datetime(2019, 1, 19, 12, 0, 0),
+            "last_changed_at": datetime(2019, 2, 6, 12, 0, 0)
+        }
+    ]
+
+    # create entries
+    for entry in entries:
+        entry = Entry.create(**entry)
+        entry.save()
+
+    # include the from date
+    results = list(Entry.search(logbook=lb, from_timestamp=datetime(2019, 1, 17, 0, 0, 0)))
+    assert {r.title for r in results} == {"B", "C"}
+
+    # include the until_date
+    results = list(Entry.search(logbook=lb, until_timestamp=datetime(2019, 1, 17, 23, 59, 59)))
+    assert {r.title for r in results} == {"Z", "A", "B"}
+
+    # date interval
+    results = list(Entry.search(logbook=lb,
+                                from_timestamp=datetime(2019, 1, 15, 0, 0, 0),
+                                until_timestamp=datetime(2019, 1, 17, 23, 59, 59)))
+    assert {r.title for r in results} == {"A", "B"}
+
+    # also looks at change timestamp
+    results = list(Entry.search(logbook=lb, from_timestamp=datetime(2019, 2, 1)))
+    assert {r.title for r in results} == {"C"}
 
 
 def test_entry_search_followups(db):

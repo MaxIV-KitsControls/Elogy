@@ -14,3 +14,6 @@ run-frontend:
 # Run this command with "make run -j2", that way backend and frontend run simultaneously
 run: run-backend run-frontend
 
+# Only runs backend tests (currently there are no frontend tests anyway)
+test:
+	cd backend && $(MAKE) test
