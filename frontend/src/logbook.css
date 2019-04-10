@@ -21,6 +21,10 @@
     border-bottom: 1px solid #aaa;
 }
 
+#logbook header .commands {
+    float: right;
+}
+
 #logbook header .name {
     font-size: 120%;
     font-weight: bold;
