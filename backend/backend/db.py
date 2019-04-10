@@ -8,7 +8,7 @@ from flask import url_for
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField, fn
 from peewee import (IntegerField, CharField, TextField, BooleanField,
                     DateTimeField, ForeignKeyField, sqlite3)
-from peewee import Model, DoesNotExist, DeferredRelation, Entity
+from peewee import Model, DoesNotExist, Entity
 
 from .utils import CustomJSONEncoder
 
@@ -351,7 +351,7 @@ class LogbookRevision:
         return getattr(self.change.logbook, attr)
 
 
-DeferredEntry = DeferredRelation()
+# DeferredEntry = DeferredRelation()
 
 
 # class EntrySearch(FTS5Model):
@@ -832,7 +832,7 @@ class Entry(Model):
         return result
 
 
-DeferredEntry.set_model(Entry)
+#DeferredEntry.set_model(Entry)
 
 
 class EntryChange(Model):
