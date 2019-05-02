@@ -2,3 +2,7 @@
 .gitignore
 
 frontend/node_modules
+frontend/build
+attachments
+__pycache__
+backend/env

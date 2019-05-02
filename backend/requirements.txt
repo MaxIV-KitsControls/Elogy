@@ -14,6 +14,7 @@ peewee==2.10.2
 Pillow==5.0.0
 pyldap==2.4.45
 python-dateutil==2.6.1
+python-slugify==2.0.1
 pytz==2017.3
 six==1.11.0
 uWSGI==2.0.15
@@ -21,3 +22,4 @@ webargs==1.8.1
 Werkzeug==0.14.1
 wtf-peewee==0.2.6
 WTForms==2.1
+pdfkit==0.6.1

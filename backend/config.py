@@ -5,6 +5,8 @@ TITLE = os.getenv('ELOGY_TITLE', 'elogy')
 
 BASEURL = os.getenv('ELOGY_URL', 'https://elogy.maxiv.lu.se')
 
+ROOT_PATH = os.getenv('ELOGY_ROOT', '')
+
 DEBUG = bool(os.getenv('ELOGY_DEBUG', 1))  # !!!Change this to False for production use!!!
 
 # The name of the database file

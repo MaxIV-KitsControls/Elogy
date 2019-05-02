@@ -18,7 +18,9 @@ setup(
         'flask-restful',
         'pyldap',  # should be optional, depends on libpdap and libsasl!
         'flask-admin',  # maybe also optional?
-        'wtf-peewee'
+        'wtf-peewee',
+        'python-slugify',  # optional, only used for file export
+        'pdfkit'  # optional, for export and depends on wkhtmltopdf
     ],
     extras_require={
         "dev": [

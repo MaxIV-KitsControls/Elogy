@@ -1,0 +1,77 @@
+<title>'{{logbook.name}}', entries {{offset}}-{{offset+n}}</title>
+
+<head>
+    <meta charset="utf-8">
+</head>
+
+<style>
+ header {
+     background: #bdf;
+     border: 1px solid black;
+     padding: 10px;
+     line-height: 2em;
+     margin-bottom: 20px;
+ }
+ article {
+     border: 1px solid black;
+     margin-bottom: 30px;
+ }
+ .info {
+     background: #ddd;
+     border-bottom: 1px solid black;
+     padding: 10px;
+     line-height: 2em;
+ }
+ .content {
+     padding: 10px 2%;
+ }
+ .followup {
+     margin: 20px;
+ }
+ img {
+     max-width: 100%;
+ }
+</style>
+
+
+{% macro render_entry(logbook, entry, embed) %}
+    <article>
+        <div class="info">
+            <div>
+                <b>Entry:</b> <a name="{{entry.id}}">#{{entry.id}}</a>
+                {% if entry.follows %} (Follows <a href="#{{entry.follows_id}}">#{{entry.follows_id}})</a>{% endif %}
+            </div>
+            <div>
+                <b>Created at:</b> {{ entry.created_at }}
+                {%- if entry.last_changed_at -%},
+                    <b>Last modified at:</b> {{ entry.last_changed_at }}</b>
+                {% endif %}
+            </div>
+            <div><b>Title:</b> {{ entry.title }}</div>
+            <div><b>Authors:</b> {% for author in entry.authors %}{{ author.name }}{{", " if not loop.last else ""}}{% endfor %}</div>
+        </div>
+        <div class="content">{{ embed(entry.content) }}</div>
+
+        {% for followup in entry.followups %}
+            <div class="followup">
+                {{ render_entry(logbook, followup, embed) }}
+            </div>
+        {% endfor %}
+    </article>
+{% endmacro %}
+
+
+<body>
+    <header>
+        <h1>{{ logbook.name }}</h1>
+        <div>{{ logbook.description or "(No description)" }}</div>
+        <div>Exported from Elogy at {{ url_for("entriesresource", logbook_id=logbook.id, _external=True) }} on <time>{{export_time}}</time>. </div>
+    </header>
+
+
+    <main>
+    {% for entry in entries %}
+        {{ render_entry(logbook, entry, embed) }}
+    {% endfor %}
+    </main>
+</body>

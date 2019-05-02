@@ -264,6 +264,17 @@ class Logbook extends React.Component {
                                     Configure
                                 </Link>{" "}
                                 |&nbsp;
+                                <Link
+                                    to={{
+                                        pathname: `/api/logbooks/${logbook.id}/entries/?download=html`,
+                                        search: window.location.search
+                                    }}
+                                    title={`Export the logbook '${logbook.name}' to html`}
+                                    target="_blank"
+                                >
+                                    Export HTML
+                                </Link>{" "}
+                                |&nbsp;
                             </span>
                         ) : null}
                         <Link
