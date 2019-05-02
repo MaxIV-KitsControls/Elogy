@@ -1,5 +1,4 @@
-import logging
-from slugify import slugify
+import io
 
 from flask import request, send_file
 from flask_restful import Resource, marshal, marshal_with, abort
@@ -9,7 +8,7 @@ from webargs.flaskparser import use_args
 
 from ..db import Entry, Logbook, EntryLock
 from ..attachments import handle_img_tags
-from ..export import export_entries_as_pdf, export_entries_as_html
+from ..export import export_entries
 from ..actions import new_entry, edit_entry
 from . import fields, send_signal
 
@@ -142,9 +141,10 @@ entries_args = {
     "archived": Boolean(),
     "ignore_children": Boolean(),
     "n": Integer(missing=50),
-    "offset": Integer(),
+    "offset": Integer(missing=0),
     "download": Str(),
     "sort_by_timestamp": Boolean(missing=True),
+    "reverse_order": Boolean(missing=True)
 }
 
 
@@ -160,6 +160,9 @@ class EntriesResource(Resource):
         metadata = [meta.split(":")
                     for meta in args.get("metadata", [])]
 
+        n_entries = args["n"]
+        offset = args["offset"]
+
         if logbook_id:
             # restrict search to the given logbook and its descendants
             logbook = Logbook.get(Logbook.id == logbook_id)
@@ -170,8 +173,9 @@ class EntriesResource(Resource):
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                metadata_filter=metadata,
-                               n=args["n"], offset=args.get("offset"),
-                               sort_by_timestamp=args.get("sort_by_timestamp"))
+                               n=n_entries, offset=offset,
+                               sort_by_timestamp=args.get("sort_by_timestamp"),
+                               reverse_order=args.get("reverse_order"))
             entries = logbook.get_entries(**search_args)
         else:
             # global search (all logbooks)
@@ -183,33 +187,26 @@ class EntriesResource(Resource):
                                attachment_filter=args.get("attachments"),
                                attribute_filter=attributes,
                                metadata_filter=metadata,
-                               n=args["n"], offset=args.get("offset"),
-                               sort_by_timestamp=args.get("sort_by_timestamp"))
+                               n=n_entries, offset=offset,
+                               sort_by_timestamp=args.get("sort_by_timestamp"),
+                               reverse_order=args.get("reverse_order"))
             entries = Entry.search(**search_args)
 
-        if args.get("download") == "pdf":
-            # return a PDF version
-            # TODO: not sure if this belongs in the API
-            pdf = export_entries_as_pdf(logbook, entries)
-            if pdf is None:
-                abort(400, message="Could not create PDF!")
-            return send_file(pdf, mimetype="application/pdf",
-                             as_attachment=True,
-                             attachment_filename=("{logbook.name}.pdf"
-                                                  .format(logbook=logbook)))
-        elif args.get("download") == "html":
-            # return a PDF version
-            # TODO: not sure if this belongs in the API
-            html = export_entries_as_html(logbook, entries)
-            if html is None:
-                abort(400, message="Could not create HTML!")
-            return send_file(html, mimetype="text/html",
-                             as_attachment=True,
-                             attachment_filename=(slugify("{logbook.name}.html"
-                                                  .format(logbook=logbook))))
+        if args.get("download"):
+            # Allow getting the entries as one big file (html or pdf), to go.
+            try:
+                data, real_n_entries, mimetype, filename = export_entries(
+                    logbook, entries, n_entries, offset, args["download"])
+            except ValueError:
+                abort(400)
+            buf = io.BytesIO()
+            buf.write(data)
+            buf.seek(0)
+            return send_file(buf, mimetype=mimetype, as_attachment=True,
+                             attachment_filename=filename)
 
-        return marshal(dict(logbook=logbook,
-                            entries=list(entries)), fields.entries)
+        return marshal(dict(logbook=logbook, entries=list(entries)),
+                       fields.entries)
 
 
 class EntryLockResource(Resource):

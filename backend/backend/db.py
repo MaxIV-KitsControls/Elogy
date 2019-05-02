@@ -571,7 +571,7 @@ class Entry(Model):
                attribute_filter=None, content_filter=None,
                title_filter=None, author_filter=None,
                attachment_filter=None, metadata_filter=None,
-               sort_by_timestamp=True):
+               sort_by_timestamp=True, reverse_order=False):
 
         # Note: this is all pretty messy. The reason we're building
         # the query as a raw string is that peewee does not (currently)
@@ -739,7 +739,8 @@ class Entry(Model):
 
         # Check if we're searching, in that case we want to show all entries.
         if followups or any([title_filter, content_filter, author_filter,
-                             metadata_filter, attribute_filter, attachment_filter]):
+                             metadata_filter, attribute_filter,
+                             attachment_filter]):
             query += " GROUP BY thread"
         else:
             # We're not searching. In this case we'll only show
@@ -748,7 +749,9 @@ class Entry(Model):
         # sort newest first, taking into account the last edit if any
         # TODO: does this make sense? Should we only consider creation date?
         order_by = sort_by_timestamp and "timestamp" or "entry.created_at"
-        query += " ORDER BY entry.priority DESC, {} DESC".format(order_by)
+        ordering = "DESC" if reverse_order else "ASC"
+        query += " ORDER BY entry.priority DESC, {} {}".format(order_by,
+                                                               ordering)
         if n:
             query += " LIMIT {}".format(n)
             if offset:

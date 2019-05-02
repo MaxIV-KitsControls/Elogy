@@ -4,9 +4,8 @@ The main entrypoint of the Elogy web application
 
 from time import time
 
-from flask import Flask, current_app, send_from_directory, g, request
+from flask import Flask, current_app, send_from_directory, g
 from flask_restful import Api
-import logging
 
 from .api.errors import errors as api_errors
 from .api.logbooks import LogbooksResource, LogbookChangesResource
@@ -23,7 +22,7 @@ app = Flask(__name__,
             static_folder="frontend/build/static",
             static_url_path="/static")
 app.config.from_envvar('ELOGY_CONFIG_FILE')
-
+app.root_path = app.config["ROOT_PATH"]
 app.secret_key = app.config["SECRET"]
 
 # add some hooks for debugging purposes

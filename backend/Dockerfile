@@ -3,7 +3,8 @@ FROM tiangolo/uwsgi-nginx:python3.6
 RUN apt-get update && \
 	apt-get install -y \
 	libldap2-dev \
-	libsasl2-dev
+        libsasl2-dev \
+        wkhtmltopdf
 
 RUN mkdir /app/elogy
 
@@ -20,4 +21,4 @@ RUN mkdir /var/elogy/attachments
 
 EXPOSE 80
 
-ENTRYPOINT ["uwsgi", "--socket=0.0.0.0:80", "--protocol=http", "--file=run.py", "--callable=app"]
+ENTRYPOINT ["uwsgi", "--socket=0.0.0.0:80", "--protocol=http", "--file=run.py", "--callable=app", "--wsgi-disable-file-wrapper"]

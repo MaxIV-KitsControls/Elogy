@@ -1,4 +1,7 @@
+from datetime import datetime
 from tempfile import NamedTemporaryFile
+
+from flask import current_app
 from slugify import slugify
 
 try:
@@ -6,36 +9,27 @@ try:
 except ImportError:
     pdfkit = None
 
+from .attachments import embed_attachments
 
-def export_entries_as_pdf(logbook, entries):
+
+def export_entries_as_pdf(logbook, entries, n, offset):
 
     """
-    Super basic "proof-of-concept" PDF export
-    No proper formatting, and does not embed images.
+    Export entries as a PDF. Simply uses the HTML export function below,
+    and converts the HTML into PDF using pdfkit.
     Note that pdfkit relies on the external library "wkhtmltopdf".
     TODO: pdfkit seems a bit limited, look for a more flexible alternative.
     "reportlab" looks pretty good (https://bitbucket.org/rptlab/reportlab)
     """
 
     if pdfkit is None:
-        return None
+        raise ValueError("No pdfkit/wkhtmltopdf available.")
 
-    entries_html = [
-        """
-        <p><b>Created at:</b> {created_at}</p>
-        <p><b>Title:</b> {title}</p>
-        <p><b>Authors:</b> {authors}</p>
-        <p>{content}</p>
-        """.format(title=entry.title or "(No title)",
-                   authors=", ".join(a["name"] for a in entry.authors),
-                   created_at=entry.created_at,
-                   content=entry.content or "---")
-        for entry in entries
-    ]
+    html, n_entries = export_entries_as_html(logbook, entries, n, offset)
 
     with NamedTemporaryFile(prefix=logbook.name,
                             suffix=".pdf",
-                            delete=False) as f:
+                            delete=True) as f:
         options = {
             "load-error-handling": "ignore",
             "load-media-error-handling": "ignore",
@@ -46,41 +40,59 @@ def export_entries_as_pdf(logbook, entries):
             'encoding': "UTF-8",
         }
         try:
-            pdfkit.from_string("<hr>".join(entries_html), f.name, options)
+            pdfkit.from_string(html, f.name, options)
         except OSError:
             # Apparently there's some issue with wkhtmltopdf which produces
             # errors, but it works anyway. See
             # https://github.com/wkhtmltopdf/wkhtmltopdf/issues/2051
             pass
-        return f.name
 
-def export_entries_as_html(logbook, entries):
+        f.seek(0)
+        return f.read(), n_entries
+
+
+def export_entries_as_html(logbook, entries, n, offset):
 
     """
-    Super basic "proof-of-concept" html export
-    No proper formatting, and does not embed images.
+    Takes the given logbook entries and generates a single HTML string.
+    Inline images are embedded, to make it a standalone document.
     """
 
-    entries_html = [
-        """
-        <div><b>Created at:</b> {created_at}</div>
-        <div><b>Title:</b> {title}</div>
-        <div><b>Authors:</b> {authors}</div>
-        <div>{content}</div>
-        <hr/>
-        """.format(title=entry.title or "(No title)",
-                   authors=", ".join(a["name"] for a in entry.authors),
-                   created_at=entry.created_at,
-                   content=entry.content or "---")
-        for entry in entries
-    ]
-    print(entries_html)
-    with NamedTemporaryFile(prefix=slugify(logbook.name),
-                            suffix=".html",
-                            delete=False) as f:
-        f.write('<h1>{}</h1>'.format(logbook.name).encode('utf8'))
-        f.write('<div>{}</div><hr/>'.format(logbook.description).encode('utf8'))
-        for entry_html in entries_html:
-            f.write(entry_html.encode('utf8'))
-        f.close()
-    return f.name
+    entries = list(entries)
+    if not entries:
+        raise ValueError("No entries!")
+
+    template = current_app.jinja_env.get_or_select_template(
+        "entry_export.html.jinja2")
+
+    current_app.logger.info("Rendering HTML for logbook %s; n=%d, offset=%d",
+                            logbook.id, n, offset)
+    html = template.render(logbook=logbook, entries=entries,
+                           n=len(entries), offset=offset,
+                           embed=embed_attachments,
+                           export_time=datetime.now())
+
+    return html, len(entries)
+
+
+def export_entries(logbook, entries, n_entries, offset, filetype):
+
+    if filetype == "html":
+        html, real_n_entries = export_entries_as_html(
+            logbook, entries, n=n_entries, offset=offset)
+        data = html.encode("utf-8")
+        mimetype = "text/html"
+    elif filetype == "pdf":
+        pdf, real_n_entries = export_entries_as_pdf(
+            logbook, entries, n=n_entries, offset=offset)
+        data = pdf
+        mimetype = "application/pdf"
+
+    filename = "{}_{}_{}-{}.{}".format(
+        slugify(logbook.name),
+        datetime.now().strftime("%Y%m%dT%H%M%S"),
+        offset,
+        offset + real_n_entries,
+        filetype
+    )
+    return data, real_n_entries, mimetype, filename

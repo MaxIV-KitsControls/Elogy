@@ -3,16 +3,14 @@ files that are uploaded as part of an entry. They are stored as
 original files, in a configurable location on disk.
 """
 
-from base64 import decodestring
+from base64 import decodestring, encodestring
 import binascii
 from datetime import datetime
-from dateutil.parser import parse
 import io
 import mimetypes
 import os
 
-from flask import (Blueprint, abort, request, url_for, redirect,
-                   current_app, jsonify, send_from_directory)
+from flask import url_for, current_app
 from lxml import html, etree
 from lxml.html.clean import Cleaner
 from PIL import Image
@@ -37,6 +35,19 @@ def get_content_type(file_):
     if encoding is not None:
         return "{};{}".format(type_, encoding)
     return type_
+
+
+def load_attachment(path):
+    upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"])
+    full_path = os.path.join(upload_dir, path)
+    with open(full_path, "rb") as f:
+        return f.read()
+
+
+def get_full_attachment_path(path):
+    upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"])
+    full_path = os.path.join(upload_dir, path)
+    return full_path
 
 
 def save_attachment(file_, timestamp, entry_id, metadata=None, embedded=False):
@@ -188,3 +199,31 @@ def handle_img_tags(text, entry_id=None, timestamp=None):
     return content, attachments
 
 
+def embed_attachments(text, entry_id=None, timestamp=None):
+
+    """ Embed inlined images in HTML, for export. """
+    # TODO I guess we could embed some other types too, e.g. text files..?
+
+    try:
+        doc = html.document_fromstring(text)
+    except etree.ParserError:
+        return text
+
+    for i, element in enumerate(doc.xpath("//*[@src]")):
+        src = element.attrib['src'].split("?", 1)[0]
+        if src.startswith("/attachments/"):  # TODO This is a bit crude
+            # Now we know it's an attachment and not an external link.
+            mimetype = mimetypes.guess_type(src)[0]
+            if mimetype and mimetype.startswith("image/"):
+                # We know it's an image and what type it is
+                try:
+                    image = load_attachment(src[13:])
+                except IOError:
+                    # TODO Guess the file does not exist. Put something here?
+                    continue
+                encoded = encodestring(image)
+                element.attrib["src"] = (f"data:{mimetype};base64, " +
+                                         encoded.decode("utf-8"))
+
+    # TODO maybe replace broken images with something more explanatory?
+    return etree.tostring(doc).decode("utf-8")
