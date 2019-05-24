@@ -1,6 +1,5 @@
 import React from "react";
 
-
 function flattenLogbook (logbook, ancestors) {
     // return a flat array of all the logbooks, along with their ancestors
     if (!logbook)
@@ -14,7 +13,6 @@ function flattenLogbook (logbook, ancestors) {
     );
 }
 
-
 // build a nice path string out of the ancestors to the logbook
 const LogbookOption = ({ logbook, current, ancestors }) => {
     const logbookPath = (ancestors.join(" / ") 
@@ -27,7 +25,6 @@ const LogbookOption = ({ logbook, current, ancestors }) => {
         </option>
     );
 }
-
 
 export class LogbookSelector extends React.Component {
 
@@ -52,19 +49,20 @@ export class LogbookSelector extends React.Component {
     onChange (event) {
         this.props.onLogbookChange(event.target.value);
     }
-    
+
     render () {
         const options = flattenLogbook(this.state.logbook)
-            .filter(([logbook, _]) => logbook.id !== this.props.excludeId)
+            .filter(([logbook, ancestors]) => !ancestors.includes(this.props.currentName) && logbook.id !== this.props.currentId)
             .map(([logbook, ancestors]) => (
                 <LogbookOption logbook={logbook}
-                               current={logbook.id === this.props.logbookId}
+                               current={logbook.id === this.props.currentParentId}
                                ancestors={ancestors}/>));
         
         return (
-            <select value={this.props.logbookId}
+            <select value={this.props.currentParentId}
                     title="Current logbook"
-                    onChange={this.onChange.bind(this)}>
+                    onChange={this.onChange.bind(this)}
+                    >
                 { options }
             </select>
         );
