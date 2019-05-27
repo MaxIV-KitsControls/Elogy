@@ -483,7 +483,6 @@ class LogbookEditorEdit extends LogbookEditorBase {
 
         if (!this.state.id)
             return <div>Loading...</div>;
-
         return (
             <div id="logbookeditor">
                 <Prompt message={this.getPromptMessage.bind(this)} />
@@ -491,8 +490,9 @@ class LogbookEditorEdit extends LogbookEditorBase {
                 <header>
                     Editing logbook "{this.state.logbook.name}" in
                     <LogbookSelector
-                        logbookId={parentId}
-                        excludeId={this.state.id}
+                        currentParentId={parentId}
+                        currentId={this.state.id}
+                        currentName={this.state.name}
                         onLogbookChange={this.onParentChange.bind(this)}
                     />
                 </header>
