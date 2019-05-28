@@ -17,22 +17,6 @@ build_frontend_test_image:
   only:
     - master
 
-build_backend_image:
-  stage: build
-  script:
-    - docker build ./backend/ -t docker.maxiv.lu.se/elogy_backend
-    - docker push docker.maxiv.lu.se/elogy_backend
-  only:
-    - master
-
-build_frontend_image:
-  stage: build
-  script:
-    - docker build ./frontend/ -t docker.maxiv.lu.se/elogy_frontend
-    - docker push docker.maxiv.lu.se/elogy_frontend
-  only:
-    - master
-
 deploy_test_image:
   stage: deploy
   script:
