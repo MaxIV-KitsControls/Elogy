@@ -114,7 +114,7 @@ class LogbookEditorBase extends React.Component {
     }
 
     getAttributes() {
-        const { logbook, attributes } = this.state;
+        const { logbook, attributes } = this.state;
 
         return attributes.map((attr, i) => {
             const existingAttribute =
