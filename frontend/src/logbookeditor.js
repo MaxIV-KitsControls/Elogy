@@ -10,34 +10,26 @@ import "./logbookeditor.css";
 
 // Editor for a single logbook attribute
 class LogbookAttributeEditor extends React.PureComponent {
-    constructor(props) {
-        super(props);
-        this.state = {
-            name: props.name,
-            type: props.type || "text",
-            options: props.options,
-            required: props.required
-        };
-    }
-
     onChangeName(event) {
-        this.setState({ name: event.target.value });
+        this.triggerOnChange({ name: event.target.value });
     }
 
     onChangeType(event) {
-        this.setState({ type: event.target.value });
+        this.triggerOnChange({ type: event.target.value });
     }
 
     onChangeOptions(event) {
-        this.setState({ options: event.target.value.split("\n") });
+        this.triggerOnChange({ options: event.target.value.split("\n") });
     }
 
     onChangeRequired(event) {
-        this.setState({ required: event.target.checked });
+        this.triggerOnChange({ required: event.target.checked });
     }
 
-    onBlur() {
-        this.props.onChange(this.props.index, this.state);
+    triggerOnChange(changes) {
+        const { name, type, options, required } = this.props;
+        const state = { name, type, options, required, ...changes };
+        this.props.onChange(this.props.index, state);
     }
 
     render() {
@@ -47,9 +39,9 @@ class LogbookAttributeEditor extends React.PureComponent {
                     <input
                         type="text"
                         ref="name"
-                        value={this.state.name}
+                        value={this.props.name}
+                        disabled={this.props.existingAttribute}
                         onChange={this.onChangeName.bind(this)}
-                        onBlur={this.onBlur.bind(this)}
                     />
                 </label>
                 <label>
@@ -57,9 +49,9 @@ class LogbookAttributeEditor extends React.PureComponent {
                     <select
                         name="type"
                         ref="type"
-                        value={this.state.type}
+                        value={this.props.type}
+                        disabled={this.props.existingAttribute}
                         onChange={this.onChangeType.bind(this)}
-                        onBlur={this.onBlur.bind(this)}
                     >
                         <option value="text">Text</option>
                         <option value="number">Number</option>
@@ -72,17 +64,16 @@ class LogbookAttributeEditor extends React.PureComponent {
                     <input
                         type="checkbox"
                         ref="required"
-                        checked={this.state.required}
+                        checked={this.props.required}
                         onChange={this.onChangeRequired.bind(this)}
-                        onBlur={this.onBlur.bind(this)}
                     />
                     Required
                 </label>
                 <label
                     style={{
                         display:
-                            this.state.type === "option" ||
-                            this.state.type === "multioption"
+                            this.props.type === "option" ||
+                            this.props.type === "multioption"
                                 ? "inline-block"
                                 : "none"
                     }}
@@ -92,9 +83,8 @@ class LogbookAttributeEditor extends React.PureComponent {
                         rows="3"
                         ref="options"
                         title="Choices available for the attribute (one per line)"
-                        value={(this.state.options || []).join("\n")}
+                        value={(this.props.options || []).join("\n")}
                         onChange={this.onChangeOptions.bind(this)}
-                        onBlur={this.onBlur.bind(this)}
                     />
                 </label>
             </div>
@@ -123,35 +113,43 @@ class LogbookEditorBase extends React.Component {
         this.setState({ description: event.target.value });
     }
 
-    getAttributes(logbook) {
-        return this.state.attributes.map((attr, i) => (
-            <fieldset key={i}>
-                <legend>
-                    {i}
-                    <button onClick={this.removeAttribute.bind(this, i)}>
-                        <i className="fa fa-trash" />
-                    </button>
-                    <button onClick={this.insertAttribute.bind(this, i)}>
-                        <i className="fa fa-plus" />
-                    </button>
-                    <button onClick={this.moveAttribute.bind(this, i, -1)}>
-                        <i className="fa fa-arrow-up" />
-                    </button>
-                    <button onClick={this.moveAttribute.bind(this, i, 1)}>
-                        <i className="fa fa-arrow-down" />
-                    </button>
-                </legend>
-                <LogbookAttributeEditor
-                    key={attr.name}
-                    index={i}
-                    type={attr.type}
-                    name={attr.name}
-                    options={attr.options}
-                    required={attr.required}
-                    onChange={this.changeAttribute.bind(this)}
-                />
-            </fieldset>
-        ));
+    getAttributes() {
+        const { logbook, attributes } = this.state;
+
+        return attributes.map((attr, i) => {
+            const existingAttribute =
+                logbook && logbook.attributes.some(({ name }) => name === attr.name);
+
+            return (
+                <fieldset key={i}>
+                    <legend>
+                        {i}
+                        <button onClick={this.removeAttribute.bind(this, i)}>
+                            <i className="fa fa-trash" />
+                        </button>
+                        <button onClick={this.insertAttribute.bind(this, i)}>
+                            <i className="fa fa-plus" />
+                        </button>
+                        <button onClick={this.moveAttribute.bind(this, i, -1)}>
+                            <i className="fa fa-arrow-up" />
+                        </button>
+                        <button onClick={this.moveAttribute.bind(this, i, 1)}>
+                            <i className="fa fa-arrow-down" />
+                        </button>
+                    </legend>
+                    <LogbookAttributeEditor
+                        key={i}
+                        index={i}
+                        type={attr.type}
+                        name={attr.name}
+                        options={attr.options}
+                        required={attr.required}
+                        onChange={this.changeAttribute.bind(this)}
+                        existingAttribute={existingAttribute}
+                    />
+                </fieldset>
+            );
+        });
     }
 
     findAttribute(name) {
@@ -173,13 +171,24 @@ class LogbookEditorBase extends React.Component {
     }
 
     insertAttribute(index, event) {
+        const existingNames = this.state.attributes.map(({ name }) => name);
+        const nameBase = "New attribute";
+        let attributeName = nameBase;
+        let counter = 1;
+
+        while (existingNames.includes(attributeName)) {
+            attributeName = `${nameBase} (${counter})`;
+            counter++;
+        }
+
         event.preventDefault();
         const newAttribute = {
             type: "text",
-            name: "New attribute",
+            name: attributeName,
             options: [],
             required: false
         };
+
         this.setState(
             update(this.state, {
                 attributes: { $splice: [[index, 0, newAttribute]] }
@@ -550,12 +559,20 @@ class LogbookEditorEdit extends LogbookEditorBase {
                         Archived
                     </label>
 
-                    <button onClick={this.onSubmit.bind(this, history)}>
+                    <button
+                        onClick={this.onSubmit.bind(this, history)}
+                        disabled={!this.canSubmit()}
+                    >
                         Submit
                     </button>
                 </footer>
             </div>
         );
+    }
+
+    canSubmit() {
+        const attributeNames = this.state.attributes.map(({ name }) => name);
+        return !attributeNames.some((name, i) => attributeNames.indexOf(name) !== i);
     }
 }
 
