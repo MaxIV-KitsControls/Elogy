@@ -570,6 +570,7 @@ class LogbookEditorEdit extends LogbookEditorBase {
         );
     }
 
+    // Disable the submit button if there are duplicate field names
     canSubmit() {
         const attributeNames = this.state.attributes.map(({ name }) => name);
         return !attributeNames.some((name, i) => attributeNames.indexOf(name) !== i);
