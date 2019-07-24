@@ -61,6 +61,7 @@ def export_entries_as_html(logbook, entries):
     No proper formatting, and does not embed images.
     """
 
+#    export = ""
     entries_html = [
         """
         <div><b>Created at:</b> {created_at}</div>
@@ -74,7 +75,7 @@ def export_entries_as_html(logbook, entries):
                    content=entry.content or "---")
         for entry in entries
     ]
-    print(entries_html)
+
     with NamedTemporaryFile(prefix=slugify(logbook.name),
                             suffix=".html",
                             delete=False) as f:

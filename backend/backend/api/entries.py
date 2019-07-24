@@ -204,7 +204,7 @@ class EntriesResource(Resource):
             if html is None:
                 abort(400, message="Could not create HTML!")
             return send_file(html, mimetype="text/html",
-                             as_attachment=True,
+                             as_attachment=False,
                              attachment_filename=(slugify("{logbook.name}.html"
                                                   .format(logbook=logbook))))
 
