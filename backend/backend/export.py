@@ -1,4 +1,5 @@
 from tempfile import NamedTemporaryFile
+from slugify import slugify
 
 try:
     import pdfkit
@@ -52,3 +53,35 @@ def export_entries_as_pdf(logbook, entries):
             # https://github.com/wkhtmltopdf/wkhtmltopdf/issues/2051
             pass
         return f.name
+
+def export_entries_as_html(logbook, entries):
+
+    """
+    Super basic "proof-of-concept" html export
+    No proper formatting, and does not embed images.
+    """
+
+#    export = ""
+    entries_html = [
+        """
+        <div><b>Created at:</b> {created_at}</div>
+        <div><b>Title:</b> {title}</div>
+        <div><b>Authors:</b> {authors}</div>
+        <div>{content}</div>
+        <hr/>
+        """.format(title=entry.title or "(No title)",
+                   authors=", ".join(a["name"] for a in entry.authors),
+                   created_at=entry.created_at,
+                   content=entry.content or "---")
+        for entry in entries
+    ]
+
+    with NamedTemporaryFile(prefix=slugify(logbook.name),
+                            suffix=".html",
+                            delete=False) as f:
+        f.write('<h1>{}</h1>'.format(logbook.name).encode('utf8'))
+        f.write('<div>{}</div><hr/>'.format(logbook.description).encode('utf8'))
+        for entry_html in entries_html:
+            f.write(entry_html.encode('utf8'))
+        f.close()
+    return f.name

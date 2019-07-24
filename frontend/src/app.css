@@ -106,3 +106,16 @@ a {
         display: block;
     }
 }
+
+.vertical-text {
+    writing-mode: tb-rl;
+    margin: 0px;
+}
+
+.showColumn{
+    margin: 5px;
+}
+.hiddenColumn{
+    background: #eee;
+    border-right: 1px solid #bbb;
+}

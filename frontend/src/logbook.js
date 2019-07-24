@@ -188,6 +188,10 @@ class Logbook extends React.Component {
         this.props.history.push(`?sort_by=${sortBy}`);
     }
 
+    hide(){
+        this.props.eventbus.publish("logbook.hide", true);
+    }
+
     render() {
         const logbook = this.state.logbook,
             entryId = this.props.match.params.entryId
@@ -239,7 +243,12 @@ class Logbook extends React.Component {
                         <i className="fa fa-book" />
                         {logbook.id === 0 ? "[All logbooks]" : logbook.name}
                     </span>
-
+                    <div className="commands">
+                        <a href="#">
+                            <i className="fa fa-minus"  onClick={() => this.hide()}/>
+                        </a>
+                    &nbsp;
+                    </div>
                     <div>
                         {logbook.id ? (
                             <span>
@@ -262,6 +271,17 @@ class Logbook extends React.Component {
                                     title={`Edit the settings of the logbook '${logbook.name}'`}
                                 >
                                     Configure
+                                </Link>{" "}
+                                |&nbsp;
+                                <Link
+                                    to={{
+                                        pathname: `/api/logbooks/${logbook.id}/entries/?download=html`,
+                                        search: window.location.search
+                                    }}
+                                    title={`Export the logbook '${logbook.name}' to html`}
+                                    target="_blank"
+                                >
+                                    Export HTML
                                 </Link>{" "}
                                 |&nbsp;
                             </span>

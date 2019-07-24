@@ -1,4 +1,5 @@
 import logging
+from slugify import slugify
 
 from flask import request, send_file
 from flask_restful import Resource, marshal, marshal_with, abort
@@ -8,7 +9,7 @@ from webargs.flaskparser import use_args
 
 from ..db import Entry, Logbook, EntryLock
 from ..attachments import handle_img_tags
-from ..export import export_entries_as_pdf
+from ..export import export_entries_as_pdf, export_entries_as_html
 from ..actions import new_entry, edit_entry
 from . import fields, send_signal
 
@@ -196,6 +197,16 @@ class EntriesResource(Resource):
                              as_attachment=True,
                              attachment_filename=("{logbook.name}.pdf"
                                                   .format(logbook=logbook)))
+        elif args.get("download") == "html":
+            # return a PDF version
+            # TODO: not sure if this belongs in the API
+            html = export_entries_as_html(logbook, entries)
+            if html is None:
+                abort(400, message="Could not create HTML!")
+            return send_file(html, mimetype="text/html",
+                             as_attachment=False,
+                             attachment_filename=(slugify("{logbook.name}.html"
+                                                  .format(logbook=logbook))))
 
         return marshal(dict(logbook=logbook,
                             entries=list(entries)), fields.entries)
