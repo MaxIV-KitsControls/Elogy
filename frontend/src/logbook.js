@@ -188,6 +188,10 @@ class Logbook extends React.Component {
         this.props.history.push(`?sort_by=${sortBy}`);
     }
 
+    hide(){
+        this.props.eventbus.publish("logbook.hide", true);
+    }
+
     render() {
         const logbook = this.state.logbook,
             entryId = this.props.match.params.entryId
@@ -239,7 +243,12 @@ class Logbook extends React.Component {
                         <i className="fa fa-book" />
                         {logbook.id === 0 ? "[All logbooks]" : logbook.name}
                     </span>
-
+                    <div className="commands">
+                        <a href="#">
+                            <i className="fa fa-minus"  onClick={() => this.hide()}/>
+                        </a>
+                    &nbsp;
+                    </div>
                     <div>
                         {logbook.id ? (
                             <span>

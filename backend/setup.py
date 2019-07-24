@@ -5,7 +5,7 @@ setup(
     author='Johan Forsberg',
     author_email='johan@slentrian.org',
     url='https://github.com/johanfforsberg/elogy',
-    packages=['elogy'],
+    packages=['backend'],
     include_package_data=True,
     install_requires=[
         'flask',
@@ -20,4 +20,11 @@ setup(
         'flask-admin',  # maybe also optional?
         'wtf-peewee'
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "faker",
+            "splinter"
+        ]
+    }
 )
